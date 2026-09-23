@@ -1,0 +1,250 @@
+.intro {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.noData {
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+  margin: 0;
+}
+
+.dayList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.dayCard {
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dayHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dayTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.daySubtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.timelineList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.moveSelect {
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-input);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  padding: var(--space-1) var(--space-2);
+  min-height: 36px;
+}
+
+.skipButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1.5px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.skipButtonUndo {
+  color: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.emptyDay {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.dayTipsLink {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tipsCategory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tipsCategoryTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tipsItem {
+  display: flex;
+  gap: var(--space-2);
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.bullet {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.alsoVisit {
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alsoVisitTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.alsoVisitItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alsoVisitName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.alsoVisitMeta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* aba Lugares — herdado de SelectPlaces.tsx (ver docs/ajustes-13-navegacao-menu-fixo.md, seção 5) */
+
+.placeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.addCustom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.customRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-card);
+}
+
+.customLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.removeButton:hover,
+.removeButton:active {
+  background: rgba(43, 42, 46, 0.08);
+  color: var(--text);
+}

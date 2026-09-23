@@ -1,0 +1,257 @@
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  background-color: #ffffff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.logoMark {
+  height: 28px;
+  width: auto;
+}
+
+.profileButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: 999px;
+  border: 1.5px solid var(--field-border);
+  background: var(--card);
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.greetingTitle {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+}
+
+.greetingSubtitle {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+
+.heroCard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  box-shadow: var(--shadow-photo);
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.heroPhotoWrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: var(--bg-top);
+}
+
+.heroPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroPhotoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 40px;
+}
+
+.heroBadge {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  background: var(--accent);
+  color: var(--text-on-dark);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+}
+
+.heroContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-5);
+}
+
+.heroName {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+}
+
+.heroMeta {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.pastTrips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+}
+
+.carousel {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.pastTripCard {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.pastTripPhotoWrap {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  background: var(--bg-top);
+}
+
+.pastTripPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pastTripPhotoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
+}
+
+.exampleBadge {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 2px var(--space-2);
+}
+
+.pastTripContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+}
+
+.pastTripName {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.pastTripMeta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pastTripsNote {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.documentsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.documentsRowIcon {
+  font-size: 18px;
+}
+
+.documentsRowLabel {
+  flex: 1;
+}
+
+.documentsRowChevron {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+}

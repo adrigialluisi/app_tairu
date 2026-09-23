@@ -1,0 +1,170 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.secondaryActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.textButton {
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+}
+
+.removeButton {
+  color: var(--error);
+  margin-left: auto;
+}
+
+.voucherUpload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.voucherMessageSuccess {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.voucherMessageMuted {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.costRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.costRow > *:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.voucherUploadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.voucherHint {
+  flex: 1;
+  min-width: 160px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* #f6e2e5 é um tom claro do --accent — não existe token de "accent suave" no tokens.css hoje */
+.voucherButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  background: #f6e2e5;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.voucherButton:active {
+  transform: scale(0.98);
+}
+
+.voucherAttached {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-android-input);
+  padding: var(--space-2) var(--space-3);
+}
+
+.voucherFileIcon {
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+.voucherFileName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.voucherFileActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+}
+
+.voucherIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.voucherIconButton:active {
+  transform: scale(0.94);
+}
+
+.voucherIconButtonDanger {
+  color: var(--error);
+}

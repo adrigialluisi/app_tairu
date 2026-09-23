@@ -1,0 +1,85 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--field-border);
+}
+
+:global([data-platform='ios']) .inputWrap {
+  border-radius: var(--radius-ios-input);
+}
+
+:global([data-platform='android']) .inputWrap {
+  border-radius: var(--radius-android-input);
+}
+
+.inputWrapError {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.input {
+  flex: 1;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+/*
+  Segunda camada além de autoComplete="off" (ver docs/ajustes-19-autofill-navegador.md):
+  alguns navegadores (Safari em especial) ignoram autoComplete="off" por
+  heurística própria e aplicam o próprio destaque visual de autofill (fundo
+  azul/amarelo) mesmo assim. O box-shadow inset gigante é o truque padrão
+  pra sobrescrever esse fundo, já que background-color sozinho não tem
+  prioridade suficiente nesse pseudo-estado em navegadores WebKit/Blink.
+*/
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--card) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.inputWrap:focus-within {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}

@@ -1,0 +1,23 @@
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translate(-50%, 4px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--card);
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.toast[data-visible='true'] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

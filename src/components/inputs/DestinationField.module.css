@@ -1,0 +1,145 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.comboWrap {
+  position: relative;
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  min-height: var(--touch-target);
+}
+
+:global([data-platform='ios']) .inputWrap {
+  border-radius: var(--radius-ios-input);
+}
+
+:global([data-platform='android']) .inputWrap {
+  border-radius: var(--radius-android-input);
+}
+
+.inputWrap:focus-within {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.input {
+  flex: 1;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.listbox {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-1);
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.optionActive {
+  background: var(--bg-top);
+}
+
+.optionCountry {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty {
+  padding: var(--space-3);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.detailsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detailsGroupLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detailsCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+}

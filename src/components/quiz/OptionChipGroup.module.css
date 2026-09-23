@@ -1,0 +1,63 @@
+/*
+  SEM display:flex aqui de propósito. O .fieldset tinha display:flex +
+  gap pra espaçar <legend> de .options — mas o espaçamento por gap só
+  funciona se o navegador trata o <legend> como item de flex de verdade,
+  o que é inconsistente entre navegadores/engines (é um comportamento
+  relativamente novo da spec CSS Display, nem todo motor renderiza
+  igual). Resultado: o gap não tinha efeito visível nenhum. Trocado por
+  margin-top em .options, que funciona sempre — não depende de nenhum
+  comportamento especial de <legend> dentro de <fieldset>.
+*/
+.fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legend {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0;
+  margin: 0;
+}
+
+/*
+  Padronizado em --space-4 (16px): título→opções (margin-top) e entre
+  linhas de pills quando quebram (gap, que no flex-wrap controla tanto a
+  distância pill-a-pill na mesma linha quanto linha-a-linha) — mesmo
+  valor nas duas relações, de propósito, pra ficar tudo consistente.
+*/
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.optionSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-dark);
+  font-weight: 700;
+}
+
+.check {
+  font-size: 14px;
+}

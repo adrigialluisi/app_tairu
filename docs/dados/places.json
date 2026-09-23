@@ -1,0 +1,703 @@
+[
+  {
+    "id": "ba-casa-rosada",
+    "cityId": "buenos-aires-ar",
+    "name": "Casa Rosada",
+    "neighborhood": "Microcentro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Sede do governo argentino, fachada rosa icônica na Plaza de Mayo.",
+    "lat": -34.6083,
+    "lng": -58.3712,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-obelisco",
+    "cityId": "buenos-aires-ar",
+    "name": "Obelisco",
+    "neighborhood": "Microcentro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Monumento mais reconhecível da cidade, erguido pros 400 anos de Buenos Aires.",
+    "lat": -34.6037,
+    "lng": -58.3816,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-teatro-colon",
+    "cityId": "buenos-aires-ar",
+    "name": "Teatro Colón",
+    "neighborhood": "Microcentro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Uma das casas de ópera mais renomadas do mundo, com acústica premiada.",
+    "lat": -34.601,
+    "lng": -58.3833,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-la-boca-caminito",
+    "cityId": "buenos-aires-ar",
+    "name": "La Boca — Caminito",
+    "neighborhood": "La Boca",
+    "categories": [
+      "cultura",
+      "compras"
+    ],
+    "description": "Ruela museu a céu aberto, casarões coloridos, arte de rua e artesanato.",
+    "lat": -34.6345,
+    "lng": -58.3631,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-la-bombonera",
+    "cityId": "buenos-aires-ar",
+    "name": "La Bombonera",
+    "neighborhood": "La Boca",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Estádio histórico do Boca Juniors, com museu do clube.",
+    "lat": -34.6356,
+    "lng": -58.3648,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-feria-san-telmo",
+    "cityId": "buenos-aires-ar",
+    "name": "Feira de San Telmo",
+    "neighborhood": "San Telmo",
+    "categories": [
+      "compras",
+      "cultura"
+    ],
+    "description": "Feira de antiguidades e artesanato aos domingos, num dos bairros mais boêmios.",
+    "lat": -34.6212,
+    "lng": -58.3731,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-recoleta-cemiterio",
+    "cityId": "buenos-aires-ar",
+    "name": "Cemitério da Recoleta",
+    "neighborhood": "Recoleta",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Necrópole monumental onde está sepultada Evita Perón, entre outras figuras históricas.",
+    "lat": -34.5875,
+    "lng": -58.3931,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-basilica-pilar",
+    "cityId": "buenos-aires-ar",
+    "name": "Basílica Nossa Senhora do Pilar",
+    "neighborhood": "Recoleta",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Igreja colonial de 1732, ao lado do cemitério da Recoleta.",
+    "lat": -34.5879,
+    "lng": -58.3928,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-rosedal-palermo",
+    "cityId": "buenos-aires-ar",
+    "name": "Parque 3 de Febrero — Rosedal",
+    "neighborhood": "Palermo",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Grande parque urbano com jardim de rosas e lagos, ideal pra caminhar.",
+    "lat": -34.5711,
+    "lng": -58.4138,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-jardim-japones",
+    "cityId": "buenos-aires-ar",
+    "name": "Jardim Japonês",
+    "neighborhood": "Palermo",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Jardim tranquilo dentro do Parque 3 de Febrero, com cerimônia do chá tradicional.",
+    "lat": -34.5735,
+    "lng": -58.4147,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-floralis-generica",
+    "cityId": "buenos-aires-ar",
+    "name": "Floralis Genérica",
+    "neighborhood": "Recoleta",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Escultura metálica gigante em forma de flor, que abre e fecha as pétalas ao longo do dia.",
+    "lat": -34.5858,
+    "lng": -58.3936,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-malba",
+    "cityId": "buenos-aires-ar",
+    "name": "MALBA",
+    "neighborhood": "Palermo",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Museu de arte latino-americana, com obras de Frida Kahlo e Tarsila do Amaral.",
+    "lat": -34.5769,
+    "lng": -58.403,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-puerto-madero",
+    "cityId": "buenos-aires-ar",
+    "name": "Puerto Madero",
+    "neighborhood": "Puerto Madero",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Bairro portuário revitalizado, restaurantes à beira d'água e o Puente de la Mujer.",
+    "lat": -34.6083,
+    "lng": -58.3629,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-avenida-corrientes",
+    "cityId": "buenos-aires-ar",
+    "name": "Avenida Corrientes",
+    "neighborhood": "Microcentro",
+    "categories": [
+      "cultura",
+      "vida-noturna"
+    ],
+    "description": "A \"Broadway portenha\": teatros, livrarias 24h e pizzarias clássicas.",
+    "lat": -34.6041,
+    "lng": -58.3925,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-monumental-river",
+    "cityId": "buenos-aires-ar",
+    "name": "Estádio Monumental de River Plate",
+    "neighborhood": "Núñez",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Um dos maiores estádios da América do Sul, com museu de esportes.",
+    "lat": -34.5453,
+    "lng": -58.4497,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-cafe-tortoni",
+    "cityId": "buenos-aires-ar",
+    "name": "Café Tortoni",
+    "neighborhood": "Microcentro",
+    "categories": [
+      "gastronomia",
+      "cultura"
+    ],
+    "description": "Confeitaria histórica de 1858, a mais antiga da cidade, point de escritores e artistas.",
+    "lat": -34.6086,
+    "lng": -58.3806,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-don-julio",
+    "cityId": "buenos-aires-ar",
+    "name": "Don Julio",
+    "neighborhood": "Palermo",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Parrilla mundialmente premiada, entre as mais renomadas da América Latina.",
+    "lat": -34.5875,
+    "lng": -58.4297,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-la-cabrera",
+    "cityId": "buenos-aires-ar",
+    "name": "La Cabrera",
+    "neighborhood": "Palermo Soho",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Parrilla tradicional com toque sofisticado, aberta desde 2001.",
+    "lat": -34.5885,
+    "lng": -58.4308,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-la-brigada",
+    "cityId": "buenos-aires-ar",
+    "name": "La Brigada",
+    "neighborhood": "San Telmo",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Parrilla clássica com ampla carta de vinhos argentinos.",
+    "lat": -34.6198,
+    "lng": -58.3735,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-el-desnivel",
+    "cityId": "buenos-aires-ar",
+    "name": "El Desnivel",
+    "neighborhood": "San Telmo",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Parrilla simples e despretensiosa, favorita entre moradores do bairro.",
+    "lat": -34.6217,
+    "lng": -58.3719,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "ba-ateneo-grand-splendid",
+    "cityId": "buenos-aires-ar",
+    "name": "El Ateneo Grand Splendid",
+    "neighborhood": "Recoleta",
+    "categories": [
+      "cultura",
+      "compras"
+    ],
+    "description": "Livraria dentro de um teatro histórico restaurado, eleita uma das mais bonitas do mundo.",
+    "lat": -34.5956,
+    "lng": -58.3931,
+    "popularity": "turistico"
+  },
+  {
+    "id": "ba-ciudad-cultural-konex",
+    "cityId": "buenos-aires-ar",
+    "name": "Ciudad Cultural Konex",
+    "neighborhood": "Abasto",
+    "categories": [
+      "cultura",
+      "vida-noturna"
+    ],
+    "description": "Centro cultural numa antiga fábrica, casa do espetáculo de percussão La Bomba de Tiempo.",
+    "lat": -34.6033,
+    "lng": -58.4103,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-sky-costanera",
+    "cityId": "santiago-cl",
+    "name": "Sky Costanera",
+    "neighborhood": "Providencia",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Mirante mais alto da América Latina, vista de 360° da cidade e da cordilheira.",
+    "lat": -33.4172,
+    "lng": -70.606,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-museu-memoria",
+    "cityId": "santiago-cl",
+    "name": "Museu da Memória e dos Direitos Humanos",
+    "neighborhood": "Santiago Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Espaço dedicado à história recente do Chile, com exposições interativas.",
+    "lat": -33.4372,
+    "lng": -70.6842,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-parque-bicentenario",
+    "cityId": "santiago-cl",
+    "name": "Parque Bicentenário",
+    "neighborhood": "Vitacura",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Parque com lagos, jardins e restaurantes, bom pra caminhar e relaxar.",
+    "lat": -33.3961,
+    "lng": -70.5977,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-museu-precolombino",
+    "cityId": "santiago-cl",
+    "name": "Museu Chileno de Arte Pré-colombiana",
+    "neighborhood": "Santiago Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Uma das maiores coleções de artefatos indígenas da América Latina.",
+    "lat": -33.4372,
+    "lng": -70.6506,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-museu-belas-artes",
+    "cityId": "santiago-cl",
+    "name": "Museu Nacional de Belas Artes",
+    "neighborhood": "Santiago Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Acervo de arte chilena e internacional em prédio histórico.",
+    "lat": -33.4372,
+    "lng": -70.6396,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-parque-araucano",
+    "cityId": "santiago-cl",
+    "name": "Parque Araucano",
+    "neighborhood": "Las Condes",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Espaço de lazer com áreas verdes, quadras esportivas e piquenique.",
+    "lat": -33.4033,
+    "lng": -70.5764,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-palacio-la-moneda",
+    "cityId": "santiago-cl",
+    "name": "Palácio de La Moneda",
+    "neighborhood": "Santiago Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Sede do governo chileno, com centro cultural e tours guiados.",
+    "lat": -33.4425,
+    "lng": -70.6535,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-catedral-metropolitana",
+    "cityId": "santiago-cl",
+    "name": "Catedral Metropolitana",
+    "neighborhood": "Plaza de Armas",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Catedral neoclássica do século 18, com vitrais e altares ornamentados.",
+    "lat": -33.4372,
+    "lng": -70.6506,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-barrio-lastarria",
+    "cityId": "santiago-cl",
+    "name": "Bairro Lastarria",
+    "neighborhood": "Lastarria",
+    "categories": [
+      "cultura",
+      "vida-noturna",
+      "gastronomia"
+    ],
+    "description": "Zona artística e boêmia, museus, teatros, cafés e bares.",
+    "lat": -33.4381,
+    "lng": -70.6404,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-plaza-de-armas",
+    "cityId": "santiago-cl",
+    "name": "Plaza de Armas",
+    "neighborhood": "Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Coração histórico de Santiago, cercado de edifícios emblemáticos.",
+    "lat": -33.4372,
+    "lng": -70.6506,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-cerro-santa-lucia",
+    "cityId": "santiago-cl",
+    "name": "Cerro Santa Lucía",
+    "neighborhood": "Centro",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Morro com parque urbano e vistas panorâmicas, no meio da cidade.",
+    "lat": -33.4372,
+    "lng": -70.6417,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-cerro-san-cristobal",
+    "cityId": "santiago-cl",
+    "name": "Cerro San Cristóbal",
+    "neighborhood": "Parque Metropolitano",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Ícone de Santiago, com funicular, trilhas e vista dos Andes.",
+    "lat": -33.4244,
+    "lng": -70.6329,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-mercado-central",
+    "cityId": "santiago-cl",
+    "name": "Mercado Central",
+    "neighborhood": "Centro",
+    "categories": [
+      "gastronomia",
+      "compras"
+    ],
+    "description": "Mercado tradicional de frutos do mar, arquitetura de ferro forjado do século 19.",
+    "lat": -33.4342,
+    "lng": -70.6503,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-museu-ceu-aberto-san-miguel",
+    "cityId": "santiago-cl",
+    "name": "Museu a Céu Aberto de San Miguel",
+    "neighborhood": "San Miguel",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Galeria de arte urbana com murais gigantes ao ar livre.",
+    "lat": -33.4958,
+    "lng": -70.6503,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-liguria",
+    "cityId": "santiago-cl",
+    "name": "Liguria",
+    "neighborhood": "Providencia",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Bar-restaurante tradicional chileno, ponto de encontro clássico de Providencia.",
+    "lat": -33.4249,
+    "lng": -70.6089,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-bocanariz",
+    "cityId": "santiago-cl",
+    "name": "Bocanáriz",
+    "neighborhood": "Lastarria",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Wine bar renomado com curadoria de vinhos chilenos e harmonizações.",
+    "lat": -33.4381,
+    "lng": -70.6402,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-peumayen",
+    "cityId": "santiago-cl",
+    "name": "Peumayen Ancestral Food",
+    "neighborhood": "Bellavista",
+    "categories": [
+      "gastronomia",
+      "cultura"
+    ],
+    "description": "Cozinha ancestral chilena baseada nas raízes mapuche, aimará e rapa nui.",
+    "lat": -33.4321,
+    "lng": -70.6329,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "sc-confiteria-torres",
+    "cityId": "santiago-cl",
+    "name": "Confitería Torres",
+    "neighborhood": "Centro",
+    "categories": [
+      "gastronomia",
+      "cultura"
+    ],
+    "description": "O restaurante/bar mais antigo de Santiago, aberto desde 1879.",
+    "lat": -33.4453,
+    "lng": -70.6558,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-la-cabrera-las-condes",
+    "cityId": "santiago-cl",
+    "name": "La Cabrera",
+    "neighborhood": "Las Condes",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Unidade chilena da parrilla argentina renomada, carnes nobres e ambiente descontraído.",
+    "lat": -33.4155,
+    "lng": -70.5983,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-la-chascona",
+    "cityId": "santiago-cl",
+    "name": "Casa Museo La Chascona",
+    "neighborhood": "Bellavista",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Uma das casas do poeta Pablo Neruda, hoje museu aberto à visitação.",
+    "lat": -33.4321,
+    "lng": -70.6317,
+    "popularity": "turistico"
+  },
+  {
+    "id": "sc-costanera-center",
+    "cityId": "santiago-cl",
+    "name": "Costanera Center",
+    "neighborhood": "Providencia",
+    "categories": [
+      "compras"
+    ],
+    "description": "Maior shopping da América do Sul, ao lado do Sky Costanera.",
+    "lat": -33.4177,
+    "lng": -70.6062,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-valle-de-la-luna",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Valle de la Luna",
+    "neighborhood": "Cordillera de la Sal",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Vale lunar com dunas e formações rochosas esculpidas pelo vento; o pôr do sol é o horário mais procurado.",
+    "lat": -22.9167,
+    "lng": -68.3167,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-valle-de-la-muerte",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Valle de la Muerte",
+    "neighborhood": "Cordillera de la Sal",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Vizinho ao Valle de la Luna, com dunas altas usadas pra sandboard e vista panorâmica da Cordillera de la Sal.",
+    "lat": -22.8958,
+    "lng": -68.2864,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-laguna-cejar",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Laguna Cejar",
+    "neighborhood": "Salar de Atacama",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Lagoa salgada com salinidade tão alta que a pessoa flutua sem esforço, parecida com o Mar Morto.",
+    "lat": -23.2039,
+    "lng": -68.1897,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-ojos-del-salar",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Ojos del Salar",
+    "neighborhood": "Salar de Atacama",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Duas piscinas naturais de água doce e fria, cercadas pelo deserto, a poucos minutos da Laguna Cejar.",
+    "lat": -23.198,
+    "lng": -68.187,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "atc-laguna-chaxa",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Laguna Chaxa",
+    "neighborhood": "Reserva Los Flamencos",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Lagoa dentro da Reserva Nacional Los Flamencos, com flamingos-andinos e vista pro vulcão Licancabur.",
+    "lat": -23.4926,
+    "lng": -68.2138,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-lagunas-altiplanicas",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Lagunas Altiplânicas Miscanti e Miñiques",
+    "neighborhood": "Altiplano",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Duas lagoas a mais de 4.000m de altitude, num dos trechos mais altos do roteiro pelo deserto.",
+    "lat": -23.7314,
+    "lng": -67.7775,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "atc-geiseres-del-tatio",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Géiseres del Tatio",
+    "neighborhood": "El Tatio",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Um dos maiores campos geotérmicos do mundo, melhor visto de madrugada, com o vapor mais visível no frio.",
+    "lat": -22.3372,
+    "lng": -68.0161,
+    "popularity": "turistico"
+  },
+  {
+    "id": "atc-pukara-de-quitor",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Pukará de Quitor",
+    "neighborhood": "Quitor",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Ruínas de uma fortaleza pré-colombiana atacamenha do século XII, com trilha e mirante sobre o vale.",
+    "lat": -22.8975,
+    "lng": -68.2214,
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "atc-iglesia-san-pedro",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Igreja de San Pedro de Atacama",
+    "neighborhood": "Centro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Igreja de adobe e madeira de cardón do século XVII, na praça central do povoado.",
+    "lat": -22.9098,
+    "lng": -68.2003,
+    "wikiTitle": "Igreja de San Pedro de Atacama",
+    "popularity": "fora-do-circuito"
+  },
+  {
+    "id": "atc-restaurante-adobe",
+    "cityId": "san-pedro-de-atacama-cl",
+    "name": "Restaurante Adobe",
+    "neighborhood": "Centro",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Restaurante de referência no povoado, com pratos andinos como cordeiro, quinoa e queijo de cabra local.",
+    "lat": -22.9095,
+    "lng": -68.1999,
+    "popularity": "fora-do-circuito"
+  }
+]

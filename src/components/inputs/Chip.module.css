@@ -1,0 +1,42 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: 999px;
+  max-width: 100%;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.removeButton:hover,
+.removeButton:active {
+  background: rgba(43, 42, 46, 0.08);
+  color: var(--text);
+}

@@ -1,0 +1,60 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon {
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+.title {
+  flex: 1;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.editButton {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+}
+
+.detailRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.voucherNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}

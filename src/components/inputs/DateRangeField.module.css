@@ -1,0 +1,116 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  min-height: var(--touch-target);
+}
+
+:global([data-platform='ios']) .inputWrap {
+  border-radius: var(--radius-ios-input);
+}
+
+:global([data-platform='android']) .inputWrap {
+  border-radius: var(--radius-android-input);
+}
+
+.inputWrapError {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.inputWrap:focus-within {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.input {
+  flex: 1;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.calendarToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--accent-dark);
+  font-size: 20px;
+  cursor: pointer;
+  margin-right: var(--space-1);
+  border-radius: 50%;
+}
+
+.calendarToggle:hover {
+  background: var(--bg-top);
+}
+
+/*
+  Mesmo motivo do .input acima: o botão do calendário também vive dentro
+  de .inputWrap, que já desenha o próprio anel via :focus-within — sem
+  isso, o anel nativo do <button> duplicava por cima.
+*/
+.calendarToggle:focus-visible {
+  outline: none;
+}
+
+.popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-android-card);
+  box-shadow: var(--shadow-card);
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}

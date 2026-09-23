@@ -1,0 +1,63 @@
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/*
+  Todo o conteúdo rolável (e o rodapé de ações) vive dentro deste "sheet"
+  de superfície --card, nunca solto direto sobre o `.screen`. Isso garante
+  que qualquer par texto/fundo aqui dentro já foi validado em WCAG AA (ver
+  nota em tokens.css) independente de quanto a tela rolar — o app bar, que
+  fica direto sobre o `.screen`, hoje branco sólido (ver
+  docs/ajustes-38-fase3-fundo-mais-branco.md; antes era o topo do
+  gradiente pêssego→verde-azulado), também não tem risco de contraste.
+*/
+.sheet {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-top: 1px solid var(--card-border);
+}
+
+:global([data-platform='ios']) .sheet {
+  border-top-left-radius: var(--radius-ios-sheet);
+  border-top-right-radius: var(--radius-ios-sheet);
+}
+
+:global([data-platform='android']) .sheet {
+  border-top-left-radius: var(--radius-android-sheet);
+  border-top-right-radius: var(--radius-android-sheet);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  /*
+    Espaço ENTRE grupos de campo (nome, datas, destinos... ou, no Quiz,
+    entre cada pergunta) — --space-8 (32px), deliberadamente bem maior que
+    o espaço DENTRO de um grupo (--space-2/--space-3, 8-12px, controlado
+    por cada componente). Ver CLAUDE.md, "Espaçamento e organização visual".
+  */
+  gap: var(--space-8);
+}
+
+.footer {
+  padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: var(--space-3);
+  border-top: 1px solid var(--card-border);
+}

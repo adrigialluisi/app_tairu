@@ -1,0 +1,138 @@
+.tablist {
+  display: flex;
+}
+
+/* iOS: segmented control em pílula, como o PlatformSwitcher. */
+:global([data-platform='ios']) .tablist {
+  background: var(--card);
+  border: 1.5px solid var(--field-border);
+  border-radius: 999px;
+  padding: var(--space-1);
+  gap: var(--space-1);
+}
+
+:global([data-platform='ios']) .tab {
+  flex: 1;
+  border-radius: 999px;
+}
+
+:global([data-platform='ios']) .tabSelected {
+  background: var(--accent);
+  color: var(--text-on-dark);
+}
+
+/* Android: Material Tabs, sublinhado no item ativo. */
+:global([data-platform='android']) .tablist {
+  border-bottom: 1.5px solid var(--card-border);
+  gap: var(--space-4);
+}
+
+:global([data-platform='android']) .tab {
+  border-bottom: 3px solid transparent;
+  padding-bottom: var(--space-2);
+}
+
+:global([data-platform='android']) .tabSelected {
+  border-bottom-color: var(--accent-dark);
+  color: var(--accent-dark);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/*
+  variant="pill-date" (ver docs/ajustes-27-timeline-roteiro-lista.md) — pill
+  quadrado de 56×56px, duas linhas (mês + dia), rolagem horizontal. Reaproveita
+  toda a lógica de teclado/ARIA do Tabs, só troca o visual do botão/tablist.
+*/
+.tablistPillDate {
+  overflow-x: auto;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1); /* respiro pra barra de rolagem não colar no conteúdo */
+}
+
+.tabPillDate {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  height: 56px;
+  border-radius: var(--radius-android-card);
+  border: 1.5px solid var(--field-border);
+  background: var(--card);
+  padding: 0 var(--space-2);
+}
+
+.tabPillDate.tabSelected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pillTop {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tabPillDate.tabSelected .pillTop {
+  color: var(--text-on-dark);
+  opacity: 0.85;
+}
+
+.pillBottom {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.tabPillDate.tabSelected .pillBottom {
+  color: var(--text-on-dark);
+}
+
+/*
+  A variante pill-date precisa de forma quadrada/pill própria nas duas
+  cascas — sem isso, as regras de segmented control acima (borda inferior
+  no Android, flex:1 + cantos 999px no iOS) vazam pro pill por terem
+  especificidade igual ou maior que .tabPillDate sozinho.
+*/
+:global([data-platform='ios']) .tabPillDate {
+  flex: 0 0 auto;
+  border-radius: var(--radius-android-card);
+}
+
+:global([data-platform='android']) .tabPillDate {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Mesmo motivo acima, agora pro container (.tablist) — sem isso o pill-date
+   herdava o fundo/borda em pílula do segmented control iOS, ou a linha
+   inferior + gap largo do Material Tabs Android. */
+:global([data-platform='ios']) .tablistPillDate {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0 0 var(--space-1);
+  gap: var(--space-2);
+}
+
+:global([data-platform='android']) .tablistPillDate {
+  border-bottom: none;
+  gap: var(--space-2);
+}

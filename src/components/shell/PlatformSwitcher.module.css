@@ -1,0 +1,34 @@
+.wrapper {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  right: var(--space-2);
+  z-index: 1000;
+  margin-top: var(--space-2);
+}
+
+/*
+  Sem círculo/fundo/borda (pedido explícito da Adriana) — só o ícone + a
+  setinha, como a pista visual de um <select>. O alvo de toque continua
+  >= 44x44px via min-width/min-height + padding, mesmo com a pintura
+  visual (ícone 16px + seta 10px) bem menor que isso.
+*/
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toggle:active {
+  opacity: 0.6;
+}
+
+.chevron {
+  color: var(--muted);
+}

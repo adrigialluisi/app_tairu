@@ -1,0 +1,76 @@
+[
+  {
+    "cityId": "buenos-aires-ar",
+    "categories": [
+      {
+        "category": "transporte",
+        "label": "Transporte",
+        "tips": [
+          "O metrô (subte) é o jeito mais rápido de evitar o trânsito — use o cartão SUBE, recarregável em bancas de jornal.",
+          "Evite parar táxi na rua por golpes e valores inflacionados; prefira apps como Uber ou Cabify, ou peça o valor antes de entrar."
+        ]
+      },
+      {
+        "category": "dinheiro",
+        "label": "Dinheiro e câmbio",
+        "tips": [
+          "Leve reais ou dólares pra trocar lá — não compre pesos argentinos no Brasil antes da viagem.",
+          "Muitos estabelecimentos não aceitam cartão ou cobram taxa extra; tenha sempre uma quantia em espécie."
+        ]
+      },
+      {
+        "category": "seguranca",
+        "label": "Segurança",
+        "tips": [
+          "Recoleta e Palermo são áreas mais tranquilas; à noite, evite caminhar pelo Microcentro (entre Casa Rosada e Obelisco).",
+          "Fique atento aos pertences em metrôs e ônibus lotados, como em qualquer grande cidade."
+        ]
+      },
+      {
+        "category": "costumes",
+        "label": "Costumes locais",
+        "tips": [
+          "Gorjeta é opcional em Buenos Aires (diferente do Brasil) — 5-10% em restaurantes se o serviço foi bom, sem obrigação.",
+          "Horários são mais tarde que no Brasil: almoço rola até as 14h-15h, jantar geralmente só depois das 20h."
+        ]
+      }
+    ]
+  },
+  {
+    "cityId": "santiago-cl",
+    "categories": [
+      {
+        "category": "transporte",
+        "label": "Transporte",
+        "tips": [
+          "O metrô e os ônibus (Red Movilidad) usam a Tarjeta bip!, recarregável em estações e comércios conveniados.",
+          "Em horário de pico, cuidado redobrado com carteiristas no metrô e em locais muito movimentados."
+        ]
+      },
+      {
+        "category": "dinheiro",
+        "label": "Dinheiro e câmbio",
+        "tips": [
+          "Use pesos chilenos no dia a dia — evite pagar em dólar ou real, o câmbio costuma ser desvantajoso.",
+          "Evite trocar dinheiro em casas informais fora dos locais oficiais, principalmente perto de pontos turísticos muito movimentados."
+        ]
+      },
+      {
+        "category": "seguranca",
+        "label": "Segurança",
+        "tips": [
+          "Redobre a atenção em locais turísticos concorridos do Centro, praças de alimentação e shoppings — evite exibir celular à mostra.",
+          "Mantenha pertences próximos ao corpo, inclusive dentro de hotéis e restaurantes."
+        ]
+      },
+      {
+        "category": "costumes",
+        "label": "Costumes locais",
+        "tips": [
+          "Gorjeta em restaurantes costuma vir sugerida na conta (10%, às vezes 15% em lugares mais caros) — dá pra ajustar ou recusar.",
+          "Em táxi, o costume é arredondar o valor da corrida pra cima; a tarifa é tabelada e não varia por horário."
+        ]
+      }
+    ]
+  }
+]

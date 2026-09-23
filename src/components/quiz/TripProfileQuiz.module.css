@@ -1,0 +1,7 @@
+/* Dica, não validação — texto secundário, nunca vira alerta/erro. */
+.multiDestinationHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}

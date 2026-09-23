@@ -1,0 +1,135 @@
+/*
+  Tokens de identidade visual — ponto de partida extraído dos prints do app
+  atual (ver CLAUDE.md). Valores abaixo já foram ajustados e VALIDADOS contra
+  WCAG 2.1 AA (razão de contraste calculada via fórmula de luminância
+  relativa). Regras de uso que garantem os pares permanecerem em conformidade:
+
+  - --text (#2B2A2E) pode ser usado sobre --card, --bg-top, --bg-mid e
+    --bg-low (mínimo 6.99:1). NUNCA usar --text sobre --bg-bottom
+    (cai pra 2.45:1) — nessa faixa do gradiente, usar --text-on-dark.
+  - --muted (#676155, escurecido do valor original #726C5E pra passar no
+    teste) só é garantido em --card (5.70:1) e --bg-top (4.54:1) pra texto
+    normal. Por isso, nesta versão do protótipo, todo texto secundário/muted
+    fica dentro de superfícies --card — nunca solto sobre --bg-mid/low/bottom.
+  - --accent como TEXTO só é usado em texto grande (o wordmark, ≥ 32px
+    bold) sobre --bg-top (4.50:1, passa o limite de 3:1 de texto grande com
+    folga) ou como texto normal sobre --card (5.64:1). Como FUNDO de botão
+    com texto branco em cima, passa em qualquer lugar (6.08:1+).
+  - --field-border (#5B564A, criado à parte do --card-border decorativo)
+    é o único usado como borda funcional de input/chip — passa 3:1 em
+    QUALQUER ponto do gradiente (mínimo 3.58:1 sobre --bg-low) e sobre
+    --card (6.77:1).
+  - --card-border (#E4D6B6) é puramente decorativo (divisor sutil de card),
+    nunca é a única pista de um limite funcional.
+  - --focus-ring reaproveita --accent-dark: 8.97:1 (card), 7.15:1 (bg-top),
+    5.88:1 (bg-mid), 4.55:1 (bg-low) — visível em qualquer fundo do app.
+*/
+
+:root {
+  /* gradiente de fundo da identidade visual */
+  --bg-top: #f3dab8;
+  --bg-mid: #decca9;
+  --bg-low: #a6bab3;
+  --bg-bottom: #4c6a70;
+
+  /* marca / destaque */
+  --accent: #b23345;
+  --accent-dark: #7e2331;
+
+  /* superfícies */
+  --card: #fbf6ea;
+  --card-border: #e4d6b6; /* decorativo apenas */
+
+  /* texto */
+  --text: #2b2a2e;
+  --text-on-dark: #ffffff;
+  --muted: #676155;
+
+  /* bordas funcionais / foco */
+  --field-border: #5b564a;
+  --field-border-focus: var(--accent-dark);
+  --focus-ring: var(--accent-dark);
+
+  /* estado */
+  --error: var(--accent-dark);
+  --success: #2f6b4f; /* verde escuro — só usado com ícone, nunca sozinho */
+
+  /* tipografia */
+  --font-ios:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue',
+    sans-serif;
+  --font-android: 'Roboto', 'Segoe UI', sans-serif;
+
+  /*
+    Escala tipográfica — antes cada componente usava um font-size solto
+    (Home tinha 20px pro nome da viagem, AppBar 19px pro título, etc., sem
+    token nenhum). Adicionado agora como base pra fase 2 (componentes)
+    reaproveitar em vez de continuar inventando valor por componente. Ver
+    docs/ajustes-34-tokens-estilo-referencia.md — nenhum componente usa
+    esses tokens ainda, só a fase 2 em diante.
+  */
+  --text-2xl: 28px; /* título de tela, ex. "Olá! 👋" */
+  --text-xl: 20px; /* nome de card grande, título de seção */
+  --text-lg: 17px; /* título de item de lista, linha de timeline */
+  --text-base: 15px; /* corpo padrão */
+  --text-sm: 13px; /* metadado, legenda, texto --muted */
+
+  --font-weight-bold: 800;
+  --font-weight-semibold: 700;
+  --font-weight-medium: 600;
+  --font-weight-regular: 400;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+
+  /*
+    Espaçamento — grade de 8px (ver CLAUDE.md, "Espaçamento e organização
+    visual"). Nomeados como space-N = N × 4px, nunca usar valor solto fora
+    desta escala. Hierarquia esperada em toda tela: o espaço ENTRE grupos
+    (--space-8, 32px — ex. de "Ritmo do dia a dia" até "Orçamento") tem
+    que ser visivelmente maior que o espaço DENTRO de um grupo (--space-2
+    a --space-4, 8-16px — ex. de opção a opção, título de pergunta até
+    suas opções, ou label a input). Padronizado em --space-4 (16px) pro
+    título→opções e entre linhas de pills no Quiz — ver
+    OptionChipGroup.module.css.
+  */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  /* Passo novo na escala — pra padding interno de card mais generoso que --space-4, sem pular direto pro --space-6 */
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-ios-input: 999px;
+  --radius-ios-card: 24px;
+  --radius-ios-sheet: 28px;
+  --radius-android-input: 14px;
+  --radius-android-card: 16px; /* era 12px — ver docs/ajustes-34-tokens-estilo-referencia.md */
+  --radius-android-sheet: 16px;
+
+  /*
+    Raio de cantos pra CONTEÚDO com foto (hero card, cards de lugar, fotos
+    de capa) — único pras duas plataformas, porque as referências não
+    diferenciam isso por sistema (diferente dos raios de CHROME de
+    navegação acima, que continuam com --radius-ios-card/
+    --radius-android-card do jeito que estão).
+  */
+  --radius-photo: 20px;
+
+  --touch-target: 44px;
+
+  /*
+    Folga padrão entre um ícone (seta, ×, chevron) e a borda de um
+    componente em pílula (select, chip, badge) — pra nenhum ícone ficar
+    "colado" na borda. Todo componente em pílula com ícone deve manter
+    pelo menos essa distância entre a TINTA do ícone e a borda externa.
+  */
+  --pill-icon-inset: var(--space-3);
+
+  /* Sombras mais suaves e "flutuantes", pra cards com foto — ver docs/ajustes-34-tokens-estilo-referencia.md */
+  --shadow-card: 0 4px 20px rgba(43, 42, 46, 0.1); /* era 0 2px 12px rgba(43, 42, 46, 0.08) */
+  --shadow-sheet: 0 -4px 24px rgba(43, 42, 46, 0.18);
+  --shadow-photo: 0 8px 28px rgba(43, 42, 46, 0.14); /* nova, só pra fotos grandes tipo hero card */
+}

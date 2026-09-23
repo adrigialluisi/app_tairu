@@ -1,0 +1,53 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-6);
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+[data-platform='ios'] .button {
+  border-radius: var(--radius-ios-input);
+}
+
+[data-platform='android'] .button {
+  border-radius: var(--radius-android-input);
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--text-on-dark);
+}
+
+.secondary {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--field-border);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.iconOnly {
+  padding: 0;
+  width: var(--touch-target);
+  min-height: var(--touch-target);
+  flex: 0 0 auto;
+}
+
+.fullWidth {
+  width: 100%;
+}

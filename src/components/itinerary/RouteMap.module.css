@@ -1,0 +1,72 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mapBox {
+  position: relative;
+  height: 360px;
+  border-radius: var(--radius-android-card);
+  overflow: hidden;
+  border: 1.5px solid var(--field-border);
+}
+
+.mapBox :global(.leaflet-container) {
+  height: 100%;
+  width: 100%;
+  font-family: inherit;
+}
+
+/*
+  Leaflet desenha um fundo branco + borda em todo divIcon por padrão
+  (.leaflet-div-icon) — anulado aqui porque o pino já é desenhado inteiro
+  via HTML/CSS inline no createDayIcon, sem depender de nenhum ícone de
+  imagem (evita o problema clássico de asset de marcador do Leaflet não
+  resolver certo com bundler).
+*/
+.mapBox :global(.leaflet-div-icon) {
+  background: none;
+  border: none;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.popupName {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.popupMeta {
+  color: var(--muted);
+}
+
+.missingNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.emptyState,
+.fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-4);
+}
+
+.emptyStateText,
+.fallbackText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}

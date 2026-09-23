@@ -1,0 +1,113 @@
+[
+  {
+    "cityId": "buenos-aires-ar",
+    "categories": [
+      {
+        "category": "transporte",
+        "label": "Transporte",
+        "tips": [
+          "O metrô (subte) é o jeito mais rápido de evitar o trânsito — use o cartão SUBE, recarregável em bancas de jornal.",
+          "Evite parar táxi na rua por golpes e valores inflacionados; prefira apps como Uber ou Cabify, ou peça o valor antes de entrar."
+        ]
+      },
+      {
+        "category": "dinheiro",
+        "label": "Dinheiro e câmbio",
+        "tips": [
+          "Leve reais ou dólares pra trocar lá — não compre pesos argentinos no Brasil antes da viagem.",
+          "Muitos estabelecimentos não aceitam cartão ou cobram taxa extra; tenha sempre uma quantia em espécie."
+        ]
+      },
+      {
+        "category": "seguranca",
+        "label": "Segurança",
+        "tips": [
+          "Recoleta e Palermo são áreas mais tranquilas; à noite, evite caminhar pelo Microcentro (entre Casa Rosada e Obelisco).",
+          "Fique atento aos pertences em metrôs e ônibus lotados, como em qualquer grande cidade."
+        ]
+      },
+      {
+        "category": "costumes",
+        "label": "Costumes locais",
+        "tips": [
+          "Gorjeta é opcional em Buenos Aires (diferente do Brasil) — 5-10% em restaurantes se o serviço foi bom, sem obrigação.",
+          "Horários são mais tarde que no Brasil: almoço rola até as 14h-15h, jantar geralmente só depois das 20h."
+        ]
+      }
+    ]
+  },
+  {
+    "cityId": "santiago-cl",
+    "categories": [
+      {
+        "category": "transporte",
+        "label": "Transporte",
+        "tips": [
+          "O metrô e os ônibus (Red Movilidad) usam a Tarjeta bip!, recarregável em estações e comércios conveniados.",
+          "Em horário de pico, cuidado redobrado com carteiristas no metrô e em locais muito movimentados."
+        ]
+      },
+      {
+        "category": "dinheiro",
+        "label": "Dinheiro e câmbio",
+        "tips": [
+          "Use pesos chilenos no dia a dia — evite pagar em dólar ou real, o câmbio costuma ser desvantajoso.",
+          "Evite trocar dinheiro em casas informais fora dos locais oficiais, principalmente perto de pontos turísticos muito movimentados."
+        ]
+      },
+      {
+        "category": "seguranca",
+        "label": "Segurança",
+        "tips": [
+          "Redobre a atenção em locais turísticos concorridos do Centro, praças de alimentação e shoppings — evite exibir celular à mostra.",
+          "Mantenha pertences próximos ao corpo, inclusive dentro de hotéis e restaurantes."
+        ]
+      },
+      {
+        "category": "costumes",
+        "label": "Costumes locais",
+        "tips": [
+          "Gorjeta em restaurantes costuma vir sugerida na conta (10%, às vezes 15% em lugares mais caros) — dá pra ajustar ou recusar.",
+          "Em táxi, o costume é arredondar o valor da corrida pra cima; a tarifa é tabelada e não varia por horário."
+        ]
+      }
+    ]
+  },
+  {
+    "cityId": "san-pedro-de-atacama-cl",
+    "categories": [
+      {
+        "category": "transporte",
+        "label": "Transporte",
+        "tips": [
+          "A maioria dos pontos turísticos fica longe do povoado e só é visitada em excursões organizadas (vans com guia) — poucas opções de transporte independente até os principais atrativos.",
+          "As agências costumam ter vagas limitadas, principalmente pra Lagunas Altiplânicas e Géiseres del Tatio — reserve os passeios com pelo menos 1-2 dias de antecedência."
+        ]
+      },
+      {
+        "category": "dinheiro",
+        "label": "Dinheiro e câmbio",
+        "tips": [
+          "O povoado é pequeno e tem poucos caixas eletrônicos — leve dinheiro em pesos chilenos ou confirme antes se o hotel/agência aceita cartão.",
+          "Muitas excursões cobram entrada separada em pontos como o Valle de la Luna e a Reserva Los Flamencos, geralmente só em dinheiro no local."
+        ]
+      },
+      {
+        "category": "seguranca",
+        "label": "Segurança",
+        "tips": [
+          "A maior atenção aqui é com o corpo, não com assalto: altitude (o povoado já fica a ~2.400m, e passeios como os Géiseres chegam a mais de 4.000m) pode causar mal-estar — hidrate-se bem e vá com calma no primeiro dia.",
+          "Sol forte e ar seco o dia inteiro, mesmo com frio à noite — protetor solar, boné e água são essenciais mesmo em dias nublados."
+        ]
+      },
+      {
+        "category": "costumes",
+        "label": "Costumes locais",
+        "tips": [
+          "As noites no deserto ficam bem frias, mesmo em dias de sol forte de dia — leve roupa em camadas.",
+          "A excursão aos Géiseres del Tatio geralmente sai de madrugada (por volta das 4h-5h) pra ver o vapor no ponto mais frio do dia — vale dormir cedo na véspera."
+        ]
+      }
+    ]
+  }
+]

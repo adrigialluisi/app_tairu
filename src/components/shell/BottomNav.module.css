@@ -1,0 +1,101 @@
+.nav {
+  display: flex;
+  border-top: 1.5px solid var(--card-border);
+  background: var(--card);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: bottomNavIn 200ms ease-out;
+}
+
+@keyframes bottomNavIn {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav {
+    animation: none;
+  }
+}
+
+.item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--touch-target);
+  padding: var(--space-2) 2px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.iconWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/*
+  Selos de progresso (ver docs/ajustes-22-trilha-progresso-e-salvo.md):
+  check = seção com critério de "completa" satisfeito; count = contagem
+  informativa (convites), não uma meta. Cores: check usa --accent (mesmo
+  destaque de estado ativo/positivo do app); count usa --muted,
+  deliberadamente mais discreto.
+*/
+.badgeCheck,
+.badgeCount {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--card);
+}
+
+.badgeCheck {
+  background: var(--accent);
+}
+
+.badgeCount {
+  background: var(--muted);
+}
+
+/*
+  5 itens (ver docs/ajustes-26-central-inicio-documentos-splash.md), 375px
+  de largura ÷ 5 = 75px por item, menos padding. "Convidados" é o rótulo
+  mais longo (10 caracteres) — 9px dá uma folga real, não só o mínimo que
+  cabe raspando. Convenção de tab bar (rótulo sempre menor que texto de
+  corpo) — não é o padrão geral de 14px+ do resto do app.
+*/
+.label {
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.1px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.itemActive {
+  color: var(--accent-dark);
+}
