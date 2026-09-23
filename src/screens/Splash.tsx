@@ -15,7 +15,7 @@ export function Splash() {
           (~6% de opacidade) que fica atrás do conteúdo.
           Versão com tagline embutida no SVG — sem texto de tagline solto.
         */}
-        <img src="/logo/LogoTairu_Tagline.svg" alt="Tairu" className={styles.logoImg} />
+        <img src={`${import.meta.env.BASE_URL}logo/LogoTairu_Tagline.svg`} alt="Tairu" className={styles.logoImg} />
       </div>
       <div className={styles.footer}>
         <Button variant="primary" fullWidth onClick={() => navigate('/inicio')}>

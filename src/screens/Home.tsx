@@ -96,7 +96,7 @@ export function Home() {
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <img src="/logo/LogoTairu.svg" alt="Tairu" className={styles.logoMark} />
+        <img src={`${import.meta.env.BASE_URL}logo/LogoTairu.svg`} alt="Tairu" className={styles.logoMark} />
         <div className={styles.headerActions}>
           <PlatformSwitcher inline />
           <button type="button" className={styles.profileButton} aria-label="Perfil (em breve)" disabled>
