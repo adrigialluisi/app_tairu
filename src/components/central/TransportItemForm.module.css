@@ -36,6 +36,10 @@
   margin-left: auto;
 }
 
+.removeOnly {
+  margin-left: 0;
+}
+
 .costRow {
   display: flex;
   align-items: flex-end;

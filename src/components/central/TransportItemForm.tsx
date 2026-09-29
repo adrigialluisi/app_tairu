@@ -14,7 +14,6 @@ interface TransportItemFormProps {
   /** null = criando um novo item; preenchido = editando um item existente */
   initialItem: TransportItem | null;
   onSave: (item: TransportItem) => void;
-  onCancel: () => void;
   /** só passado quando initialItem existe (editando) */
   onRemove?: () => void;
 }
@@ -31,7 +30,6 @@ export function TransportItemForm({
   destinationId,
   initialItem,
   onSave,
-  onCancel,
   onRemove,
 }: TransportItemFormProps) {
   const baseId = useId();
@@ -271,16 +269,17 @@ export function TransportItemForm({
         <Button fullWidth disabled={!type} onClick={handleSave}>
           Salvar transporte
         </Button>
-        <div className={styles.secondaryActions}>
-          <button type="button" className={styles.textButton} onClick={onCancel}>
-            Cancelar
-          </button>
-          {onRemove && (
-            <button type="button" className={`${styles.textButton} ${styles.removeButton}`} onClick={onRemove}>
+        {onRemove && (
+          <div className={styles.secondaryActions}>
+            <button
+              type="button"
+              className={`${styles.textButton} ${styles.removeButton} ${styles.removeOnly}`}
+              onClick={onRemove}
+            >
               Remover transporte
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

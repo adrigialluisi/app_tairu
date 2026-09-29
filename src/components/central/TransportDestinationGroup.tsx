@@ -40,7 +40,6 @@ export function TransportDestinationGroup({ destination }: TransportDestinationG
               trip.saveTransportItem(updated);
               setEditingId(null);
             }}
-            onCancel={() => setEditingId(null)}
             onRemove={() => {
               trip.removeTransportItem(item.id);
               setEditingId(null);
@@ -59,7 +58,6 @@ export function TransportDestinationGroup({ destination }: TransportDestinationG
             trip.saveTransportItem(item);
             setEditingId(null);
           }}
-          onCancel={() => setEditingId(null)}
         />
       )}
 
