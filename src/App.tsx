@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { PlatformProvider, usePlatform } from './context/PlatformContext';
 import { TripProvider, useTrip } from './context/TripContext';
+import { DocumentsProvider } from './context/DocumentsContext';
 import { PlatformSwitcher } from './components/shell/PlatformSwitcher';
 import { BottomNav } from './components/shell/BottomNav';
 import { Splash } from './screens/Splash';
@@ -10,6 +11,7 @@ import { CreateTrip } from './screens/CreateTrip';
 import { InviteCompanions } from './screens/InviteCompanions';
 import { Itinerary } from './screens/Itinerary';
 import { Central } from './screens/Central';
+import { Documents } from './screens/Documents';
 import { ComingSoon } from './screens/ComingSoon';
 
 /**
@@ -48,42 +50,28 @@ function SectionComingSoon({ title }: { title: string }) {
   );
 }
 
-/**
- * Documentos saiu do menu fixo (ver docs/ajustes-26-central-inicio-documentos-splash.md)
- * — não é mais uma das seções de dentro de uma viagem, é acessível só pela
- * Início. Por isso usa `onBack` voltando pra Início, sem `bottomNav`.
- */
-function DocumentosComingSoon() {
-  const navigate = useNavigate();
-  return (
-    <ComingSoon
-      title="Documentos"
-      message="Seus documentos de viagem (passaporte, visto, vacina) entram aqui — ainda não desenhado nesse bloco do protótipo."
-      onBack={() => navigate('/inicio')}
-    />
-  );
-}
-
 export function App() {
   return (
     <PlatformProvider>
-      <TripProvider>
-        <PlatformRoot>
-          <HashRouter>
-            <GlobalPlatformSwitcher />
-            <Routes>
-              <Route path="/" element={<Splash />} />
-              <Route path="/inicio" element={<Home />} />
-              <Route path="/destinos" element={<CreateTrip />} />
-              <Route path="/central" element={<Central />} />
-              <Route path="/convidar" element={<InviteCompanions />} />
-              <Route path="/roteiro" element={<Itinerary />} />
-              <Route path="/custos" element={<SectionComingSoon title="Custos" />} />
-              <Route path="/documentos" element={<DocumentosComingSoon />} />
-            </Routes>
-          </HashRouter>
-        </PlatformRoot>
-      </TripProvider>
+      <DocumentsProvider>
+        <TripProvider>
+          <PlatformRoot>
+            <HashRouter>
+              <GlobalPlatformSwitcher />
+              <Routes>
+                <Route path="/" element={<Splash />} />
+                <Route path="/inicio" element={<Home />} />
+                <Route path="/destinos" element={<CreateTrip />} />
+                <Route path="/central" element={<Central />} />
+                <Route path="/convidar" element={<InviteCompanions />} />
+                <Route path="/roteiro" element={<Itinerary />} />
+                <Route path="/custos" element={<SectionComingSoon title="Custos" />} />
+                <Route path="/documentos" element={<Documents />} />
+              </Routes>
+            </HashRouter>
+          </PlatformRoot>
+        </TripProvider>
+      </DocumentsProvider>
     </PlatformProvider>
   );
 }

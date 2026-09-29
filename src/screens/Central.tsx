@@ -5,15 +5,11 @@ import { ScreenShell } from '../components/shell/ScreenShell';
 import { BottomNav } from '../components/shell/BottomNav';
 import { Tabs } from '../components/shell/Tabs';
 import { TransportSection } from '../components/central/TransportSection';
+import { StaySection } from '../components/central/StaySection';
+import { OtherSection } from '../components/central/OtherSection';
 import { useTrip } from '../context/TripContext';
-import styles from './Central.module.css';
 
 const TABS_NAME = 'central-tabs';
-
-const PANELS: Record<'estadia' | 'outros', { icon: string; message: string }> = {
-  estadia: { icon: '🏨', message: 'Hospedagens entram aqui — ainda não desenhado nesse bloco do protótipo.' },
-  outros: { icon: '📋', message: 'Seguro viagem e outros itens práticos entram aqui — ainda não desenhado nesse bloco do protótipo.' },
-};
 
 export function Central() {
   const navigate = useNavigate();
@@ -37,14 +33,7 @@ export function Central() {
         onChange={(v) => setTab(v as typeof tab)}
       />
       <div role="tabpanel">
-        {tab === 'transporte' ? (
-          <TransportSection />
-        ) : (
-          <div className={styles.wrap}>
-            <span className={styles.icon} aria-hidden="true">{PANELS[tab].icon}</span>
-            <p className={styles.message}>{PANELS[tab].message}</p>
-          </div>
-        )}
+        {tab === 'transporte' ? <TransportSection /> : tab === 'estadia' ? <StaySection /> : <OtherSection />}
       </div>
     </ScreenShell>
   );

@@ -240,8 +240,26 @@
   font-size: 18px;
 }
 
+.documentsRowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
 .documentsRowLabel {
   flex: 1;
+}
+
+.documentsRowSubtitle {
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  color: var(--muted);
+}
+
+.documentsRowAlert {
+  color: var(--error);
 }
 
 .documentsRowChevron {

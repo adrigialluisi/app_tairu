@@ -1,0 +1,19 @@
+.timeRow {
+  display: flex;
+  gap: var(--space-3);
+}
+.timeRow > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.hotelPreview {
+  background: var(--bg-top);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-android-card);
+  padding: var(--space-3);
+}
+
+.removeOnly {
+  margin-left: 0;
+}

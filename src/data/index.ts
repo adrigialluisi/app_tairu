@@ -2,7 +2,8 @@ import citiesRaw from './cities.json';
 import currenciesRaw from './currencies.json';
 import placesRaw from './places.json';
 import localTipsRaw from './localTips.json';
-import type { QuizInterest, QuizDiscovery } from '../context/TripContext';
+import hotelsRaw from './hotels.json';
+import type { QuizInterest, QuizDiscovery, StayType } from '../context/TripContext';
 
 export interface CityEntry {
   id: string;
@@ -133,4 +134,49 @@ export function getAlsoWorthVisiting(
 ): PlaceEntry[] {
   const candidates = getPlacesForCity(cityId).filter((p) => !excludePlaceIds.has(p.id));
   return rankPlacesByProfile(candidates, interests, discovery).slice(0, count);
+}
+
+export interface HotelEntry {
+  id: string;
+  cityId: string;
+  name: string;
+  type: StayType;
+  address: string;
+  neighborhood: string;
+  locality: string;
+  /** 1–5 quando existe classificação oficial; null quando não existe (aí vale o badge) */
+  stars: number | null;
+  badge: string | null;
+  /** 1–4, relativo aos outros hotéis do mesmo destino */
+  priceLevel: 1 | 2 | 3 | 4;
+  distanceLabel: string;
+  description: string;
+  /** caminho relativo a public/, ex.: "hotels/ba-alvear-palace.jpg" */
+  photo: string | null;
+  photoSourceUrl: string;
+}
+
+export const hotels: HotelEntry[] = hotelsRaw as HotelEntry[];
+
+/**
+ * Busca de hospedagem real, só dentro da cidade do destino. Com o campo
+ * vazio (ou menos de 2 letras), devolve todos os hotéis da cidade — 5 por
+ * cidade, cabe tudo, sem paginação. Com 2+ letras, filtra por nome, bairro
+ * ou cidade (locality), ignorando acento/caixa (mesmo normalize() de
+ * searchCities).
+ */
+export function searchHotels(cityId: string, query: string): HotelEntry[] {
+  const inCity = hotels.filter((h) => h.cityId === cityId);
+  const q = normalize(query.trim());
+  if (q.length < 2) return inCity;
+  return inCity.filter(
+    (h) =>
+      normalize(h.name).includes(q) ||
+      normalize(h.neighborhood).includes(q) ||
+      normalize(h.locality).includes(q),
+  );
+}
+
+export function getHotel(id: string | null): HotelEntry | undefined {
+  return id ? hotels.find((h) => h.id === id) : undefined;
 }

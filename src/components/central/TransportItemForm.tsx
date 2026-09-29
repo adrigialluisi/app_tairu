@@ -1,9 +1,9 @@
-import { useId, useRef, useState, type ChangeEvent } from 'react';
+import { useId, useState } from 'react';
 import { OptionChipGroup } from '../quiz/OptionChipGroup';
 import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
-import { UploadIcon, ReplaceIcon, TrashIcon } from '../shell/Icons';
+import { VoucherUpload } from './VoucherUpload';
 import { lookupMockTransportVoucher } from '../../data/mockVouchers';
 import { transportTypeIcon } from '../../utils/transportSummary';
 import type { TransportItem, TransportType } from '../../context/TripContext';
@@ -56,13 +56,8 @@ export function TransportItemForm({
   const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
   const [voucherRecognized, setVoucherRecognized] = useState<boolean | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleVoucherFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-
+  function handleVoucherFile(file: File) {
     const match = lookupMockTransportVoucher(file.name);
     setVoucherFileName(file.name);
 
@@ -115,64 +110,12 @@ export function TransportItemForm({
 
   return (
     <div className={styles.form}>
-      <div className={styles.voucherUpload}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/pdf,image/*"
-          className={styles.hiddenFileInput}
-          onChange={handleVoucherFileChange}
-        />
-        {!voucherFileName && (
-          <div className={styles.voucherUploadRow}>
-            <span className={styles.voucherHint}>Tem um voucher? Anexe pra preencher os campos automaticamente.</span>
-            <button type="button" className={styles.voucherButton} onClick={() => fileInputRef.current?.click()}>
-              <UploadIcon />
-              Enviar voucher
-            </button>
-          </div>
-        )}
-
-        {voucherFileName && (
-          <div className={styles.voucherAttached}>
-            <span className={styles.voucherFileIcon} aria-hidden="true">📎</span>
-            <span className={styles.voucherFileName} title={voucherFileName}>
-              {voucherFileName}
-            </span>
-            <div className={styles.voucherFileActions}>
-              <button
-                type="button"
-                className={styles.voucherIconButton}
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Substituir voucher"
-                title="Substituir voucher"
-              >
-                <ReplaceIcon />
-              </button>
-              <button
-                type="button"
-                className={`${styles.voucherIconButton} ${styles.voucherIconButtonDanger}`}
-                onClick={handleRemoveVoucher}
-                aria-label="Excluir voucher"
-                title="Excluir voucher"
-              >
-                <TrashIcon />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {voucherRecognized === true && (
-          <p className={styles.voucherMessageSuccess}>
-            <span aria-hidden="true">✓</span> Campos preenchidos automaticamente. Confira antes de salvar.
-          </p>
-        )}
-        {voucherRecognized === false && (
-          <p className={styles.voucherMessageMuted}>
-            Não reconhecemos esse voucher automaticamente — confira/preencha os campos manualmente abaixo.
-          </p>
-        )}
-      </div>
+      <VoucherUpload
+        fileName={voucherFileName}
+        recognized={voucherRecognized}
+        onFileSelected={handleVoucherFile}
+        onRemove={handleRemoveVoucher}
+      />
 
       <OptionChipGroup legend="Tipo de transporte" options={TYPE_OPTIONS} value={type} onChange={setType} />
 

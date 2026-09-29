@@ -10,6 +10,8 @@ import styles from './DateRangeField.module.css';
 
 interface DateRangeFieldProps {
   label?: string;
+  /** false = campo opcional, sem "*" nem texto "(obrigatório...)". Default true — não muda Destinos. */
+  required?: boolean;
   startISO: string | null;
   endISO: string | null;
   onChange: (startISO: string | null, endISO: string | null) => void;
@@ -28,7 +30,7 @@ function isoRangeToDigits(startISO: string | null, endISO: string | null): strin
   return out;
 }
 
-export function DateRangeField({ label = 'Datas', startISO, endISO, onChange }: DateRangeFieldProps) {
+export function DateRangeField({ label = 'Datas', required = true, startISO, endISO, onChange }: DateRangeFieldProps) {
   const [digits, setDigits] = useState(() => isoRangeToDigits(startISO, endISO));
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -79,8 +81,10 @@ export function DateRangeField({ label = 'Datas', startISO, endISO, onChange }: 
   return (
     <div className={styles.field} ref={wrapRef}>
       <label htmlFor={inputId} className={styles.label}>
-        {label} <span aria-hidden="true">*</span>
-        <span className="visually-hidden"> (obrigatório, formato dia/mês/ano até dia/mês/ano)</span>
+        {label} {required && <span aria-hidden="true">*</span>}
+        <span className="visually-hidden">
+          {required ? ' (obrigatório, formato dia/mês/ano até dia/mês/ano)' : ' (formato dia/mês/ano até dia/mês/ano)'}
+        </span>
       </label>
       <div className={`${styles.inputWrap} ${error ? styles.inputWrapError : ''}`}>
         <input

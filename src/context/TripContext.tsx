@@ -83,6 +83,69 @@ export interface CarRentalTransportItem extends TransportItemBase {
 
 export type TransportItem = FlightTransportItem | BusTransportItem | CarRentalTransportItem;
 
+export type StayType = 'hotel' | 'apartamento' | 'hostel' | 'pousada';
+
+export interface StayItem {
+  id: string;
+  /** TripDestination.id: a qual trecho da viagem essa estadia pertence */
+  destinationId: string;
+  type: StayType;
+  /** referência a hotels.json quando a pessoa escolheu da busca; null se digitou livre */
+  hotelId: string | null;
+  name: string;
+  address: string;
+  /** cidade onde a hospedagem fica de fato (pode ser vizinha ao destino, ex.: Viña del Mar) */
+  locality: string;
+  /** ISO yyyy-mm-dd, igual as datas de TripDestination */
+  checkInDate: string | null;
+  checkOutDate: string | null;
+  /** "hh:mm" ou "" (opcional) */
+  checkInTime: string;
+  checkOutTime: string;
+  confirmationCode: string;
+  roomType: string;
+  /** nunca exibido no card/resumo, só guardado pra Fase 4 (Custos) */
+  costAmount: string;
+  costCurrencyCode: string;
+  voucherFileName: string | null;
+}
+
+export type OtherItemType = 'seguro' | 'passeio' | 'ingresso' | 'chip' | 'outro';
+
+export interface Attachment {
+  id: string;
+  fileName: string;
+  /** URL.createObjectURL(file) — só vale enquanto o app está aberto */
+  url: string;
+}
+
+export interface OtherItem {
+  id: string;
+  type: OtherItemType;
+  /** null = viagem toda; senão TripDestination.id */
+  destinationId: string | null;
+  /** nome do passeio, do evento, do plano de chip ou título livre (em Seguro, o nome do plano) */
+  title: string;
+  /** seguradora, agência, operadora ou fornecedor */
+  provider: string;
+  /** nº da apólice, código da reserva, localizador */
+  referenceCode: string;
+  /** período (seguro, chip) ou dia do passeio/evento (só startDate) — ISO yyyy-mm-dd */
+  startDate: string | null;
+  endDate: string | null;
+  /** "hh:mm" ou "" — passeio e ingresso */
+  time: string;
+  /** ponto de encontro (passeio) ou local (ingresso) */
+  location: string;
+  /** telefone da central 24h — só seguro */
+  emergencyPhone: string;
+  notes: string;
+  /** nunca exibido no card, só guardado pra Fase 4 (Custos) */
+  costAmount: string;
+  costCurrencyCode: string;
+  attachments: Attachment[];
+}
+
 export type QuizDiscovery = 'turistico' | 'equilibrado' | 'fora-do-circuito';
 export type QuizRhythm = 'tranquilo' | 'moderado' | 'corrido';
 export type QuizBudget = 'economico' | 'moderado' | 'confortavel';
@@ -111,6 +174,8 @@ interface TripState {
   destinosSaved: boolean;
   perfilSaved: boolean;
   transportItems: TransportItem[];
+  stayItems: StayItem[];
+  otherItems: OtherItem[];
 }
 
 export interface TripContextValue extends TripState {
@@ -133,6 +198,10 @@ export interface TripContextValue extends TripState {
   setPerfilSaved: (value: boolean) => void;
   saveTransportItem: (item: TransportItem) => void;
   removeTransportItem: (id: string) => void;
+  saveStayItem: (item: StayItem) => void;
+  removeStayItem: (id: string) => void;
+  saveOtherItem: (item: OtherItem) => void;
+  removeOtherItem: (id: string) => void;
   resetTrip: () => void;
 }
 
@@ -157,6 +226,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [destinosSaved, setDestinosSaved] = useState(false);
   const [perfilSaved, setPerfilSaved] = useState(false);
   const [transportItems, setTransportItems] = useState<TransportItem[]>([]);
+  const [stayItems, setStayItems] = useState<StayItem[]>([]);
+  const [otherItems, setOtherItems] = useState<OtherItem[]>([]);
 
   const value = useMemo<TripContextValue>(
     () => ({
@@ -169,6 +240,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       destinosSaved,
       perfilSaved,
       transportItems,
+      stayItems,
+      otherItems,
       setName,
       addDestination: (destination) =>
         setDestinations((prev) => [
@@ -270,6 +343,23 @@ export function TripProvider({ children }: { children: ReactNode }) {
           return exists ? prev.map((t) => (t.id === item.id ? item : t)) : [...prev, item];
         }),
       removeTransportItem: (id) => setTransportItems((prev) => prev.filter((t) => t.id !== id)),
+      saveStayItem: (item) =>
+        setStayItems((prev) => {
+          const exists = prev.some((s) => s.id === item.id);
+          return exists ? prev.map((s) => (s.id === item.id ? item : s)) : [...prev, item];
+        }),
+      removeStayItem: (id) => setStayItems((prev) => prev.filter((s) => s.id !== id)),
+      saveOtherItem: (item) =>
+        setOtherItems((prev) => {
+          const exists = prev.some((o) => o.id === item.id);
+          return exists ? prev.map((o) => (o.id === item.id ? item : o)) : [...prev, item];
+        }),
+      removeOtherItem: (id) =>
+        setOtherItems((prev) => {
+          const removed = prev.find((o) => o.id === id);
+          removed?.attachments.forEach((a) => URL.revokeObjectURL(a.url));
+          return prev.filter((o) => o.id !== id);
+        }),
       resetTrip: () => {
         setName('');
         setDestinations([]);
@@ -280,6 +370,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setDestinosSaved(false);
         setPerfilSaved(false);
         setTransportItems([]);
+        setStayItems([]);
+        setOtherItems((prev) => {
+          prev.forEach((o) => o.attachments.forEach((a) => URL.revokeObjectURL(a.url)));
+          return [];
+        });
       },
     }),
     [
@@ -292,6 +387,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       destinosSaved,
       perfilSaved,
       transportItems,
+      stayItems,
+      otherItems,
     ],
   );
 

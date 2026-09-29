@@ -4,12 +4,24 @@ export function digitsOnly(value: string): string {
   return value.replace(/\D/g, '').slice(0, 16);
 }
 
+/** Só dígitos, no máximo 4, insere ":" depois do 2º ("1500" -> "15:00"). Sem validação de erro nessa fase. */
+export function maskTime(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
 function formatSingleDateDigits(d: string): string {
   let out = '';
   if (d.length > 0) out += d.slice(0, 2);
   if (d.length > 2) out += '/' + d.slice(2, 4);
   if (d.length > 4) out += '/' + d.slice(4, 8);
   return out;
+}
+
+/** Máscara de digitação dd/mm/aaaa pra campos de data única (sem calendário — ver docs/ajustes-54-meus-documentos.md). */
+export function maskSingleDate(value: string): string {
+  return formatSingleDateDigits(digitsOnly(value).slice(0, 8));
 }
 
 /** Aplica a máscara dd/mm/aaaa – dd/mm/aaaa a partir de uma string só de dígitos. */

@@ -2,8 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/shell/Button';
 import { PlatformSwitcher } from '../components/shell/PlatformSwitcher';
 import { useTrip } from '../context/TripContext';
+import { useDocuments } from '../context/DocumentsContext';
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
 import { formatCompanionsLabel, formatDatesLabel, formatDestinationsLabel } from '../utils/tripSummary';
+import { getTripEndISO } from '../utils/itinerary';
+import { expiryStatus } from '../utils/documentSummary';
 import styles from './Home.module.css';
 
 /**
@@ -85,6 +88,7 @@ function PastTripCard({ trip }: { trip: (typeof EXAMPLE_PAST_TRIPS)[number] }) {
 
 export function Home() {
   const trip = useTrip();
+  const docs = useDocuments();
   const navigate = useNavigate();
   const hasActiveTrip = trip.name.trim().length > 0 || trip.destinations.length > 0;
 
@@ -92,6 +96,16 @@ export function Home() {
     trip.resetTrip();
     navigate('/destinos');
   }
+
+  const tripEndISO = getTripEndISO(trip.destinations);
+  const alertCount = docs.documents.filter((d) => {
+    const kind = expiryStatus(d, tripEndISO).kind;
+    return kind === 'expired' || kind === 'before-trip-end';
+  }).length;
+  const documentsSubtitle =
+    docs.documents.length === 0
+      ? 'Passaporte, RG, CNH e outros'
+      : `${docs.documents.length} ${docs.documents.length === 1 ? 'documento' : 'documentos'}`;
 
   return (
     <div className={styles.screen}>
@@ -124,7 +138,18 @@ export function Home() {
 
       <button type="button" className={styles.documentsRow} onClick={() => navigate('/documentos')}>
         <span className={styles.documentsRowIcon} aria-hidden="true">📄</span>
-        <span className={styles.documentsRowLabel}>Meus documentos</span>
+        <span className={styles.documentsRowText}>
+          <span className={styles.documentsRowLabel}>Meus documentos</span>
+          <span className={styles.documentsRowSubtitle}>
+            {documentsSubtitle}
+            {alertCount > 0 && (
+              <span className={styles.documentsRowAlert}>
+                {' '}
+                · ⚠ {alertCount} {alertCount === 1 ? 'precisa' : 'precisam'} de atenção
+              </span>
+            )}
+          </span>
+        </span>
         <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
       </button>
 

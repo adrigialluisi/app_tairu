@@ -7,6 +7,7 @@
   { "id": "santiago-cl", "city": "Santiago", "country": "Chile", "currencyCode": "CLP" },
   { "id": "valparaiso-cl", "city": "Valparaíso", "country": "Chile", "currencyCode": "CLP" },
   { "id": "vina-del-mar-cl", "city": "Viña del Mar", "country": "Chile", "currencyCode": "CLP" },
+  { "id": "san-pedro-de-atacama-cl", "city": "San Pedro de Atacama", "country": "Chile", "currencyCode": "CLP" },
   { "id": "concepcion-cl", "city": "Concepción", "country": "Chile", "currencyCode": "CLP" },
   { "id": "sao-paulo-br", "city": "São Paulo", "country": "Brasil", "currencyCode": "BRL" },
   { "id": "rio-de-janeiro-br", "city": "Rio de Janeiro", "country": "Brasil", "currencyCode": "BRL" },
