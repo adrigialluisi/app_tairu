@@ -1,7 +1,9 @@
+import { Wifi } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Icon } from '../shell/Icon';
 import styles from './RouteMap.module.css';
 
 export interface RouteMapPin {
@@ -25,7 +27,7 @@ interface RouteMapProps {
 const DAY_COLORS = ['#B23345', '#1D5B7A', '#8A5A1F', '#3E7A6B', '#5B4B8A', '#A34A9A', '#4C6A70', '#7E2331'];
 
 function createDayIcon(dayNumber: number, skipped: boolean): L.DivIcon {
-  const color = skipped ? '#726c5e' : DAY_COLORS[(dayNumber - 1) % DAY_COLORS.length];
+  const color = skipped ? '#78716c' : DAY_COLORS[(dayNumber - 1) % DAY_COLORS.length];
   const glyph = skipped ? '✕' : String(dayNumber);
   const opacity = skipped ? 0.55 : 1;
   return L.divIcon({
@@ -112,7 +114,7 @@ export function RouteMap({ cityLabel, pins, missingCount }: RouteMapProps) {
     return (
       <div className={styles.fallback}>
         <p className={styles.fallbackText}>
-          <span aria-hidden="true">📡 </span>
+          <Icon icon={Wifi} />{' '}
           Mapa precisa de internet — sem conexão agora. A lista continua funcionando normalmente.
         </p>
       </div>

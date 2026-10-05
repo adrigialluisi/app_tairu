@@ -1,3 +1,4 @@
+import { Paperclip } from 'lucide-react';
 import {
   otherItemDetailRows,
   otherItemScope,
@@ -6,6 +7,8 @@ import {
   otherTypeLabel,
 } from '../../utils/otherSummary';
 import type { OtherItem, TripDestination } from '../../context/TripContext';
+import { Icon } from '../shell/Icon';
+import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 import stayStyles from './StayItemCard.module.css';
 import cardStyles from './OtherItemCard.module.css';
@@ -21,10 +24,10 @@ export function OtherItemCard({ item, destinations, onEdit }: OtherItemCardProps
   const phoneRow = item.type === 'seguro' && item.emergencyPhone ? `Central 24h: ${item.emergencyPhone}` : null;
 
   return (
-    <div className={styles.card}>
+    <Card className={`px-4 ${styles.card}`}>
       <div className={styles.header}>
         <span className={styles.icon} aria-hidden="true">
-          {otherTypeIcon(item.type)}
+          <Icon icon={otherTypeIcon(item.type)} />
         </span>
         <span className={stayStyles.titleWrap}>
           <span className={styles.title}>{otherItemTitle(item)}</span>
@@ -63,12 +66,12 @@ export function OtherItemCard({ item, destinations, onEdit }: OtherItemCardProps
               className={cardStyles.attachmentLink}
               title={att.fileName}
             >
-              <span aria-hidden="true">📎</span>
+              <Icon icon={Paperclip} />
               <span className={cardStyles.attachmentName}>{att.fileName}</span>
             </a>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

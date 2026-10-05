@@ -1,0 +1,66 @@
+.converter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* De | ⇅ | Para — o botão alinha com os selects (embaixo dos rótulos) */
+.pairRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--touch-target) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.swap.swap {
+  border-radius: var(--radius-control);
+  font-size: 20px;
+}
+
+.swap.swap:focus-visible {
+  border-radius: var(--radius-control);
+}
+
+.result {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.resultFrom {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.resultValue {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.rate {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.missing {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--error);
+}
+
+.footnote {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

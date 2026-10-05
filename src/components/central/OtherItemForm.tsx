@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { OptionChipGroup } from '../quiz/OptionChipGroup';
 import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
@@ -22,7 +23,8 @@ interface OtherItemFormProps {
 
 const TYPE_OPTIONS: { value: OtherItemType; label: string }[] = OTHER_TYPES.map((t) => ({
   value: t,
-  label: `${otherTypeIcon(t)} ${otherTypeLabel(t)}`,
+  label: otherTypeLabel(t),
+  icon: otherTypeIcon(t),
 }));
 
 interface FieldConfig {
@@ -78,30 +80,11 @@ const FIELD_CONFIG: Record<OtherItemType, FieldConfig> = {
     referenceLabel: 'Código do ingresso (opcional)',
     showEmergencyPhone: false,
   },
-  chip: {
-    providerLabel: 'Operadora',
-    titleLabel: 'Plano (opcional)',
-    titlePlaceholder: 'Ex.: eSIM 10 GB',
-    dateLabel: 'Validade',
-    showTime: false,
-    showLocation: false,
-    referenceLabel: null,
-    showEmergencyPhone: false,
-  },
-  outro: {
-    providerLabel: 'Fornecedor (opcional)',
-    titleLabel: 'Título',
-    titlePlaceholder: 'Ex.: Reserva de restaurante',
-    dateLabel: 'Data ou período',
-    showTime: false,
-    showLocation: false,
-    referenceLabel: 'Código / localizador (opcional)',
-    showEmergencyPhone: false,
-  },
 };
 
 export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: OtherItemFormProps) {
   const baseId = useId();
+  const navigate = useNavigate();
 
   const [type, setType] = useState<OtherItemType | null>(initialItem?.type ?? null);
   const [destinationId, setDestinationId] = useState<string | null>(initialItem?.destinationId ?? null);
@@ -140,7 +123,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
       setDestinationId(effectiveDestinationId);
     }
 
-    if (newType === 'seguro' || newType === 'chip') {
+    if (newType === 'seguro') {
       if (effectiveDestinationId) {
         const d = destinations.find((x) => x.id === effectiveDestinationId);
         setStartDate(d?.dateStart ?? null);
@@ -179,6 +162,16 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
   return (
     <div className={styles.form}>
       <OptionChipGroup legend="O que é esse registro?" options={TYPE_OPTIONS} value={type} onChange={handleTypeChange} />
+
+      {type === 'seguro' && (
+        <p className={styles.hint}>
+          Tem seguro anual ou do cartão de crédito? Guarde em{' '}
+          <button type="button" className={styles.inlineLink} onClick={() => navigate('/documentos')}>
+            Meus documentos
+          </button>
+          , assim ele vale pra todas as suas viagens.
+        </p>
+      )}
 
       <AttachmentList attachments={attachments} onChange={setAttachments} />
 

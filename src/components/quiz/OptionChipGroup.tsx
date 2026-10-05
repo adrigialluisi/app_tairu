@@ -1,9 +1,13 @@
-import type { KeyboardEvent } from 'react';
-import styles from './OptionChipGroup.module.css';
+import { Check, type LucideIcon } from 'lucide-react';
+import { FieldLegend, FieldSet } from '@/components/ui/field';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { chipFieldsetClass, chipGroupClass, chipItemClass, chipLegendClass } from './chipClasses';
 
 export interface ChipOption<T extends string> {
   value: T;
   label: string;
+  /** ícone lucide opcional antes do rótulo (ex.: tipo de transporte) — decorativo, o rótulo é que diz o que é */
+  icon?: LucideIcon;
 }
 
 interface OptionChipGroupProps<T extends string> {
@@ -19,44 +23,39 @@ export function OptionChipGroup<T extends string>({
   value,
   onChange,
 }: OptionChipGroupProps<T>) {
-  function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    e.preventDefault();
-    const delta = e.key === 'ArrowRight' ? 1 : -1;
-    const nextIndex = (index + delta + options.length) % options.length;
-    const nextOption = options[nextIndex];
-    onChange(nextOption.value);
-    const buttons = e.currentTarget.parentElement?.querySelectorAll('button');
-    (buttons?.[nextIndex] as HTMLButtonElement | undefined)?.focus();
-  }
-
   return (
-    <fieldset className={styles.fieldset}>
-      <legend className={styles.legend}>{legend}</legend>
-      <div className={styles.options} role="radiogroup" aria-label={legend}>
-        {options.map((option, index) => {
+    <FieldSet className={chipFieldsetClass}>
+      <FieldLegend className={chipLegendClass}>{legend}</FieldLegend>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        spacing={2}
+        className={chipGroupClass}
+        aria-label={legend}
+        value={value ?? ''}
+        // o ToggleGroup single manda valor vazio ao tocar de novo no chip marcado;
+        // aqui isso repete o valor atual, como antes da onda 1 (cada toque chamava
+        // onChange com o chip tocado): quem não desmarca recebe o mesmo valor e nada
+        // muda; quem desmarca (ex.: "Onde foi?" no visualizador de fotos) desmarca
+        onValueChange={(next) => {
+          if (next) onChange(next as T);
+          else if (value) onChange(value);
+        }}
+      >
+        {options.map((option) => {
           const selected = option.value === value;
           return (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              tabIndex={selected || (!value && index === 0) ? 0 : -1}
-              className={`${styles.option} ${selected ? styles.optionSelected : ''}`}
-              onClick={() => onChange(option.value)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-            >
-              {selected && (
-                <span className={styles.check} aria-hidden="true">
-                  ✓
-                </span>
+            <ToggleGroupItem key={option.value} value={option.value} className={chipItemClass}>
+              {selected ? (
+                <Check className="size-4" aria-hidden="true" />
+              ) : (
+                option.icon && <option.icon className="size-4" aria-hidden="true" />
               )}
               {option.label}
-            </button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
-    </fieldset>
+      </ToggleGroup>
+    </FieldSet>
   );
 }

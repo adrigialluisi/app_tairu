@@ -1,6 +1,7 @@
+import { MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './Button';
-import styles from './EmptyTripState.module.css';
+import { EmptyState } from './EmptyState';
 
 interface EmptyTripStateProps {
   message: string;
@@ -15,11 +16,15 @@ interface EmptyTripStateProps {
 export function EmptyTripState({ message }: EmptyTripStateProps) {
   const navigate = useNavigate();
   return (
-    <div className={styles.wrap}>
-      <p className={styles.message}>{message}</p>
-      <Button variant="primary" fullWidth onClick={() => navigate('/destinos')}>
-        Ir pra Destinos
-      </Button>
-    </div>
+    <EmptyState
+      icon={<MapPin />}
+      action={
+        <Button variant="primary" fullWidth onClick={() => navigate('/destinos')}>
+          Ir pra Destinos
+        </Button>
+      }
+    >
+      {message}
+    </EmptyState>
   );
 }

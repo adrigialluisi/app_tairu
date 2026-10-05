@@ -1,4 +1,12 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { findMockCompanion } from '../data/mockCompanions';
+import {
+  MOCK_EXPENSE_PREFIX,
+  applyMockContributions,
+  mockExpenseKey,
+  mockPlaceKey,
+  placesWantedBy,
+} from '../utils/mockContributions';
 import { computeUnpinnedLocalDay, splitDaysByDestination } from '../utils/itinerary';
 
 export interface TripDestination {
@@ -16,8 +24,15 @@ export interface TripDestination {
 export interface TripCompanion {
   id: string;
   email: string;
-  /** único status real possível sem backend — nunca simular "aceito" */
-  status: 'convite-enviado';
+  /**
+   * 'entrou' só acontece com os dois convidados do cenário fixo
+   * (src/data/mockCompanions.ts, SIMULAÇÃO — ajustes-67); qualquer outro
+   * e-mail fica em 'convite-enviado'.
+   */
+  status: 'convite-enviado' | 'entrou';
+  /** só preenchido quando é um convidado simulado do cenário */
+  name?: string;
+  initials?: string;
 }
 
 export interface TripPlaceSelection {
@@ -30,6 +45,10 @@ export interface TripPlaceSelection {
   customLabel: string | null;
   /** copiado do places.json no momento da seleção, ou [] se customLabel */
   categories: string[];
+  /** quem adicionou: 'voce' ou TripCompanion.id */
+  addedBy: MemberId;
+  /** outros membros que também querem ir */
+  alsoWantedBy: MemberId[];
 }
 
 export interface ItineraryOverride {
@@ -39,7 +58,7 @@ export interface ItineraryOverride {
   skipped: boolean;
 }
 
-export type TransportType = 'voo' | 'onibus' | 'carro-locado';
+export type TransportType = 'voo' | 'onibus' | 'trem' | 'carro-locado';
 
 interface TransportItemBase {
   id: string;
@@ -71,6 +90,25 @@ export interface BusTransportItem extends TransportItemBase {
   arrivalAt: string;
 }
 
+export interface TrainTransportItem extends TransportItemBase {
+  type: 'trem';
+  /** operadora, ex.: Tren de la Costa, Renfe, Trenitalia */
+  company: string;
+  /** número do trem ou nome da linha/ramal */
+  trainNumber: string;
+  /** estação de embarque */
+  origin: string;
+  /** estação de desembarque */
+  destination: string;
+  departureAt: string;
+  arrivalAt: string;
+  /** "Turista", "Primeira", "Executiva"… (opcional) */
+  travelClass: string;
+  /** texto livre: "Vagão 2 · assento 14" (opcional) */
+  seat: string;
+  bookingCode: string;
+}
+
 export interface CarRentalTransportItem extends TransportItemBase {
   type: 'carro-locado';
   company: string;
@@ -81,7 +119,11 @@ export interface CarRentalTransportItem extends TransportItemBase {
   dropoffAt: string;
 }
 
-export type TransportItem = FlightTransportItem | BusTransportItem | CarRentalTransportItem;
+export type TransportItem =
+  | FlightTransportItem
+  | BusTransportItem
+  | TrainTransportItem
+  | CarRentalTransportItem;
 
 export type StayType = 'hotel' | 'apartamento' | 'hostel' | 'pousada';
 
@@ -110,7 +152,7 @@ export interface StayItem {
   voucherFileName: string | null;
 }
 
-export type OtherItemType = 'seguro' | 'passeio' | 'ingresso' | 'chip' | 'outro';
+export type OtherItemType = 'seguro' | 'passeio' | 'ingresso';
 
 export interface Attachment {
   id: string;
@@ -124,13 +166,13 @@ export interface OtherItem {
   type: OtherItemType;
   /** null = viagem toda; senão TripDestination.id */
   destinationId: string | null;
-  /** nome do passeio, do evento, do plano de chip ou título livre (em Seguro, o nome do plano) */
+  /** nome do passeio ou do evento (em Seguro, o nome do plano) */
   title: string;
-  /** seguradora, agência, operadora ou fornecedor */
+  /** seguradora ou agência */
   provider: string;
   /** nº da apólice, código da reserva, localizador */
   referenceCode: string;
-  /** período (seguro, chip) ou dia do passeio/evento (só startDate) — ISO yyyy-mm-dd */
+  /** período (seguro) ou dia do passeio/evento (só startDate) — ISO yyyy-mm-dd */
   startDate: string | null;
   endDate: string | null;
   /** "hh:mm" ou "" — passeio e ingresso */
@@ -144,6 +186,85 @@ export interface OtherItem {
   costAmount: string;
   costCurrencyCode: string;
   attachments: Attachment[];
+}
+
+export type ExpenseCategory = 'transporte' | 'hospedagem' | 'alimentacao' | 'passeios' | 'compras' | 'outros';
+
+/** 'voce' = a pessoa usando o app; senão TripCompanion.id */
+export type MemberId = string;
+
+export interface Expense {
+  id: string;
+  description: string;
+  /** texto como digitado; converter com parseAmount (src/utils/money.ts) */
+  amount: string;
+  currencyCode: string;
+  /** TripDestination.id, ou null = outro lugar / viagem toda */
+  destinationId: string | null;
+  category: ExpenseCategory;
+  paidBy: MemberId;
+  /** null = dividir entre todos os membros atuais (inclui quem for convidado depois) */
+  splitWith: MemberId[] | null;
+  /** ISO yyyy-mm-dd ou null */
+  date: string | null;
+  attachments: Attachment[];
+}
+
+/** Só quem pagou/divide pode mudar nos custos que vêm da Central; valor e moeda continuam sendo editados lá. */
+export interface CentralCostOverride {
+  /** id do TransportItem / StayItem / OtherItem */
+  sourceId: string;
+  paidBy: MemberId;
+  splitWith: MemberId[] | null;
+}
+
+/** Foto da viagem (Memórias, ajustes-64) — em memória via URL.createObjectURL, como os anexos. */
+export interface TripPhoto {
+  id: string;
+  /** URL.createObjectURL(file) */
+  url: string;
+  fileName: string;
+  /** data do arquivo (lastModified), ISO yyyy-mm-dd */
+  fileDateISO: string;
+  /** dia da viagem atribuído (automático ou escolhido); null = sem dia */
+  dayISO: string | null;
+  /** true se a pessoa escolheu o dia na mão */
+  dayManual: boolean;
+  /**
+   * rótulo do lugar: o texto livre de "Outro", ou o nome do lugar/evento ligado
+   * (guardado pra continuar mostrando o nome se o vínculo cair). Com
+   * placeSelectionId/eventId, a tela mostra o nome ATUAL do lugar/evento.
+   */
+  placeLabel: string | null;
+  /** parada do roteiro a que a foto pertence: TripPlaceSelection.id; null = sem lugar ligado (ajustes-75) */
+  placeSelectionId: string | null;
+  /** evento escolhido a que a foto pertence: EventEntry.id; null = nenhum (ajustes-75) */
+  eventId: string | null;
+  caption: string;
+  /** destaque: usado pela Retrospectiva (ajuste 65) */
+  favorite: boolean;
+}
+
+export type RetroCardKind = 'capa' | 'numeros' | 'cidade' | 'destaques' | 'fecho';
+
+/** Card da Retrospectiva (Memórias, ajustes-65) — montado com frases-modelo e dados reais, editável. */
+export interface RetroCard {
+  id: string;
+  kind: RetroCardKind;
+  title: string;
+  text: string;
+  /** TripPhoto.id da foto principal do card (capa e cidade); null = sem foto */
+  photoId: string | null;
+  /** só no kind 'cidade' */
+  destinationId?: string;
+  hidden: boolean;
+}
+
+export interface Retrospective {
+  generatedAtISO: string;
+  showCosts: boolean;
+  /** a ordem do array é a ordem de exibição */
+  cards: RetroCard[];
 }
 
 export type QuizDiscovery = 'turistico' | 'equilibrado' | 'fora-do-circuito';
@@ -176,6 +297,25 @@ interface TripState {
   transportItems: TransportItem[];
   stayItems: StayItem[];
   otherItems: OtherItem[];
+  /** eventos locais escolhidos (src/data/events.json) — data fixa, fora do selectedPlaces e da distribuição de dias */
+  selectedEventIds: string[];
+  /** Custos (ajustes-61): gastos lançados à mão, quem pagou/divide os custos da Central e transferências acertadas */
+  expenses: Expense[];
+  centralCostOverrides: CentralCostOverride[];
+  /** `${from}->${to}:${amountBRL.toFixed(2)}` — se o valor mudar, a marcação deixa de valer */
+  settledTransferKeys: string[];
+  /** Memórias (ajustes-64) */
+  photos: TripPhoto[];
+  /** Retrospectiva (ajustes-65): null = ainda não gerada */
+  retrospective: Retrospective | null;
+  /** "Agora não" no convite da retrospectiva */
+  retroDismissed: boolean;
+  /** PersonalDocument.id compartilhados com o grupo desta viagem (ajustes-66) — o documento continua da pessoa */
+  sharedDocumentIds: string[];
+  /** chaves de contribuições simuladas que a pessoa removeu — nunca recriar (ajustes-67) */
+  dismissedMockKeys: string[];
+  /** aviso "Marina Duarte entrou na viagem…" (seq muda a cada entrada, pra tela mostrar o toast) */
+  companionJoinNotice: { seq: number; message: string } | null;
 }
 
 export interface TripContextValue extends TripState {
@@ -202,6 +342,20 @@ export interface TripContextValue extends TripState {
   removeStayItem: (id: string) => void;
   saveOtherItem: (item: OtherItem) => void;
   removeOtherItem: (id: string) => void;
+  toggleEvent: (eventId: string) => void;
+  saveExpense: (expense: Expense) => void;
+  removeExpense: (id: string) => void;
+  saveCentralCostOverride: (override: CentralCostOverride) => void;
+  toggleSettledTransfer: (key: string) => void;
+  addPhotos: (photos: TripPhoto[]) => void;
+  updatePhoto: (photo: TripPhoto) => void;
+  removePhoto: (id: string) => void;
+  setRetrospective: (retrospective: Retrospective | null) => void;
+  updateRetroCard: (card: RetroCard) => void;
+  moveRetroCard: (id: string, direction: -1 | 1) => void;
+  setRetroShowCosts: (value: boolean) => void;
+  setRetroDismissed: (value: boolean) => void;
+  toggleSharedDocument: (id: string) => void;
   resetTrip: () => void;
 }
 
@@ -228,6 +382,82 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [transportItems, setTransportItems] = useState<TransportItem[]>([]);
   const [stayItems, setStayItems] = useState<StayItem[]>([]);
   const [otherItems, setOtherItems] = useState<OtherItem[]>([]);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [centralCostOverrides, setCentralCostOverrides] = useState<CentralCostOverride[]>([]);
+  const [settledTransferKeys, setSettledTransferKeys] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<TripPhoto[]>([]);
+  const [retrospective, setRetrospective] = useState<Retrospective | null>(null);
+  const [retroDismissed, setRetroDismissed] = useState(false);
+  const [sharedDocumentIds, setSharedDocumentIds] = useState<string[]>([]);
+  const [dismissedMockKeys, setDismissedMockKeys] = useState<string[]>([]);
+  const [companionJoinNotice, setCompanionJoinNotice] = useState<{ seq: number; message: string } | null>(null);
+  // SIMULAÇÃO (ajustes-67): timers de "entrada" dos convidados do cenário e quem já foi anunciado
+  const joinTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const announcedJoins = useRef(new Set<string>());
+
+  function dismissMockKeys(keys: string[]) {
+    if (keys.length === 0) return;
+    setDismissedMockKeys((prev) => [...new Set([...prev, ...keys])]);
+  }
+
+  /** chaves pra não recriar um lugar removido que veio (ou também era querido) de convidado */
+  function mockKeysForSelection(sel: TripPlaceSelection | undefined): string[] {
+    if (!sel || !sel.placeId) return [];
+    const members = [sel.addedBy, ...sel.alsoWantedBy].filter((m) => m !== 'voce');
+    return members.map((m) => mockPlaceKey(m, sel.placeId as string));
+  }
+
+  // Aplica as contribuições simuladas na entrada e sempre que destinos/convidados mudam (idempotente).
+  useEffect(() => {
+    const result = applyMockContributions({ destinations, companions, selectedPlaces, expenses, dismissedMockKeys });
+    if (result.changed) {
+      setSelectedPlaces(result.selectedPlaces);
+      setExpenses(result.expenses);
+    }
+    for (const c of companions) {
+      if (c.status !== 'entrou' || announcedJoins.current.has(c.id)) continue;
+      announcedJoins.current.add(c.id);
+      const n = placesWantedBy(result.selectedPlaces, c.id);
+      setCompanionJoinNotice((prev) => ({
+        seq: (prev?.seq ?? 0) + 1,
+        message:
+          n > 0
+            ? `${c.name ?? c.email} entrou na viagem e sugeriu ${n} ${n === 1 ? 'lugar' : 'lugares'}`
+            : `${c.name ?? c.email} entrou na viagem`,
+      }));
+    }
+    // só destinos e convidados disparam (spec); lugares/gastos/descartes são lidos do render atual
+  }, [destinations, companions]);
+
+  /*
+    Lugar ou evento saiu do roteiro (desmarcado em Sugestões, removido da lista,
+    convidado simulado saiu…): as fotos ligadas a ele NÃO somem — só o vínculo
+    cai, e o rótulo (placeLabel) com o nome fica, então elas vão pra "Outras do
+    dia" em Memórias (docs/ajustes-75-fotos-por-atracao.md, 4). Num lugar só
+    pra cobrir todos os caminhos de remoção.
+  */
+  useEffect(() => {
+    const placeIds = new Set(selectedPlaces.map((s) => s.id));
+    const eventIds = new Set(selectedEventIds);
+    setPhotos((prev) =>
+      prev.some(
+        (p) => (p.placeSelectionId && !placeIds.has(p.placeSelectionId)) || (p.eventId && !eventIds.has(p.eventId)),
+      )
+        ? prev.map((p) => ({
+            ...p,
+            placeSelectionId: p.placeSelectionId && placeIds.has(p.placeSelectionId) ? p.placeSelectionId : null,
+            eventId: p.eventId && eventIds.has(p.eventId) ? p.eventId : null,
+          }))
+        : prev,
+    );
+  }, [selectedPlaces, selectedEventIds]);
+
+  // limpa timers pendentes se o provider sair
+  useEffect(() => {
+    const timers = joinTimers.current;
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, []);
 
   const value = useMemo<TripContextValue>(
     () => ({
@@ -242,6 +472,16 @@ export function TripProvider({ children }: { children: ReactNode }) {
       transportItems,
       stayItems,
       otherItems,
+      selectedEventIds,
+      expenses,
+      centralCostOverrides,
+      settledTransferKeys,
+      photos,
+      retrospective,
+      retroDismissed,
+      sharedDocumentIds,
+      dismissedMockKeys,
+      companionJoinNotice,
       setName,
       addDestination: (destination) =>
         setDestinations((prev) => [
@@ -258,12 +498,57 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setDestinations((prev) => prev.map((d) => (d.id === id ? { ...d, currencyCode } : d))),
       setDestinationDateRange: (id, start, end) =>
         setDestinations((prev) => prev.map((d) => (d.id === id ? { ...d, dateStart: start, dateEnd: end } : d))),
-      addCompanion: (email) =>
-        setCompanions((prev) => [
-          ...prev,
-          { id: `${email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, email, status: 'convite-enviado' },
-        ]),
-      removeCompanion: (id) => setCompanions((prev) => prev.filter((c) => c.id !== id)),
+      addCompanion: (email) => {
+        const id = `${email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        setCompanions((prev) => [...prev, { id, email, status: 'convite-enviado' }]);
+        // SIMULAÇÃO: só os convidados do cenário fixo "entram" (2,5 s depois); o resto fica em "Convite enviado"
+        const profile = findMockCompanion(email);
+        if (profile) {
+          const timer = setTimeout(() => {
+            joinTimers.current.delete(id);
+            setCompanions((prev) =>
+              prev.map((c) =>
+                c.id === id ? { ...c, status: 'entrou', name: profile.name, initials: profile.initials } : c,
+              ),
+            );
+          }, 2500);
+          joinTimers.current.set(id, timer);
+        }
+      },
+      removeCompanion: (id) => {
+        const timer = joinTimers.current.get(id);
+        if (timer) clearTimeout(timer);
+        joinTimers.current.delete(id);
+        announcedJoins.current.delete(id);
+        setCompanions((prev) => prev.filter((c) => c.id !== id));
+        // tira tudo o que esse convidado trouxe: lugares que só ele queria, o "também quer", gastos dele
+        const removedPlaceIds = selectedPlaces
+          .filter((s) => s.addedBy === id && s.alsoWantedBy.filter((m) => m !== id).length === 0)
+          .map((s) => s.id);
+        setSelectedPlaces((prev) =>
+          prev
+            .filter((s) => !removedPlaceIds.includes(s.id))
+            .map((s) => {
+              if (s.addedBy !== id && !s.alsoWantedBy.includes(id)) return s;
+              const others = s.alsoWantedBy.filter((m) => m !== id);
+              // lugar que outro membro também queria fica, agora "adicionado" por esse outro
+              return s.addedBy === id ? { ...s, addedBy: others[0], alsoWantedBy: others.slice(1) } : { ...s, alsoWantedBy: others };
+            }),
+        );
+        setItineraryOverrides((prev) => prev.filter((o) => !removedPlaceIds.includes(o.placeSelectionId)));
+        const withoutMember = (list: MemberId[] | null) => {
+          if (!list) return null;
+          const next = list.filter((m) => m !== id);
+          return next.length > 0 ? next : null;
+        };
+        setExpenses((prev) =>
+          prev.filter((e) => e.paidBy !== id).map((e) => ({ ...e, splitWith: withoutMember(e.splitWith) })),
+        );
+        setCentralCostOverrides((prev) =>
+          prev.map((o) => ({ ...o, paidBy: o.paidBy === id ? 'voce' : o.paidBy, splitWith: withoutMember(o.splitWith) })),
+        );
+        setSettledTransferKeys((prev) => prev.filter((k) => !k.split(':')[0].split('->').includes(id)));
+      },
       setQuizAnswer: (key, value) => setQuiz((prev) => ({ ...prev, [key]: value })),
       toggleQuizDiscovery: (discovery) =>
         setQuiz((prev) => ({
@@ -279,7 +564,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
             ? prev.interests.filter((i) => i !== interest)
             : [...prev.interests, interest],
         })),
-      togglePlace: (destinationId, place) =>
+      togglePlace: (destinationId, place) => {
+        dismissMockKeys(
+          mockKeysForSelection(
+            selectedPlaces.find((s) => s.destinationId === destinationId && s.placeId === place.placeId),
+          ),
+        );
         setSelectedPlaces((prev) => {
           const existing = prev.find((s) => s.destinationId === destinationId && s.placeId === place.placeId);
           if (existing) return prev.filter((s) => s.id !== existing.id);
@@ -291,9 +581,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
               placeId: place.placeId,
               customLabel: null,
               categories: place.categories,
+              addedBy: 'voce',
+              alsoWantedBy: [],
             },
           ];
-        }),
+        });
+      },
       addCustomPlace: (destinationId, label) =>
         setSelectedPlaces((prev) => [
           ...prev,
@@ -303,9 +596,14 @@ export function TripProvider({ children }: { children: ReactNode }) {
             placeId: null,
             customLabel: label,
             categories: [],
+            addedBy: 'voce',
+            alsoWantedBy: [],
           },
         ]),
-      removeSelectedPlace: (id) => setSelectedPlaces((prev) => prev.filter((s) => s.id !== id)),
+      removeSelectedPlace: (id) => {
+        dismissMockKeys(mockKeysForSelection(selectedPlaces.find((s) => s.id === id)));
+        setSelectedPlaces((prev) => prev.filter((s) => s.id !== id));
+      },
       moveItineraryItem: (placeSelectionId, newDayIndex) =>
         setItineraryOverrides((prev) => {
           const existing = prev.find((o) => o.placeSelectionId === placeSelectionId);
@@ -360,7 +658,68 @@ export function TripProvider({ children }: { children: ReactNode }) {
           removed?.attachments.forEach((a) => URL.revokeObjectURL(a.url));
           return prev.filter((o) => o.id !== id);
         }),
+      toggleEvent: (eventId) =>
+        setSelectedEventIds((prev) =>
+          prev.includes(eventId) ? prev.filter((id) => id !== eventId) : [...prev, eventId],
+        ),
+      saveExpense: (expense) =>
+        setExpenses((prev) => {
+          const exists = prev.some((e) => e.id === expense.id);
+          return exists ? prev.map((e) => (e.id === expense.id ? expense : e)) : [...prev, expense];
+        }),
+      removeExpense: (id) => {
+        // gasto simulado removido não volta (ajustes-67)
+        if (id.startsWith(MOCK_EXPENSE_PREFIX)) dismissMockKeys([mockExpenseKey(id.slice(MOCK_EXPENSE_PREFIX.length))]);
+        setExpenses((prev) => {
+          const removed = prev.find((e) => e.id === id);
+          removed?.attachments.forEach((a) => URL.revokeObjectURL(a.url));
+          return prev.filter((e) => e.id !== id);
+        });
+      },
+      saveCentralCostOverride: (override) =>
+        setCentralCostOverrides((prev) => [...prev.filter((o) => o.sourceId !== override.sourceId), override]),
+      toggleSettledTransfer: (key) =>
+        setSettledTransferKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key])),
+      addPhotos: (added) => setPhotos((prev) => [...prev, ...added]),
+      updatePhoto: (photo) => setPhotos((prev) => prev.map((p) => (p.id === photo.id ? photo : p))),
+      removePhoto: (id) => {
+        setPhotos((prev) => {
+          const removed = prev.find((p) => p.id === id);
+          if (removed) URL.revokeObjectURL(removed.url);
+          return prev.filter((p) => p.id !== id);
+        });
+        // card da retrospectiva que usava essa foto cai pra "sem foto" (a tela usa a foto da cidade no lugar)
+        setRetrospective((prev) =>
+          prev && prev.cards.some((c) => c.photoId === id)
+            ? { ...prev, cards: prev.cards.map((c) => (c.photoId === id ? { ...c, photoId: null } : c)) }
+            : prev,
+        );
+      },
+      setRetrospective,
+      updateRetroCard: (card) =>
+        setRetrospective((prev) =>
+          prev ? { ...prev, cards: prev.cards.map((c) => (c.id === card.id ? card : c)) } : prev,
+        ),
+      moveRetroCard: (id, direction) =>
+        setRetrospective((prev) => {
+          if (!prev) return prev;
+          const from = prev.cards.findIndex((c) => c.id === id);
+          const to = from + direction;
+          if (from < 0 || to < 0 || to >= prev.cards.length) return prev;
+          const cards = [...prev.cards];
+          [cards[from], cards[to]] = [cards[to], cards[from]];
+          return { ...prev, cards };
+        }),
+      setRetroShowCosts: (value) => setRetrospective((prev) => (prev ? { ...prev, showCosts: value } : prev)),
+      setRetroDismissed,
+      toggleSharedDocument: (id) =>
+        setSharedDocumentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
       resetTrip: () => {
+        joinTimers.current.forEach((t) => clearTimeout(t));
+        joinTimers.current.clear();
+        announcedJoins.current.clear();
+        setDismissedMockKeys([]);
+        setCompanionJoinNotice(null);
         setName('');
         setDestinations([]);
         setCompanions([]);
@@ -371,6 +730,21 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setPerfilSaved(false);
         setTransportItems([]);
         setStayItems([]);
+        setSelectedEventIds([]);
+        setExpenses((prev) => {
+          prev.forEach((e) => e.attachments.forEach((a) => URL.revokeObjectURL(a.url)));
+          return [];
+        });
+        setCentralCostOverrides([]);
+        setSettledTransferKeys([]);
+        setPhotos((prev) => {
+          prev.forEach((p) => URL.revokeObjectURL(p.url));
+          return [];
+        });
+        setRetrospective(null);
+        setRetroDismissed(false);
+        // desliga os compartilhamentos; os documentos (DocumentsContext) não são apagados
+        setSharedDocumentIds([]);
         setOtherItems((prev) => {
           prev.forEach((o) => o.attachments.forEach((a) => URL.revokeObjectURL(a.url)));
           return [];
@@ -389,6 +763,16 @@ export function TripProvider({ children }: { children: ReactNode }) {
       transportItems,
       stayItems,
       otherItems,
+      selectedEventIds,
+      expenses,
+      centralCostOverrides,
+      settledTransferKeys,
+      photos,
+      retrospective,
+      retroDismissed,
+      sharedDocumentIds,
+      dismissedMockKeys,
+      companionJoinNotice,
     ],
   );
 

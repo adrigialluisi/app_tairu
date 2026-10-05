@@ -6,8 +6,8 @@
 }
 
 .title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: var(--text-2xl);
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }

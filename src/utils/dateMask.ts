@@ -86,6 +86,41 @@ export function formatISOToWeekdayDisplay(iso: string): string {
   return `${weekday}, ${formatISOToDisplay(iso)}`;
 }
 
+const MONTHS_PT = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+/** "Sábado, 21 de novembro" — cabeçalho de dia do Roteiro (mesma tabela fixa, sem toLocaleDateString). */
+export function formatISOToLongWeekday(iso: string): string {
+  const { day, month, year } = fromISODate(iso);
+  const weekday = WEEKDAYS_PT[new Date(year, month - 1, day).getDay()].replace('-feira', '');
+  return `${weekday}, ${day} de ${MONTHS_PT[month - 1]}`;
+}
+
+/** "Sáb, 21/11" — rótulo curto de dia (Memórias, grupos e pills). */
+export function formatISOToShortDay(iso: string): string {
+  const { day, month, year } = fromISODate(iso);
+  const weekday = WEEKDAYS_PT[new Date(year, month - 1, day).getDay()].slice(0, 3);
+  return `${weekday}, ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
+}
+
+/** "SÁB" — dia da semana abreviado, pro bloco de data do card de evento. */
+export function formatISOToWeekdayAbbrev(iso: string): string {
+  const { day, month, year } = fromISODate(iso);
+  return WEEKDAYS_PT[new Date(year, month - 1, day).getDay()].slice(0, 3).toUpperCase();
+}
+
 const MONTHS_ABBREV_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
 /** Mês abreviado (3 letras, PT) + número do dia — usado nos pills de data do Roteiro. */

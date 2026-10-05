@@ -1,0 +1,196 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* botão + pergunta do dia + filtro: um grupo (16px) */
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+
+
+
+/* "De qual dia são essas fotos?" — painel inline, não modal */
+.askCard {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.askTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.dayChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dayChoice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  min-width: 88px;
+  padding: var(--space-1) var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dayChoiceDate {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dayChoiceCity {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.linkButton {
+  align-self: flex-start;
+  min-height: var(--touch-target);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.groupCount {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.groupHint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--placeholder);
+  cursor: pointer;
+}
+
+/* foco por dentro: o overflow:hidden cortaria o anel de fora */
+.thumb:focus-visible {
+  outline-offset: -3px;
+  border-radius: 8px;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* destaque ⭐: Badge accent (ajustes-71); aqui só a posição no canto da miniatura */
+.star {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+}
+
+.emptyDay {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* subgrupos por lugar dentro do dia (docs/ajustes-75-fotos-por-atracao.md, 5) */
+.placeGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.placeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.placeTitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+}
+
+.placeCount {
+  font-weight: var(--font-weight-regular);
+  color: var(--muted);
+}
+
+/* texto livre de "Outro" (ou lugar que saiu do roteiro), dentro de "Outras do dia" */
+.placeOther {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

@@ -1,0 +1,109 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+  position: relative;
+  /* espaço entre linhas da agenda — a conectora atravessa esse espaço */
+  padding-bottom: var(--space-3);
+}
+
+.rowLast {
+  padding-bottom: 0;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-1) 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.time {
+  flex: 0 0 48px;
+  display: flex;
+  flex-direction: column;
+  padding-top: 6px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.date {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--muted);
+}
+
+.icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--bg-top);
+  font-size: 16px;
+}
+
+/*
+  Conectora — mesma ideia do TimelineStop, mais discreta (1px, cor
+  decorativa). Fica na linha (não no ícone) pra atravessar a altura que o
+  texto tiver, do fim deste ícone até o começo do próximo. Posição = coluna
+  de hora (48px) + gap + metade do ícone (16px).
+*/
+.row:not(.rowLast)::before {
+  content: '';
+  position: absolute;
+  left: calc(48px + var(--space-3) + 16px);
+  top: calc(var(--space-1) + 32px);
+  bottom: calc(-1 * var(--space-1));
+  width: 1px;
+  background: var(--card-border);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: 4px;
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.action {
+  flex: 0 0 auto;
+}
+
+/* faixa embaixo da linha (fotos do evento), alinhada com o título: hora (48px) + ícone (32px) + 2 vãos */
+.below {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-left: calc(48px + 32px + var(--space-3) * 2);
+}

@@ -1,22 +1,25 @@
+import { Bus, Car, Plane, TrainFront, type LucideIcon } from 'lucide-react';
 import type { TransportItem, TransportType } from '../context/TripContext';
 
 const TYPE_LABELS: Record<TransportType, string> = {
   voo: 'Voo',
   onibus: 'Ônibus',
+  trem: 'Trem',
   'carro-locado': 'Carro locado',
 };
 
-const TYPE_ICONS: Record<TransportType, string> = {
-  voo: '✈️',
-  onibus: '🚌',
-  'carro-locado': '🚗',
+const TYPE_ICONS: Record<TransportType, LucideIcon> = {
+  voo: Plane,
+  onibus: Bus,
+  trem: TrainFront,
+  'carro-locado': Car,
 };
 
 export function transportTypeLabel(type: TransportType): string {
   return TYPE_LABELS[type];
 }
 
-export function transportTypeIcon(type: TransportType): string {
+export function transportTypeIcon(type: TransportType): LucideIcon {
   return TYPE_ICONS[type];
 }
 
@@ -27,9 +30,30 @@ export function transportItemTitle(item: TransportItem): string {
       return [item.company, item.flightNumber].filter(Boolean).join(' ') || 'Voo';
     case 'onibus':
       return item.company || 'Ônibus';
+    case 'trem':
+      return [item.company, item.trainNumber].filter(Boolean).join(' · ') || 'Trem';
     case 'carro-locado':
       return [item.company, item.vehicleCategory].filter(Boolean).join(' — ') || 'Carro locado';
   }
+}
+
+/** Origem / destino / "data · hh:mm – hh:mm" — comum a voo, ônibus e trem. */
+function routeRows(
+  item: { origin: string; destination: string; departureAt: string; arrivalAt: string },
+  originPrefix: string,
+  destinationPrefix: string,
+): string[] {
+  const rows: string[] = [];
+  if (item.origin) rows.push(`${originPrefix}${item.origin}`);
+  if (item.destination) rows.push(`${destinationPrefix}${item.destination}`);
+  const depParts = item.departureAt.trim().split(' ');
+  const arrParts = item.arrivalAt.trim().split(' ');
+  const date = depParts[0] || arrParts[0] || '';
+  const depTime = depParts.slice(1).join(' ');
+  const arrTime = arrParts.slice(1).join(' ');
+  const timeRange = [depTime, arrTime].filter(Boolean).join(' – ');
+  if (date || timeRange) rows.push([date, timeRange].filter(Boolean).join(' · '));
+  return rows;
 }
 
 /**
@@ -44,16 +68,13 @@ export function transportItemDetailRows(item: TransportItem): string[] {
   switch (item.type) {
     case 'voo':
     case 'onibus': {
-      const rows: string[] = [];
-      if (item.origin) rows.push(`Saída: ${item.origin}`);
-      if (item.destination) rows.push(`Chegada: ${item.destination}`);
-      const depParts = item.departureAt.trim().split(' ');
-      const arrParts = item.arrivalAt.trim().split(' ');
-      const date = depParts[0] || arrParts[0] || '';
-      const depTime = depParts.slice(1).join(' ');
-      const arrTime = arrParts.slice(1).join(' ');
-      const timeRange = [depTime, arrTime].filter(Boolean).join(' – ');
-      if (date || timeRange) rows.push([date, timeRange].filter(Boolean).join(' · '));
+      const rows = routeRows(item, 'Saída: ', 'Chegada: ');
+      return rows.length ? rows : ['Detalhes a preencher'];
+    }
+    case 'trem': {
+      const rows = routeRows(item, 'Embarque: ', 'Desembarque: ');
+      const classAndSeat = [item.travelClass, item.seat].filter(Boolean).join(' · ');
+      if (classAndSeat) rows.push(classAndSeat);
       return rows.length ? rows : ['Detalhes a preencher'];
     }
     case 'carro-locado': {

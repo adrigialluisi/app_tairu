@@ -23,6 +23,7 @@
     "description": "Monumento mais reconhecível da cidade, erguido pros 400 anos de Buenos Aires.",
     "lat": -34.6037,
     "lng": -58.3816,
+    "wikiTitle": "Obelisco de Buenos Aires",
     "popularity": "turistico"
   },
   {
@@ -42,6 +43,7 @@
     "id": "ba-la-boca-caminito",
     "cityId": "buenos-aires-ar",
     "name": "La Boca — Caminito",
+    "wikiTitle": "Caminito",
     "neighborhood": "La Boca",
     "categories": [
       "cultura",
@@ -56,6 +58,7 @@
     "id": "ba-la-bombonera",
     "cityId": "buenos-aires-ar",
     "name": "La Bombonera",
+    "wikiTitle": "Estadio Alberto J. Armando",
     "neighborhood": "La Boca",
     "categories": [
       "cultura"
@@ -69,6 +72,7 @@
     "id": "ba-feria-san-telmo",
     "cityId": "buenos-aires-ar",
     "name": "Feira de San Telmo",
+    "wikiTitle": "Plaza Dorrego",
     "neighborhood": "San Telmo",
     "categories": [
       "compras",
@@ -83,6 +87,7 @@
     "id": "ba-recoleta-cemiterio",
     "cityId": "buenos-aires-ar",
     "name": "Cemitério da Recoleta",
+    "wikiTitle": "Cementerio de la Recoleta",
     "neighborhood": "Recoleta",
     "categories": [
       "cultura"
@@ -96,6 +101,7 @@
     "id": "ba-basilica-pilar",
     "cityId": "buenos-aires-ar",
     "name": "Basílica Nossa Senhora do Pilar",
+    "wikiTitle": "Basílica de Nuestra Señora del Pilar (Buenos Aires)",
     "neighborhood": "Recoleta",
     "categories": [
       "cultura"
@@ -109,6 +115,7 @@
     "id": "ba-rosedal-palermo",
     "cityId": "buenos-aires-ar",
     "name": "Parque 3 de Febrero — Rosedal",
+    "wikiTitle": "Rosedal de Palermo",
     "neighborhood": "Palermo",
     "categories": [
       "natureza"
@@ -129,6 +136,7 @@
     "description": "Jardim tranquilo dentro do Parque 3 de Febrero, com cerimônia do chá tradicional.",
     "lat": -34.5735,
     "lng": -58.4147,
+    "wikiTitle": "Jardim Japonês de Buenos Aires",
     "popularity": "fora-do-circuito"
   },
   {
@@ -148,6 +156,7 @@
     "id": "ba-malba",
     "cityId": "buenos-aires-ar",
     "name": "MALBA",
+    "wikiTitle": "Museo de Arte Latinoamericano de Buenos Aires",
     "neighborhood": "Palermo",
     "categories": [
       "cultura"
@@ -188,6 +197,7 @@
     "id": "ba-monumental-river",
     "cityId": "buenos-aires-ar",
     "name": "Estádio Monumental de River Plate",
+    "wikiTitle": "Estadio Monumental (River Plate)",
     "neighborhood": "Núñez",
     "categories": [
       "cultura"
@@ -235,6 +245,7 @@
     "description": "Parrilla tradicional com toque sofisticado, aberta desde 2001.",
     "lat": -34.5885,
     "lng": -58.4308,
+    "wikiTitle": "La Cabrera (restaurante)",
     "popularity": "turistico"
   },
   {
@@ -248,6 +259,7 @@
     "description": "Parrilla clássica com ampla carta de vinhos argentinos.",
     "lat": -34.6198,
     "lng": -58.3735,
+    "wikiTitle": "La Brigada (restaurante)",
     "popularity": "turistico"
   },
   {
@@ -295,6 +307,7 @@
     "id": "sc-sky-costanera",
     "cityId": "santiago-cl",
     "name": "Sky Costanera",
+    "wikiTitle": "Gran Torre Costanera",
     "neighborhood": "Providencia",
     "categories": [
       "cultura"
@@ -308,6 +321,7 @@
     "id": "sc-museu-memoria",
     "cityId": "santiago-cl",
     "name": "Museu da Memória e dos Direitos Humanos",
+    "wikiTitle": "Museo de la Memoria y los Derechos Humanos",
     "neighborhood": "Santiago Centro",
     "categories": [
       "cultura"
@@ -321,6 +335,7 @@
     "id": "sc-parque-bicentenario",
     "cityId": "santiago-cl",
     "name": "Parque Bicentenário",
+    "wikiTitle": "Parque Bicentenario (Vitacura)",
     "neighborhood": "Vitacura",
     "categories": [
       "natureza"
@@ -334,6 +349,7 @@
     "id": "sc-museu-precolombino",
     "cityId": "santiago-cl",
     "name": "Museu Chileno de Arte Pré-colombiana",
+    "wikiTitle": "Museo Chileno de Arte Precolombino",
     "neighborhood": "Santiago Centro",
     "categories": [
       "cultura"
@@ -347,6 +363,7 @@
     "id": "sc-museu-belas-artes",
     "cityId": "santiago-cl",
     "name": "Museu Nacional de Belas Artes",
+    "wikiTitle": "Museo Nacional de Bellas Artes (Chile)",
     "neighborhood": "Santiago Centro",
     "categories": [
       "cultura"
@@ -373,6 +390,7 @@
     "id": "sc-palacio-la-moneda",
     "cityId": "santiago-cl",
     "name": "Palácio de La Moneda",
+    "wikiTitle": "Palacio de La Moneda",
     "neighborhood": "Santiago Centro",
     "categories": [
       "cultura"
@@ -386,6 +404,7 @@
     "id": "sc-catedral-metropolitana",
     "cityId": "santiago-cl",
     "name": "Catedral Metropolitana",
+    "wikiTitle": "Catedral Metropolitana de Santiago",
     "neighborhood": "Plaza de Armas",
     "categories": [
       "cultura"
@@ -399,6 +418,7 @@
     "id": "sc-barrio-lastarria",
     "cityId": "santiago-cl",
     "name": "Bairro Lastarria",
+    "wikiTitle": "Barrio Lastarria",
     "neighborhood": "Lastarria",
     "categories": [
       "cultura",
@@ -421,12 +441,14 @@
     "description": "Coração histórico de Santiago, cercado de edifícios emblemáticos.",
     "lat": -33.4372,
     "lng": -70.6506,
+    "wikiTitle": "Plaza de Armas de Santiago",
     "popularity": "turistico"
   },
   {
     "id": "sc-cerro-santa-lucia",
     "cityId": "santiago-cl",
     "name": "Cerro Santa Lucía",
+    "wikiTitle": "Cerro Santa Lucía",
     "neighborhood": "Centro",
     "categories": [
       "natureza"
@@ -440,6 +462,7 @@
     "id": "sc-cerro-san-cristobal",
     "cityId": "santiago-cl",
     "name": "Cerro San Cristóbal",
+    "wikiTitle": "Parque Metropolitano de Santiago",
     "neighborhood": "Parque Metropolitano",
     "categories": [
       "natureza"
@@ -453,6 +476,7 @@
     "id": "sc-mercado-central",
     "cityId": "santiago-cl",
     "name": "Mercado Central",
+    "wikiTitle": "Mercado Central de Santiago",
     "neighborhood": "Centro",
     "categories": [
       "gastronomia",
@@ -467,6 +491,7 @@
     "id": "sc-museu-ceu-aberto-san-miguel",
     "cityId": "santiago-cl",
     "name": "Museu a Céu Aberto de San Miguel",
+    "wikiTitle": "Museo a Cielo Abierto en San Miguel",
     "neighborhood": "San Miguel",
     "categories": [
       "cultura"
@@ -487,6 +512,7 @@
     "description": "Bar-restaurante tradicional chileno, ponto de encontro clássico de Providencia.",
     "lat": -33.4249,
     "lng": -70.6089,
+    "wikiTitle": "Liguria (restaurante)",
     "popularity": "fora-do-circuito"
   },
   {
@@ -520,6 +546,7 @@
     "id": "sc-confiteria-torres",
     "cityId": "santiago-cl",
     "name": "Confitería Torres",
+    "wikiTitle": "Confitería Torres",
     "neighborhood": "Centro",
     "categories": [
       "gastronomia",
@@ -541,12 +568,14 @@
     "description": "Unidade chilena da parrilla argentina renomada, carnes nobres e ambiente descontraído.",
     "lat": -33.4155,
     "lng": -70.5983,
+    "wikiTitle": "La Cabrera (restaurante)",
     "popularity": "turistico"
   },
   {
     "id": "sc-la-chascona",
     "cityId": "santiago-cl",
     "name": "Casa Museo La Chascona",
+    "wikiTitle": "La Chascona",
     "neighborhood": "Bellavista",
     "categories": [
       "cultura"
@@ -573,6 +602,7 @@
     "id": "atc-valle-de-la-luna",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Valle de la Luna",
+    "wikiTitle": "Valle de la Luna (Chile)",
     "neighborhood": "Cordillera de la Sal",
     "categories": [
       "natureza"
@@ -599,6 +629,7 @@
     "id": "atc-laguna-cejar",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Laguna Cejar",
+    "wikiTitle": "Laguna Cejar",
     "neighborhood": "Salar de Atacama",
     "categories": [
       "natureza"
@@ -612,6 +643,7 @@
     "id": "atc-ojos-del-salar",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Ojos del Salar",
+    "wikiTitle": "Salar de Atacama",
     "neighborhood": "Salar de Atacama",
     "categories": [
       "natureza"
@@ -625,6 +657,7 @@
     "id": "atc-laguna-chaxa",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Laguna Chaxa",
+    "wikiTitle": "Laguna Chaxa",
     "neighborhood": "Reserva Los Flamencos",
     "categories": [
       "natureza"
@@ -638,6 +671,7 @@
     "id": "atc-lagunas-altiplanicas",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Lagunas Altiplânicas Miscanti e Miñiques",
+    "wikiTitle": "Laguna Miscanti",
     "neighborhood": "Altiplano",
     "categories": [
       "natureza"
@@ -651,6 +685,7 @@
     "id": "atc-geiseres-del-tatio",
     "cityId": "san-pedro-de-atacama-cl",
     "name": "Géiseres del Tatio",
+    "wikiTitle": "El Tatio",
     "neighborhood": "El Tatio",
     "categories": [
       "natureza"
@@ -684,7 +719,7 @@
     "description": "Igreja de adobe e madeira de cardón do século XVII, na praça central do povoado.",
     "lat": -22.9098,
     "lng": -68.2003,
-    "wikiTitle": "Igreja de San Pedro de Atacama",
+    "wikiTitle": "Iglesia de San Pedro de Atacama",
     "popularity": "fora-do-circuito"
   },
   {

@@ -1,4 +1,6 @@
+import { ArrowLeft, ChevronLeft, House } from 'lucide-react';
 import { usePlatform } from '../../context/PlatformContext';
+import { Icon } from './Icon';
 import styles from './AppBar.module.css';
 
 interface AppBarProps {
@@ -11,7 +13,6 @@ interface AppBarProps {
 
 export function AppBar({ title, subtitle, onBack, onHome }: AppBarProps) {
   const { platform } = usePlatform();
-  const backGlyph = platform === 'ios' ? '‹' : '←';
 
   return (
     <header className={styles.bar}>
@@ -22,11 +23,11 @@ export function AppBar({ title, subtitle, onBack, onHome }: AppBarProps) {
           onClick={onBack}
           aria-label="Voltar"
         >
-          <span aria-hidden="true">{backGlyph}</span>
+          <Icon icon={platform === 'ios' ? ChevronLeft : ArrowLeft} />
         </button>
       ) : onHome ? (
         <button type="button" className={styles.backButton} onClick={onHome} aria-label="Ir pra Início">
-          <span aria-hidden="true">🏠</span>
+          <Icon icon={House} />
         </button>
       ) : (
         platform === 'ios' && <span className={styles.spacer} aria-hidden="true" />

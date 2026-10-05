@@ -10,7 +10,7 @@
 .hotelPreview {
   background: var(--bg-top);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-android-card);
+  border-radius: var(--radius-card);
   padding: var(--space-3);
 }
 

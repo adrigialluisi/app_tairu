@@ -1,3 +1,4 @@
+import { BedDouble, Building, Hotel, House, type LucideIcon } from 'lucide-react';
 import { formatISOToDisplay, fromISODate } from './dateMask';
 import type { HotelEntry } from '../data';
 import type { StayItem, StayType } from '../context/TripContext';
@@ -9,18 +10,18 @@ const TYPE_LABELS: Record<StayType, string> = {
   pousada: 'Pousada',
 };
 
-const TYPE_ICONS: Record<StayType, string> = {
-  hotel: '🏨',
-  apartamento: '🏠',
-  hostel: '🛏️',
-  pousada: '🏡',
+const TYPE_ICONS: Record<StayType, LucideIcon> = {
+  hotel: Hotel,
+  apartamento: Building,
+  hostel: BedDouble,
+  pousada: House,
 };
 
 export function stayTypeLabel(type: StayType): string {
   return TYPE_LABELS[type];
 }
 
-export function stayTypeIcon(type: StayType): string {
+export function stayTypeIcon(type: StayType): LucideIcon {
   return TYPE_ICONS[type];
 }
 

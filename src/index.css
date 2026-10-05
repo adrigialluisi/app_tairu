@@ -1,0 +1,139 @@
+/*
+  Tailwind + shadcn/ui com a identidade do Tairu.
+
+  - Visual = shadcn com o tema do Tairu (docs/ajustes-72-virada-visual-shadcn.md):
+    os componentes migrados são estilizados pelas classes do shadcn, sem
+    CSS Module por cima. Os CSS Modules que sobram são de telas/componentes
+    ainda não migrados; eles herdam o visual novo pelos tokens.
+  - Sem o preflight (reset global) do Tailwind: importamos só theme +
+    utilities, em vez de `@import "tailwindcss"`, pra não quebrar o que ainda
+    não foi revisado. Consequência a lembrar: <button> sem fundo definido
+    herda o cinza padrão do navegador (sempre dar bg-transparent).
+  - O tema do shadcn é mapeado DIRETO pros tokens de src/styles/tokens.css
+    no bloco @theme inline (--color-*). NÃO definimos as variáveis cruas do
+    shadcn (--primary, --accent, --muted, --card…) no :root, porque vários
+    nomes colidem com os nossos com outro significado (nosso --accent é o
+    bordô de destaque; o do shadcn é fundo de hover).
+  - Sem modo escuro: o Tairu não tem tema escuro. O variant `dark` existe
+    só porque os componentes do shadcn o referenciam; nada liga a classe .dark.
+*/
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Fonte e raio dependem da plataforma (switcher iOS/Android). O atributo
+  data-platform fica no <html> também (PlatformRoot), pra valer dentro dos
+  portais do Radix (Dialog, Popover…), que renderizam fora da árvore do app.
+*/
+[data-platform='ios'] {
+  --tairu-font: var(--font-ios);
+  /* 12px: md ≈ 10px (campo, botão) e xl ≈ 17px (cartão) — docs/ajustes-72-...md */
+  --radius: 0.75rem;
+  /* = rounded-xl e rounded-md, pros CSS Modules (o @theme inline não vira variável CSS) */
+  --radius-card: calc(var(--radius) * 1.4);
+  --radius-control: calc(var(--radius) * 0.8);
+}
+
+[data-platform='android'] {
+  --tairu-font: var(--font-android);
+  /* 8px: md ≈ 6px (campo, botão) e xl ≈ 11px (cartão) */
+  --radius: 0.5rem;
+  --radius-card: calc(var(--radius) * 1.4);
+  --radius-control: calc(var(--radius) * 0.8);
+}
+
+/*
+  Tema: visual do shadcn com o bordô do Tairu (docs/ajustes-72-virada-visual-shadcn.md,
+  seção 2). Os valores moram em src/styles/tokens.css (fonte única, com o
+  contraste de cada par anotado lá); aqui só o mapeamento pros nomes do shadcn.
+  Nada de creme: fundo branco, tons stone, bordô só no destaque.
+*/
+@theme inline {
+  /* tipografia: a mesma pilha por plataforma do resto do app */
+  --font-sans: var(--tairu-font, var(--font-ios));
+  --font-heading: var(--font-sans);
+
+  /* superfícies e texto */
+  --color-background: #ffffff;
+  --color-foreground: var(--text); /* stone-900, 17.49:1 */
+  --color-card: var(--card); /* branco */
+  --color-card-foreground: var(--text);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--text);
+
+  /* ação principal = bordô */
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--text-on-dark); /* 6.08:1 (hover: --accent-dark, 9.67:1) */
+
+  /* ação secundária e fundos sutis = stone-100 */
+  --color-secondary: var(--bg-top);
+  --color-secondary-foreground: var(--text); /* 16.03:1 */
+  --color-muted: var(--bg-top);
+  --color-muted-foreground: var(--muted); /* stone-600: 7.63:1 no branco, 6.99:1 no muted */
+
+  /* hover de linha/item do shadcn (≠ do nosso --accent, que é o bordô) */
+  --color-accent: var(--bg-top);
+  --color-accent-foreground: var(--text);
+
+  /* destaque suave: chip selecionado, selo bordô (texto --accent-dark, 8.62:1) */
+  --color-accent-soft: var(--accent-soft);
+  --color-page: var(--page);
+  --color-border-strong: var(--border-strong);
+
+  /* erro / ação destrutiva e sucesso */
+  --color-destructive: var(--error); /* 6.57:1 */
+  --color-success: var(--success); /* 6.29:1 */
+  --color-destructive-soft: var(--error-soft);
+  --color-success-soft: var(--success-soft);
+
+  /* bordas: decorativa vs. funcional (campo) */
+  --color-border: var(--card-border); /* stone-200, decorativa */
+  --color-input: var(--field-border); /* stone-500, 4.8:1 */
+  --color-ring: var(--focus-ring); /* bordô, 6.08:1 */
+
+  /* gráficos: valores e contraste em tokens.css (--chart-1 a --chart-6) */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  /* sidebar (não usamos, mas os componentes referenciam) */
+  --color-sidebar: var(--card);
+  --color-sidebar-foreground: var(--text);
+  --color-sidebar-primary: var(--accent);
+  --color-sidebar-primary-foreground: var(--text-on-dark);
+  --color-sidebar-accent: var(--bg-top);
+  --color-sidebar-accent-foreground: var(--text);
+  --color-sidebar-border: var(--card-border);
+  --color-sidebar-ring: var(--focus-ring);
+
+  /* escala de raio do preset Nova, a partir do --radius da plataforma */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+  Base do shadcn, em camada. Continua SEM o preflight (reset completo), pra não
+  quebrar telas ainda não revisadas — só o `body` ganha fundo, cor, fonte e
+  suavização (docs/ajustes-72-...md, seção 1).
+*/
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}

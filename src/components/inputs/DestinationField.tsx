@@ -1,9 +1,14 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { MapPin, TriangleAlert } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { CommandItem } from '@/components/ui/command';
 import { searchCities, type CityEntry } from '../../data';
 import type { TripDestination } from '../../context/TripContext';
 import { Chip } from './Chip';
 import { CurrencySelect } from './CurrencySelect';
 import { DateRangeField } from './DateRangeField';
+import { SearchCombobox, comboboxItemClass } from './SearchCombobox';
+import { Icon } from '../shell/Icon';
+import { Card } from '@/components/ui/card';
 import styles from './DestinationField.module.css';
 
 interface DestinationFieldProps {
@@ -27,11 +32,8 @@ export function DestinationField({
 }: DestinationFieldProps) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
   const baseId = useId();
   const inputId = `${baseId}-destination-input`;
-  const listboxId = `${baseId}-destination-listbox`;
   const errorId = `${baseId}-destination-error`;
 
   const excludeIds = useMemo(() => new Set(destinations.map((d) => d.cityId)), [destinations]);
@@ -41,27 +43,7 @@ export function DestinationField({
     onAdd({ cityId: city.id, city: city.city, country: city.country, currencyCode: city.currencyCode });
     setQuery('');
     setOpen(false);
-    setActiveIndex(-1);
-    inputRef.current?.focus();
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (!open) setOpen(true);
-      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter') {
-      if (open && activeIndex >= 0 && suggestions[activeIndex]) {
-        e.preventDefault();
-        selectCity(suggestions[activeIndex]);
-      }
-    } else if (e.key === 'Escape') {
-      setOpen(false);
-      setActiveIndex(-1);
-    }
+    document.getElementById(inputId)?.focus();
   }
 
   const showListbox = open && query.trim().length >= 2;
@@ -78,59 +60,26 @@ export function DestinationField({
         vem depois, abaixo dele, pra ele não "descer" na tela conforme a
         pessoa vai adicionando destinos.
       */}
-      <div className={styles.comboWrap}>
-        <div className={styles.inputWrap}>
-          <input
-            ref={inputRef}
-            id={inputId}
-            className={styles.input}
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={showListbox}
-            aria-controls={listboxId}
-            aria-labelledby={`${baseId}-label`}
-            aria-activedescendant={
-              showListbox && activeIndex >= 0 ? `${baseId}-option-${activeIndex}` : undefined
-            }
-            aria-describedby={error ? errorId : undefined}
-            placeholder="Ex.: Buenos Aires"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-              setActiveIndex(-1);
-            }}
-            onFocus={() => setOpen(true)}
-            onBlur={() => setOpen(false)}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-          />
-        </div>
-        {showListbox && (
-          <ul className={styles.listbox} id={listboxId} role="listbox" aria-label="Sugestões de destino">
-            {suggestions.length === 0 ? (
-              <li className={styles.empty}>Nenhuma cidade encontrada.</li>
-            ) : (
-              suggestions.map((city, index) => (
-                <li key={city.id} role="presentation">
-                  <button
-                    type="button"
-                    id={`${baseId}-option-${index}`}
-                    role="option"
-                    aria-selected={index === activeIndex}
-                    className={`${styles.option} ${index === activeIndex ? styles.optionActive : ''}`}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => selectCity(city)}
-                  >
-                    <span>{city.city}</span>
-                    <span className={styles.optionCountry}>{city.country}</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        )}
-      </div>
+      <SearchCombobox
+        id={inputId}
+        value={query}
+        onValueChange={setQuery}
+        open={showListbox}
+        onOpenChange={setOpen}
+        placeholder="Ex.: Buenos Aires"
+        listLabel="Sugestões de destino"
+        emptyText="Nenhuma cidade encontrada."
+        aria-labelledby={`${baseId}-label`}
+        aria-describedby={error ? errorId : undefined}
+        invalid={!!error}
+      >
+        {suggestions.map((city) => (
+          <CommandItem key={city.id} value={city.id} onSelect={() => selectCity(city)} className={comboboxItemClass}>
+            <span>{city.city}</span>
+            <span className="text-(length:--text-sm) text-muted-foreground">{city.country}</span>
+          </CommandItem>
+        ))}
+      </SearchCombobox>
 
       {destinations.length > 0 && (
         <ul className={styles.chipList}>
@@ -148,7 +97,7 @@ export function DestinationField({
 
       {error && (
         <p id={errorId} role="alert" className={styles.error}>
-          <span aria-hidden="true">⚠</span> {error}
+          <Icon icon={TriangleAlert} /> {error}
         </p>
       )}
 
@@ -156,34 +105,52 @@ export function DestinationField({
         <div className={styles.detailsGroup}>
           <span className={styles.detailsGroupLabel}>Detalhes por destino</span>
           <ul className={styles.detailsList}>
-            {destinations.map((d) => {
+            {destinations.map((d, index) => {
               const currencyId = `${baseId}-currency-${d.id}`;
+              const headingId = `${baseId}-details-${d.id}`;
               return (
-                <li key={d.id} className={styles.detailsCard}>
-                  {/* Sem repetir o nome da cidade solto aqui (já aparece no
-                      chip acima e no label visível "Datas em X" abaixo) —
-                      CurrencySelect carrega seu próprio label acessível
-                      ("Moeda de X") pra diferenciar cada select pra quem
-                      usa leitor de tela. */}
+                /*
+                  Cada cartão diz de qual cidade é (cabeçalho com ordem, cidade e
+                  país). O cartão é um grupo nomeado pelo cabeçalho, então o leitor
+                  de tela anuncia "Buenos Aires, Argentina" antes de "Moeda" e
+                  "Datas da estadia" — os rótulos visíveis não precisam repetir a cidade.
+                */
+                <Card asChild className="px-4">
+                <li key={d.id} className={styles.detailsCard} role="group" aria-labelledby={headingId}>
+                  <div className={styles.detailsHeader}>
+                    <span className={styles.detailsOrder} aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <span className={styles.detailsPin} aria-hidden="true">
+                      <Icon icon={MapPin} />
+                    </span>
+                    <div id={headingId} className={styles.detailsTitleWrap}>
+                      <h4 className={styles.detailsCity}>{d.city}</h4>
+                      <p className={styles.detailsCountry}>{d.country}</p>
+                    </div>
+                  </div>
                   <CurrencySelect
                     id={currencyId}
-                    label={`Moeda de ${d.city}`}
+                    label="Moeda"
+                    showLabel
+                    fullWidth
                     value={d.currencyCode}
                     onChange={(code) => onCurrencyChange(d.id, code)}
                   />
                   <DateRangeField
-                    label={`Datas em ${d.city}`}
+                    label="Datas da estadia"
                     startISO={d.dateStart}
                     endISO={d.dateEnd}
                     onChange={(start, end) => onDateRangeChange(d.id, start, end)}
                   />
                 </li>
+                </Card>
               );
             })}
           </ul>
           {dateOverlapError && (
             <p role="alert" className={styles.error}>
-              <span aria-hidden="true">⚠</span> {dateOverlapError}
+              <Icon icon={TriangleAlert} /> {dateOverlapError}
             </p>
           )}
         </div>

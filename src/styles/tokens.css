@@ -1,58 +1,78 @@
 /*
-  Tokens de identidade visual — ponto de partida extraído dos prints do app
-  atual (ver CLAUDE.md). Valores abaixo já foram ajustados e VALIDADOS contra
-  WCAG 2.1 AA (razão de contraste calculada via fórmula de luminância
-  relativa). Regras de uso que garantem os pares permanecerem em conformidade:
+  Tokens de identidade visual — visual shadcn com o bordô do Tairu (ver
+  docs/ajustes-72-virada-visual-shadcn.md, seção 2). Fundo branco, tons quentes
+  da escala stone do Tailwind, bordô só nos destaques. Sai o creme e o gradiente
+  pêssego→verde-azulado (só a Splash mantém o grafismo leve dela).
 
-  - --text (#2B2A2E) pode ser usado sobre --card, --bg-top, --bg-mid e
-    --bg-low (mínimo 6.99:1). NUNCA usar --text sobre --bg-bottom
-    (cai pra 2.45:1) — nessa faixa do gradiente, usar --text-on-dark.
-  - --muted (#676155, escurecido do valor original #726C5E pra passar no
-    teste) só é garantido em --card (5.70:1) e --bg-top (4.54:1) pra texto
-    normal. Por isso, nesta versão do protótipo, todo texto secundário/muted
-    fica dentro de superfícies --card — nunca solto sobre --bg-mid/low/bottom.
-  - --accent como TEXTO só é usado em texto grande (o wordmark, ≥ 32px
-    bold) sobre --bg-top (4.50:1, passa o limite de 3:1 de texto grande com
-    folga) ou como texto normal sobre --card (5.64:1). Como FUNDO de botão
-    com texto branco em cima, passa em qualquer lugar (6.08:1+).
-  - --field-border (#5B564A, criado à parte do --card-border decorativo)
-    é o único usado como borda funcional de input/chip — passa 3:1 em
-    QUALQUER ponto do gradiente (mínimo 3.58:1 sobre --bg-low) e sobre
-    --card (6.77:1).
-  - --card-border (#E4D6B6) é puramente decorativo (divisor sutil de card),
-    nunca é a única pista de um limite funcional.
-  - --focus-ring reaproveita --accent-dark: 8.97:1 (card), 7.15:1 (bg-top),
-    5.88:1 (bg-mid), 4.55:1 (bg-low) — visível em qualquer fundo do app.
+  Os nomes antigos continuam existindo, apontando pros valores novos, pra que
+  as telas ainda não revisadas herdem o visual novo sem mudar código. O tema
+  do shadcn (src/index.css, @theme inline) lê destes mesmos tokens.
+
+  Contraste (WCAG 2.1 AA, fórmula de luminância relativa), conferido em 05/out/2026:
+  - --text (stone-900) 17.49:1 no branco, 16.03:1 no --bg-top (stone-100),
+    13.93:1 no --bg-low (stone-200, fundo dos avatares).
+  - --muted (stone-600) 7.63:1 no branco, 6.99:1 no stone-100, 6.08:1 no stone-200.
+  - --field-border (stone-500) é a borda funcional de campo: 4.8:1 no branco,
+    4.4:1 no stone-100 (mínimo de 3:1). Também é a cor do placeholder (4.8:1).
+  - --card-border (stone-200) é decorativa, nunca a única pista de um limite.
+  - --accent (bordô) 6.08:1 no branco e 5.58:1 no stone-100, como texto ou
+    anel de foco; branco sobre ele 6.08:1; branco sobre --accent-dark 9.67:1.
+  - --accent-soft (bordô 6%) só como fundo: --accent-dark sobre ele 8.62:1.
+  - --error 6.57:1 no branco, 6.03:1 no stone-100, 5.86:1 no --accent-soft.
+  - --success 6.29:1 no branco, 5.77:1 no stone-100 (sempre com ícone).
 */
 
 :root {
-  /* gradiente de fundo da identidade visual */
-  --bg-top: #f3dab8;
-  --bg-mid: #decca9;
-  --bg-low: #a6bab3;
-  --bg-bottom: #4c6a70;
+  /* fundos sutis (antes: o gradiente pêssego→verde-azulado) */
+  --bg-top: #f5f5f4; /* stone-100 — fundo sutil, trilho das abas, estado vazio */
+  --bg-mid: #e7e5e4; /* stone-200 */
+  --bg-low: #e7e5e4; /* stone-200 — fundo dos avatares */
+  --bg-bottom: #57534e; /* stone-600 — só em gráfico; branco sobre ele 7.63:1 */
 
   /* marca / destaque */
   --accent: #b23345;
-  --accent-dark: #7e2331;
+  --accent-dark: #7e2331; /* hover/pressed do bordô */
+  --accent-soft: #fbeff1; /* bordô 6% — chip selecionado, selo bordô, hover do botão secundário */
 
-  /* superfícies */
-  --card: #fbf6ea;
-  --card-border: #e4d6b6; /* decorativo apenas */
+  /* superfícies (docs/ajustes-73-...md, item 1): miolo da tela em stone-100;
+     AppBar, menu, cartões, campos, chips e botões em branco, destacados do fundo */
+  --page: #f5f5f4; /* = --bg-top; texto 16.03:1, --muted 6.99:1, --accent 5.58:1 */
+  --placeholder: #ece9e6; /* bloco sem foto — ícone stone-500 sobre ele 3.97:1 */
+  --border-strong: #d6d3d1; /* stone-300, linha de base das abas Android */
+  --card: #ffffff; /* era creme #fbf6ea */
+  --card-border: #e7e5e4; /* stone-200 — decorativo apenas */
 
   /* texto */
-  --text: #2b2a2e;
+  --text: #1c1917; /* stone-900 */
   --text-on-dark: #ffffff;
-  --muted: #676155;
+  --muted: #57534e; /* stone-600 */
 
   /* bordas funcionais / foco */
-  --field-border: #5b564a;
-  --field-border-focus: var(--accent-dark);
-  --focus-ring: var(--accent-dark);
+  --field-border: #78716c; /* stone-500 */
+  --field-border-focus: var(--accent);
+  --focus-ring: var(--accent);
 
   /* estado */
-  --error: var(--accent-dark);
+  --error: #b42318;
+  --error-soft: #fef3f2; /* fundo do selo de alerta — --error sobre ele 6.05:1 */
   --success: #2f6b4f; /* verde escuro — só usado com ícone, nunca sozinho */
+  --success-soft: #ecf6f0; /* fundo do selo de sucesso — --success sobre ele 5.70:1 */
+
+  /*
+    Gráfico de Custos (docs/ajustes-74-...md): 6 categorias, tons da paleta
+    (bordô e stone) alternando escuro/claro na ordem das categorias, pra que
+    vizinhos na barra se diferenciem (≥ 3.03:1 entre vizinhos) — e uma linha
+    branca separa os segmentos. A legenda sempre traz ícone + nome + valor.
+  */
+  --chart-1: #b23345; /* transporte */
+  --chart-2: #d6d3d1; /* hospedagem */
+  --chart-3: #7e2331; /* alimentação */
+  --chart-4: #e7e5e4; /* passeios */
+  --chart-5: #57534e; /* compras */
+  --chart-6: #a8a29e; /* outros */
+
+  /* texto do selo neutro (stone-700 sobre stone-100: 9.42:1) */
+  --text-badge: #44403c;
 
   /* tipografia */
   --font-ios:
@@ -61,38 +81,36 @@
   --font-android: 'Roboto', 'Segoe UI', sans-serif;
 
   /*
-    Escala tipográfica — antes cada componente usava um font-size solto
-    (Home tinha 20px pro nome da viagem, AppBar 19px pro título, etc., sem
-    token nenhum). Adicionado agora como base pra fase 2 (componentes)
-    reaproveitar em vez de continuar inventando valor por componente. Ver
-    docs/ajustes-34-tokens-estilo-referencia.md — nenhum componente usa
-    esses tokens ainda, só a fase 2 em diante.
+    Escala tipográfica (docs/ajustes-72-virada-visual-shadcn.md, seção 3):
+    pesos mais leves, como no shadcn — títulos 600, rótulos 500, corpo 400,
+    nada em 800. Nomes antigos mantidos (--font-weight-bold continua sendo
+    "o mais forte da escala", agora 600).
   */
-  --text-2xl: 28px; /* título de tela, ex. "Olá! 👋" */
-  --text-xl: 20px; /* nome de card grande, título de seção */
-  --text-lg: 17px; /* título de item de lista, linha de timeline */
-  --text-base: 15px; /* corpo padrão */
-  --text-sm: 13px; /* metadado, legenda, texto --muted */
+  --text-2xl: 24px; /* título de tela */
+  --text-xl: 18px; /* título de seção */
+  --text-lg: 16px; /* título de cartão */
+  --text-base: 15px; /* corpo */
+  --text-sm: 13px; /* auxiliar, metadado, texto --muted */
 
-  --font-weight-bold: 800;
-  --font-weight-semibold: 700;
-  --font-weight-medium: 600;
+  --font-weight-bold: 600;
+  --font-weight-semibold: 600;
+  --font-weight-medium: 500;
   --font-weight-regular: 400;
 
-  --line-height-tight: 1.2;
+  --line-height-tight: 1.25;
   --line-height-normal: 1.4;
 
   /*
-    Espaçamento — grade de 8px (ver CLAUDE.md, "Espaçamento e organização
-    visual"). Nomeados como space-N = N × 4px, nunca usar valor solto fora
-    desta escala. Hierarquia esperada em toda tela: o espaço ENTRE grupos
-    (--space-8, 32px — ex. de "Ritmo do dia a dia" até "Orçamento") tem
-    que ser visivelmente maior que o espaço DENTRO de um grupo (--space-2
-    a --space-4, 8-16px — ex. de opção a opção, título de pergunta até
-    suas opções, ou label a input). Padronizado em --space-4 (16px) pro
-    título→opções e entre linhas de pills no Quiz — ver
-    OptionChipGroup.module.css.
+    Espaçamento (docs/ajustes-72-virada-visual-shadcn.md, seção 3) — nunca
+    usar valor solto fora desta escala:
+    - margem lateral da tela, padding de cartão, entre campos: --space-4 (16px)
+    - entre seções/blocos da tela: --space-6 (24px)
+    - entre itens de lista: --space-2 (8px) ou divisória
+    - rótulo → campo e campo → ajuda/erro: --space-label (6px)
+    A hierarquia continua: espaço ENTRE blocos visivelmente maior que DENTRO
+    de um bloco.
   */
+  --space-label: 6px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -102,21 +120,21 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  --radius-ios-input: 999px;
-  --radius-ios-card: 24px;
-  --radius-ios-sheet: 28px;
-  --radius-android-input: 14px;
-  --radius-android-card: 16px; /* era 12px — ver docs/ajustes-34-tokens-estilo-referencia.md */
-  --radius-android-sheet: 16px;
-
   /*
-    Raio de cantos pra CONTEÚDO com foto (hero card, cards de lugar, fotos
-    de capa) — único pras duas plataformas, porque as referências não
-    diferenciam isso por sistema (diferente dos raios de CHROME de
-    navegação acima, que continuam com --radius-ios-card/
-    --radius-android-card do jeito que estão).
+    Raios (ajustes-72, seção 2): sem pílula gigante, parecidos nos dois
+    sistemas. Batem com a escala do shadcn no src/index.css (--radius 12px no
+    iOS / 8px no Android): campo e botão ≈ rounded-md, cartão ≈ rounded-xl.
+    Pílula total (999px) só em chip pequeno, selo e avatar.
   */
-  --radius-photo: 20px;
+  --radius-ios-input: 10px;
+  --radius-ios-card: 16px;
+  --radius-ios-sheet: 16px;
+  --radius-android-input: 6px;
+  --radius-android-card: 12px;
+  --radius-android-sheet: 12px;
+
+  /* conteúdo com foto (hero card, cards de lugar) — igual ao cartão */
+  --radius-photo: 12px;
 
   --touch-target: 44px;
 
@@ -128,8 +146,13 @@
   */
   --pill-icon-inset: var(--space-3);
 
-  /* Sombras mais suaves e "flutuantes", pra cards com foto — ver docs/ajustes-34-tokens-estilo-referencia.md */
-  --shadow-card: 0 4px 20px rgba(43, 42, 46, 0.1); /* era 0 2px 12px rgba(43, 42, 46, 0.08) */
-  --shadow-sheet: 0 -4px 24px rgba(43, 42, 46, 0.18);
-  --shadow-photo: 0 8px 28px rgba(43, 42, 46, 0.14); /* nova, só pra fotos grandes tipo hero card */
+  /*
+    Sombras (ajustes-72, seção 2): cartão sem sombra, só borda. Sombra sutil
+    (equivalente ao shadow-sm do Tailwind) só no que flutua: aba ativa no iOS,
+    popover, toast, barra inferior.
+  */
+  --shadow-card: none;
+  --shadow-sheet: 0 -1px 3px rgba(28, 25, 23, 0.06);
+  --shadow-photo: none;
+  --shadow-float: 0 1px 3px rgba(28, 25, 23, 0.1), 0 1px 2px rgba(28, 25, 23, 0.06);
 }

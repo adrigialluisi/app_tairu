@@ -5,26 +5,6 @@
   flex-wrap: wrap;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px var(--space-2);
-  border-radius: 999px;
-  border: 1px solid currentColor;
-}
-
-.badgeAlert {
-  color: var(--error);
-}
-
-.badgeSoon {
-  color: var(--muted);
-}
-
 .showButton {
   display: inline-flex;
   align-items: center;
@@ -33,7 +13,23 @@
   background: none;
   border: none;
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
 }
+
+/* alvo de toque de 44px pro telefone da central (mesmo visual do OtherItemCard) */
+.phoneLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+}
+
+/* Selos de acesso (ajustes-66) — ícone + texto, nunca só cor */
+.accessBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+

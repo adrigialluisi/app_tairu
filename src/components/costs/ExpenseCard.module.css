@@ -1,0 +1,89 @@
+.card {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--bg-top);
+  font-size: 20px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.amounts {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  text-align: right;
+}
+
+.amount {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.converted {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* alinha o selo com o texto, depois do círculo de 40px + gap */
+  padding-left: calc(40px + var(--space-3));
+}
+
+.editButton {
+  margin-left: auto;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}

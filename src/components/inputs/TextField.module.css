@@ -1,53 +1,9 @@
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+/*
+  O visual vem do shadcn + Tailwind (TextField.tsx). Fica aqui, sem camada,
+  só comportamento: o foco que mora no wrapper e o autofill do navegador.
+*/
 
-.label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.inputWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--card);
-  border: 1px solid var(--field-border);
-}
-
-:global([data-platform='ios']) .inputWrap {
-  border-radius: var(--radius-ios-input);
-}
-
-:global([data-platform='android']) .inputWrap {
-  border-radius: var(--radius-android-input);
-}
-
-.inputWrapError {
-  border-color: var(--error);
-  border-width: 2px;
-}
-
-.input {
-  flex: 1;
-  min-height: var(--touch-target);
-  padding: 0 var(--space-4);
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 16px;
-  outline: none;
-  min-width: 0;
-}
-
-.input::placeholder {
-  color: var(--muted);
-  opacity: 1;
-}
-
+/* o foco aparece no wrapper (focus-within), não no input dentro dele */
 .input:focus-visible {
   outline: none;
 }
@@ -67,19 +23,4 @@
   box-shadow: 0 0 0 1000px var(--card) inset;
   -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
   transition: background-color 9999s ease-in-out 0s;
-}
-
-.inputWrap:focus-within {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--error);
 }

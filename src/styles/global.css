@@ -33,13 +33,15 @@ input {
   font-family: inherit;
 }
 
-/* Foco de teclado visível em qualquer elemento interativo, em qualquer
-   fundo do app (ver nota de contraste em tokens.css). Nunca remover sem
+/* Foco de teclado visível em qualquer elemento interativo: anel de 2px
+   bordô (6.08:1 no branco, 5.58:1 no stone-100 — ver tokens.css), que segue
+   o raio do próprio elemento. Sem `border-radius` aqui de propósito: antes
+   ele forçava 4px e obrigava cada componente a reafirmar o raio num CSS
+   Module (docs/ajustes-72-virada-visual-shadcn.md). Nunca remover sem
    substituto equivalente. */
 :focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 a {

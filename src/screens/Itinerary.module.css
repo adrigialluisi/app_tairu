@@ -6,8 +6,8 @@
 }
 
 .title {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: var(--text-2xl);
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }
@@ -18,18 +18,30 @@
   margin: 0;
 }
 
+/* entre blocos da tela: 24px (ajustes-72, seção 3) */
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-6);
+}
+
+/*
+  Aba Roteiro (Lista e Mapa): 16px entre a barra Lista/Mapa, as abas de destino,
+  as pílulas de data e o conteúdo (docs/ajustes-73-...md, item 3) — antes o
+  painel da Lista não tinha gap e o primeiro dia ficava colado nas pílulas.
+*/
+.viewPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .noData {
   font-size: 14px;
   color: var(--muted);
   background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-android-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
   padding: var(--space-4);
   margin: 0;
 }
@@ -37,36 +49,34 @@
 .dayList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
 }
 
 .dayCard {
-  background: var(--card);
-  border: 1.5px solid var(--field-border);
-  border-radius: var(--radius-android-card);
-  padding: var(--space-4);
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
   display: flex;
   flex-direction: column;
+  /* cabeçalho → blocos → links: o mesmo 16px entre todos os blocos do cartão (ajustes-72) */
   gap: var(--space-4);
 }
 
 .dayHeader {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .dayTitle {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }
 
+/* subtítulo de cartão: 13px stone-600 (ajustes-72, seção 4) */
 .daySubtitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent-dark);
+  font-size: var(--text-sm);
+  color: var(--muted);
 }
 
 .timelineList {
@@ -77,28 +87,27 @@
   padding: 0;
 }
 
-.moveSelect {
-  border: 1.5px solid var(--field-border);
-  border-radius: var(--radius-android-input);
-  background: var(--card);
+.moveLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   color: var(--text);
-  font-size: 13px;
-  padding: var(--space-1) var(--space-2);
-  min-height: 36px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .skipButton {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border: 1.5px solid var(--field-border);
-  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-control);
   background: var(--card);
   color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--text-sm);
+  font-weight: 500;
   padding: var(--space-1) var(--space-3);
-  min-height: 32px;
+  min-height: var(--touch-target);
   cursor: pointer;
 }
 
@@ -115,12 +124,16 @@
 
 .dayTipsLink {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
   background: none;
   border: none;
   padding: 0;
   color: var(--accent-dark);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -132,8 +145,8 @@
 }
 
 .tipsCategoryTitle {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--text-lg);
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }
@@ -147,30 +160,27 @@
 .tipsItem {
   display: flex;
   gap: var(--space-2);
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--text);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .bullet {
   flex: 0 0 auto;
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .alsoVisit {
-  background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-android-card);
-  padding: var(--space-4);
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
 .alsoVisitTitle {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text);
   margin: 0;
 }
@@ -178,12 +188,12 @@
 .alsoVisitItem {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .alsoVisitName {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -192,59 +202,90 @@
   color: var(--muted);
 }
 
-/* aba Lugares — herdado de SelectPlaces.tsx (ver docs/ajustes-13-navegacao-menu-fixo.md, seção 5) */
-
-.placeList {
-  display: flex;
-  flex-direction: column;
+/* Atalho "💱 Abrir conversor" em Dicas locais → Dinheiro e câmbio */
+.converterLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-.addCustom {
+/* Roteiro → Lista: dois blocos por dia, "Agenda do dia" e "Lugares pra visitar" (docs/ajustes-63) */
+.dayBlocks {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.customRow {
+/* rótulo do bloco → conteúdo: 8px */
+.dayBlock {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
-  background: var(--card);
-  border: 1.5px solid var(--field-border);
-  border-radius: var(--radius-android-card);
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.customLabel {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.blockLabel {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--muted);
 }
 
-.removeButton {
+.agendaList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Link dentro de texto corrido — área de toque de 44px sem empurrar a linha */
+.inlineLink {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
+  min-height: var(--touch-target);
+  margin-block: calc(var(--space-3) * -1);
+  vertical-align: middle;
+  padding: 0;
+  background: none;
   border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-dark);
+  text-decoration: underline;
   cursor: pointer;
-  border-radius: 50%;
 }
 
-.removeButton:hover,
-.removeButton:active {
-  background: rgba(43, 42, 46, 0.08);
+/*
+  "Ver dicas locais" + "Fotos do dia": rodapé do cartão, separado por uma
+  divisória em vez de um vão grande (ajustes-72, seção 3). Lado a lado quando
+  cabem; quando quebram, as linhas de 44px (alvo de toque) ficam coladas.
+*/
+.dayLinks {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-4);
+  row-gap: 0;
+  border-top: 1px solid var(--card-border);
+  padding-top: var(--space-1);
+}
+
+/* Parada sugerida/querida por convidado (ajustes-67) */
+.groupLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--text);
 }

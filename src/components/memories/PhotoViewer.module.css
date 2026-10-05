@@ -1,0 +1,125 @@
+/* Dialog em tela cheia (posição, foco e Esc vêm do Dialog do shadcn) — fundo escuro com o token de texto */
+.overlay {
+  background: var(--text);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-on-dark);
+}
+
+.counter {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ✕ ‹ › — 44px, claros sobre o fundo escuro */
+.iconButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-on-dark);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iconButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* anel de foco claro: o --focus-ring (bordô) some sobre o fundo escuro */
+.iconButton:focus-visible {
+  outline-color: var(--text-on-dark);
+  border-radius: 999px;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+}
+
+.image {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-4);
+  padding: var(--space-4);
+  background: var(--card);
+  border-radius: var(--radius-card);
+}
+
+.tagRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.where {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.select {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-android-input);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.removeButton {
+  align-self: flex-start;
+  min-height: var(--touch-target);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}

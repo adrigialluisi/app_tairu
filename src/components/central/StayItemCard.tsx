@@ -1,7 +1,10 @@
+import { Paperclip } from 'lucide-react';
 import { useState } from 'react';
 import { getHotel } from '../../data';
 import { hotelPhotoUrl, stayItemDetailRows, stayItemTitle, stayTypeIcon, stayTypeLabel } from '../../utils/staySummary';
 import type { StayItem } from '../../context/TripContext';
+import { Icon } from '../shell/Icon';
+import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 import stayStyles from './StayItemCard.module.css';
 
@@ -11,7 +14,7 @@ export function StayItemCard({ item, onEdit }: { item: StayItem; onEdit: () => v
   const photo = photoFailed ? null : hotel ? hotelPhotoUrl(hotel) : null;
 
   return (
-    <div className={styles.card}>
+    <Card className={`px-4 ${styles.card}`}>
       <div className={styles.header}>
         {photo ? (
           <img
@@ -23,7 +26,7 @@ export function StayItemCard({ item, onEdit }: { item: StayItem; onEdit: () => v
           />
         ) : (
           <span className={styles.icon} aria-hidden="true">
-            {stayTypeIcon(item.type)}
+            <Icon icon={stayTypeIcon(item.type)} />
           </span>
         )}
         <span className={stayStyles.titleWrap}>
@@ -51,9 +54,9 @@ export function StayItemCard({ item, onEdit }: { item: StayItem; onEdit: () => v
       </div>
       {item.voucherFileName && (
         <p className={styles.voucherNote}>
-          <span aria-hidden="true">📎</span> Voucher anexado
+          <Icon icon={Paperclip} /> Voucher anexado
         </p>
       )}
-    </div>
+    </Card>
   );
 }

@@ -1,7 +1,9 @@
+/* visual shadcn (docs/ajustes-72-...md): fundo branco, borda superior stone-200, sombra sutil (flutua) */
 .nav {
   display: flex;
-  border-top: 1.5px solid var(--card-border);
+  border-top: 1px solid var(--card-border);
   background: var(--card);
+  box-shadow: var(--shadow-sheet);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: bottomNavIn 200ms ease-out;
 }
@@ -33,7 +35,8 @@
   gap: 2px;
   min-height: var(--touch-target);
   padding: var(--space-2) 2px;
-  color: var(--muted);
+  /* inativo stone-500 (4.8:1); ativo bordô (6.08:1) */
+  color: var(--field-border);
   text-decoration: none;
 }
 
@@ -42,9 +45,10 @@
   display: inline-flex;
 }
 
+/* ícone lucide de 22px (ajustes-72, seção 4), cor herdada do item */
 .icon {
-  font-size: 17px;
-  line-height: 1;
+  width: 22px;
+  height: 22px;
 }
 
 /*
@@ -54,42 +58,22 @@
   destaque de estado ativo/positivo do app); count usa --muted,
   deliberadamente mais discreto.
 */
-.badgeCheck,
-.badgeCount {
+/* posição dos selos de progresso no canto do ícone (o visual vem do Badge, BottomNav.tsx) */
+.progressBadge {
   position: absolute;
   top: -4px;
   right: -6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 2px;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--card);
-}
-
-.badgeCheck {
-  background: var(--accent);
-}
-
-.badgeCount {
-  background: var(--muted);
 }
 
 /*
   5 itens (ver docs/ajustes-26-central-inicio-documentos-splash.md), 375px
-  de largura ÷ 5 = 75px por item, menos padding. "Convidados" é o rótulo
-  mais longo (10 caracteres) — 9px dá uma folga real, não só o mínimo que
-  cabe raspando. Convenção de tab bar (rótulo sempre menor que texto de
-  corpo) — não é o padrão geral de 14px+ do resto do app.
+  de largura ÷ 5 = 75px por item, menos padding. Rótulo de 11px (ajustes-72,
+  seção 4): "Convidados", o mais longo, ocupa ~58px — cabe com folga.
+  Convenção de tab bar (rótulo menor que texto de corpo).
 */
 .label {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
   line-height: 1.1;
   letter-spacing: -0.1px;
   text-align: center;
@@ -97,5 +81,5 @@
 }
 
 .itemActive {
-  color: var(--accent-dark);
+  color: var(--accent);
 }

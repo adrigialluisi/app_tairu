@@ -18,7 +18,7 @@
   background: var(--accent);
   color: var(--text-on-dark);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,8 +27,8 @@
 .stepTitle {
   flex: 1;
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--text-xl);
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -36,7 +36,7 @@
   background: none;
   border: none;
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   min-height: var(--touch-target);

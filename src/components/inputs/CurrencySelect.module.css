@@ -1,61 +1,44 @@
+/*
+  O visual vem do Native Select do shadcn (CurrencySelect.tsx). Fica aqui só o
+  que o Tailwind não cobre: a container query do nome curto, o texto à mostra
+  por cima do <select> e o contorno global de foco, que no campo vira borda +
+  anel (igual ao TextField).
+*/
 .wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  background: var(--card);
-  border: 1.5px solid var(--field-border);
-  min-height: 40px;
+  /* referência da container query do .shortName abaixo */
+  container-type: inline-size;
 }
 
-:global([data-platform='ios']) .wrap {
-  border-radius: var(--radius-ios-input);
-}
-
-:global([data-platform='android']) .wrap {
-  border-radius: var(--radius-android-input);
-}
-
-.wrap:focus-within {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/*
-  appearance:none tira a seta nativa (que ignora nosso padding e cola na
-  borda) — a seta própria é o .chevron abaixo, um SVG decorativo por cima.
-  O <select> continua sendo o elemento nativo real: no toque, ainda abre a
-  roda do iOS / lista Material do Android normalmente, só a pintura da
-  seta mudou.
-*/
-.select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-  padding: var(--space-1) var(--space-8) var(--space-1) var(--space-3);
-  min-height: 36px;
-  outline: none;
-}
-
-.select:focus-visible {
+.wrap select:focus-visible {
   outline: none;
 }
 
 /*
-  Decorativo, por cima do <select> — pointer-events:none deixa o clique
-  atravessar direto pro <select> nativo por baixo, então tocar na seta
-  continua abrindo o seletor do sistema normalmente. Cor --muted passa
-  5.70:1 sobre --card (ícone funcional precisa só de 3:1).
+  Texto do campo fechado (ver docs/ajustes-70-...md, 2.1): código + nome curto
+  quando o campo tem espaço, só o código quando é estreito.
 */
-.chevron {
+.display {
   position: absolute;
-  right: var(--pill-icon-inset);
+  left: var(--space-3);
+  right: var(--space-8);
   top: 50%;
   transform: translateY(-50%);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: 500;
   pointer-events: none;
-  color: var(--muted);
+}
+
+.shortName {
+  display: none;
+  font-weight: 400;
+}
+
+@container (min-width: 150px) {
+  .shortName {
+    display: inline;
+  }
 }

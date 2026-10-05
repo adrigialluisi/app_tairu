@@ -1,11 +1,8 @@
 .card {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-android-card);
-  padding: var(--space-4);
 }
 
 .header {
@@ -21,9 +18,9 @@
 
 .title {
   flex: 1;
-  font-weight: 700;
+  font-weight: var(--font-weight-semibold);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--text-lg);
 }
 
 .editButton {
@@ -31,7 +28,7 @@
   background: none;
   border: none;
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   min-height: var(--touch-target);
@@ -41,7 +38,7 @@
 .detailRows {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .detail {

@@ -2,7 +2,7 @@
   display: flex;
   gap: var(--space-3);
   position: relative;
-  padding-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
 }
 
 .stopLast {
@@ -24,19 +24,24 @@
   */
   border: 3px solid var(--card);
   position: relative;
+  z-index: 1;
 }
 
-/* Linha conectora — pseudo-elemento no próprio dot, esticando até a próxima parada.
-   Some sozinha na última parada porque .stopLast não recebe :not(:last-child). */
-.stop:not(.stopLast) .dot::after {
+/*
+  Linha conectora: no próprio .stop (não no dot), do pé da bolinha até a
+  bolinha da próxima parada — antes ela tinha 20px fixos e não alcançava a
+  próxima parada quando a de cima tinha foto ou descrição. left = centro da
+  bolinha de 14px; top = margem (3px) + bolinha (14px); bottom = -margem da
+  próxima. Some na última parada.
+*/
+.stop:not(.stopLast)::before {
   content: '';
   position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 6px;
+  top: 17px;
+  bottom: -3px;
   width: 2px;
-  bottom: calc(-1 * var(--space-5));
-  background: var(--field-border);
+  background: var(--card-border);
 }
 
 .content {
@@ -49,7 +54,7 @@
 
 .orderLabel {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent-dark);
@@ -58,7 +63,7 @@
 .title {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -78,15 +83,31 @@
   max-width: 280px;
   height: 140px;
   object-fit: cover;
-  border-radius: var(--radius-android-card);
-  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--card-border);
   margin-top: 2px;
 }
 
+/* sem foto real: mesma caixa da foto, com a ilustração da categoria (docs/ajustes-70-...md, 2.3) */
+.photoFallback {
+  color: var(--field-border); /* stone-500, 3.97:1 no --placeholder */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--placeholder);
+  font-size: 48px;
+  line-height: 1;
+}
+
+.tags {
+  margin-top: 2px;
+}
+
+/* Ações (mover dia / Pulei / Remover) numa linha própria abaixo da descrição. */
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
+  margin-top: var(--space-3);
   flex-wrap: wrap;
 }

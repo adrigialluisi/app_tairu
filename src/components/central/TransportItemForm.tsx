@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { OptionChipGroup } from '../quiz/OptionChipGroup';
+import { OptionChipGroup, type ChipOption } from '../quiz/OptionChipGroup';
 import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
@@ -18,10 +18,11 @@ interface TransportItemFormProps {
   onRemove?: () => void;
 }
 
-const TYPE_OPTIONS: { value: TransportType; label: string }[] = [
-  { value: 'voo', label: `${transportTypeIcon('voo')} Voo` },
-  { value: 'onibus', label: `${transportTypeIcon('onibus')} Ônibus` },
-  { value: 'carro-locado', label: `${transportTypeIcon('carro-locado')} Carro locado` },
+const TYPE_OPTIONS: ChipOption<TransportType>[] = [
+  { value: 'voo', label: 'Voo', icon: transportTypeIcon('voo') },
+  { value: 'onibus', label: 'Ônibus', icon: transportTypeIcon('onibus') },
+  { value: 'trem', label: 'Trem', icon: transportTypeIcon('trem') },
+  { value: 'carro-locado', label: 'Carro locado', icon: transportTypeIcon('carro-locado') },
 ];
 
 const DATETIME_PLACEHOLDER = 'dd/mm/aaaa hh:mm';
@@ -34,17 +35,24 @@ export function TransportItemForm({
 }: TransportItemFormProps) {
   const baseId = useId();
 
-  const flightOrBus =
-    initialItem && (initialItem.type === 'voo' || initialItem.type === 'onibus') ? initialItem : null;
+  const routeItem =
+    initialItem && (initialItem.type === 'voo' || initialItem.type === 'onibus' || initialItem.type === 'trem')
+      ? initialItem
+      : null;
+  const train = initialItem && initialItem.type === 'trem' ? initialItem : null;
   const carRental = initialItem && initialItem.type === 'carro-locado' ? initialItem : null;
 
   const [type, setType] = useState<TransportType | null>(initialItem?.type ?? 'voo');
   const [company, setCompany] = useState(initialItem?.company ?? '');
   const [flightNumber, setFlightNumber] = useState(initialItem?.type === 'voo' ? initialItem.flightNumber : '');
-  const [origin, setOrigin] = useState(flightOrBus?.origin ?? '');
-  const [destination, setDestination] = useState(flightOrBus?.destination ?? '');
-  const [departureAt, setDepartureAt] = useState(flightOrBus?.departureAt ?? '');
-  const [arrivalAt, setArrivalAt] = useState(flightOrBus?.arrivalAt ?? '');
+  const [origin, setOrigin] = useState(routeItem?.origin ?? '');
+  const [destination, setDestination] = useState(routeItem?.destination ?? '');
+  const [departureAt, setDepartureAt] = useState(routeItem?.departureAt ?? '');
+  const [arrivalAt, setArrivalAt] = useState(routeItem?.arrivalAt ?? '');
+  const [trainNumber, setTrainNumber] = useState(train?.trainNumber ?? '');
+  const [travelClass, setTravelClass] = useState(train?.travelClass ?? '');
+  const [seat, setSeat] = useState(train?.seat ?? '');
+  const [bookingCode, setBookingCode] = useState(train?.bookingCode ?? '');
   const [vehicleCategory, setVehicleCategory] = useState(carRental?.vehicleCategory ?? '');
   const [pickupLocation, setPickupLocation] = useState(carRental?.pickupLocation ?? '');
   const [pickupAt, setPickupAt] = useState(carRental?.pickupAt ?? '');
@@ -78,6 +86,15 @@ export function TransportItemForm({
       setDestination(match.destination);
       setDepartureAt(match.departureAt);
       setArrivalAt(match.arrivalAt);
+    } else if (match.type === 'trem') {
+      setTrainNumber(match.trainNumber);
+      setOrigin(match.origin);
+      setDestination(match.destination);
+      setDepartureAt(match.departureAt);
+      setArrivalAt(match.arrivalAt);
+      setTravelClass(match.travelClass);
+      setSeat(match.seat);
+      setBookingCode(match.bookingCode);
     } else {
       setVehicleCategory(match.vehicleCategory);
       setPickupLocation(match.pickupLocation);
@@ -101,6 +118,20 @@ export function TransportItemForm({
       onSave({ ...base, type, company, flightNumber, origin, destination, departureAt, arrivalAt });
     } else if (type === 'onibus') {
       onSave({ ...base, type, company, origin, destination, departureAt, arrivalAt });
+    } else if (type === 'trem') {
+      onSave({
+        ...base,
+        type,
+        company,
+        trainNumber,
+        origin,
+        destination,
+        departureAt,
+        arrivalAt,
+        travelClass,
+        seat,
+        bookingCode,
+      });
     } else {
       onSave({ ...base, type, company, vehicleCategory, pickupLocation, pickupAt, dropoffLocation, dropoffAt });
     }
@@ -192,6 +223,80 @@ export function TransportItemForm({
             value={arrivalAt}
             onChange={setArrivalAt}
             autoComplete="off"
+          />
+        </>
+      )}
+
+      {type === 'trem' && (
+        <>
+          <TextField
+            id={`${baseId}-company`}
+            label="Operadora"
+            placeholder="Ex.: Tren de la Costa"
+            value={company}
+            onChange={setCompany}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-train-number`}
+            label="Número do trem ou linha"
+            value={trainNumber}
+            onChange={setTrainNumber}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-origin`}
+            label="Estação de embarque"
+            value={origin}
+            onChange={setOrigin}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-destination`}
+            label="Estação de desembarque"
+            value={destination}
+            onChange={setDestination}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-departure`}
+            label="Data/hora de partida"
+            placeholder={DATETIME_PLACEHOLDER}
+            value={departureAt}
+            onChange={setDepartureAt}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-arrival`}
+            label="Data/hora de chegada"
+            placeholder={DATETIME_PLACEHOLDER}
+            value={arrivalAt}
+            onChange={setArrivalAt}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-travel-class`}
+            label="Classe (opcional)"
+            placeholder="Ex.: Turista"
+            value={travelClass}
+            onChange={setTravelClass}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-seat`}
+            label="Vagão e assento (opcional)"
+            placeholder="Ex.: Vagão 2, assento 14"
+            value={seat}
+            onChange={setSeat}
+            autoComplete="off"
+          />
+          <TextField
+            id={`${baseId}-booking-code`}
+            label="Código da reserva (opcional)"
+            value={bookingCode}
+            onChange={setBookingCode}
+            autoComplete="off"
+            autoCapitalize="characters"
           />
         </>
       )}

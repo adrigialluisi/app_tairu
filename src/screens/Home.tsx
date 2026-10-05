@@ -1,12 +1,16 @@
+import { Bell, FileText, Images, Luggage, TriangleAlert, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
 import { PlatformSwitcher } from '../components/shell/PlatformSwitcher';
 import { useTrip } from '../context/TripContext';
-import { useDocuments } from '../context/DocumentsContext';
+import { useDocuments, type PersonalDocument } from '../context/DocumentsContext';
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
 import { formatCompanionsLabel, formatDatesLabel, formatDestinationsLabel } from '../utils/tripSummary';
 import { getTripEndISO } from '../utils/itinerary';
-import { expiryStatus } from '../utils/documentSummary';
+import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
+import { Icon } from '../components/shell/Icon';
+import { Card } from '@/components/ui/card';
 import styles from './Home.module.css';
 
 /**
@@ -42,14 +46,17 @@ function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onC
   const thumbnailUrl = usePlaceThumbnail(heroCity);
 
   return (
+    <Card asChild className="gap-0 py-0 text-left">
     <button type="button" className={styles.heroCard} onClick={onClick}>
       <div className={styles.heroPhotoWrap}>
         {heroCity && thumbnailUrl ? (
           <img src={thumbnailUrl} alt="" loading="lazy" className={styles.heroPhoto} />
         ) : (
-          <span className={styles.heroPhotoFallback} aria-hidden="true">🧳</span>
+          <span className={styles.heroPhotoFallback} aria-hidden="true"><Icon icon={Luggage} /></span>
         )}
-        <span className={styles.heroBadge}>Sua viagem</span>
+        <Badge variant="accent" className={styles.heroBadge}>
+          Sua viagem
+        </Badge>
       </div>
       <div className={styles.heroContent}>
         <span className={styles.heroName}>{trip.name.trim() || 'Viagem sem nome'}</span>
@@ -59,6 +66,7 @@ function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onC
         <span className={styles.heroMeta}>{formatCompanionsLabel(trip.companions.length)}</span>
       </div>
     </button>
+    </Card>
   );
 }
 
@@ -66,14 +74,16 @@ function PastTripCard({ trip }: { trip: (typeof EXAMPLE_PAST_TRIPS)[number] }) {
   const thumbnailUrl = usePlaceThumbnail(trip.cityForPhoto);
 
   return (
-    <div className={styles.pastTripCard}>
+    <Card className={`gap-0 py-0 ${styles.pastTripCard}`}>
       <div className={styles.pastTripPhotoWrap}>
         {thumbnailUrl ? (
           <img src={thumbnailUrl} alt="" loading="lazy" className={styles.pastTripPhoto} />
         ) : (
-          <span className={styles.pastTripPhotoFallback} aria-hidden="true">🧳</span>
+          <span className={styles.pastTripPhotoFallback} aria-hidden="true"><Icon icon={Luggage} /></span>
         )}
-        <span className={styles.exampleBadge}>Exemplo</span>
+        <Badge variant="neutral" className={styles.exampleBadge}>
+          Exemplo
+        </Badge>
       </div>
       <div className={styles.pastTripContent}>
         <p className={styles.pastTripName}>{trip.name}</p>
@@ -82,7 +92,63 @@ function PastTripCard({ trip }: { trip: (typeof EXAMPLE_PAST_TRIPS)[number] }) {
         </p>
         <p className={styles.pastTripMeta}>{trip.companionsLabel}</p>
       </div>
-    </div>
+    </Card>
+  );
+}
+
+const MAX_ALERTS = 3;
+const ALERT_ORDER: ExpiryStatus['kind'][] = ['expired', 'before-trip-end', 'soon'];
+
+/**
+ * Representação da notificação push no protótipo (ver
+ * docs/ajustes-58-documentos-campos-avisos-seguro-anual.md) — o app não
+ * manda push de verdade, então o aviso aparece aqui, onde a pessoa cai ao
+ * abrir o app.
+ */
+function DocumentAlerts({ documents, tripEndISO }: { documents: PersonalDocument[]; tripEndISO: string | null }) {
+  const navigate = useNavigate();
+  const alerts = documents
+    .filter((d) => needsAttention(d, tripEndISO))
+    .map((doc) => ({ doc, status: expiryStatus(doc, tripEndISO) }))
+    .sort((a, b) => ALERT_ORDER.indexOf(a.status.kind) - ALERT_ORDER.indexOf(b.status.kind));
+
+  if (alerts.length === 0) return null;
+
+  return (
+    <section className={styles.alerts} aria-labelledby="home-alerts-title">
+      <h2 id="home-alerts-title" className={styles.sectionTitle}>
+        Avisos
+      </h2>
+      {alerts.slice(0, MAX_ALERTS).map(({ doc, status }) => {
+        const isCritical = status.kind === 'expired' || status.kind === 'before-trip-end';
+        const dateLabel =
+          doc.type === 'seguro-anual' ? `Vigência até ${doc.expiryDate}` : `Validade: ${doc.expiryDate}`;
+        return (
+          <button
+            key={doc.id}
+            type="button"
+            className={`${styles.alertRow} ${isCritical ? styles.alertRowCritical : styles.alertRowSoon}`}
+            onClick={() => navigate('/documentos', { state: { openDocId: doc.id } })}
+          >
+            <span className={styles.alertIcon} aria-hidden="true"><Icon icon={Bell} /></span>
+            <span className={styles.alertText}>
+              <span className={styles.alertTitle}>{attentionText(doc, status)}</span>
+              <span className={styles.alertMeta}>
+                {dateLabel}
+                {doc.holderName ? ` · ${doc.holderName}` : ''}
+              </span>
+            </span>
+            <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
+          </button>
+        );
+      })}
+      {alerts.length > MAX_ALERTS && (
+        <button type="button" className={styles.alertMore} onClick={() => navigate('/documentos')}>
+          Ver todos os avisos ({alerts.length})
+          <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -98,10 +164,7 @@ export function Home() {
   }
 
   const tripEndISO = getTripEndISO(trip.destinations);
-  const alertCount = docs.documents.filter((d) => {
-    const kind = expiryStatus(d, tripEndISO).kind;
-    return kind === 'expired' || kind === 'before-trip-end';
-  }).length;
+  const alertCount = docs.documents.filter((d) => needsAttention(d, tripEndISO)).length;
   const documentsSubtitle =
     docs.documents.length === 0
       ? 'Passaporte, RG, CNH e outros'
@@ -114,7 +177,7 @@ export function Home() {
         <div className={styles.headerActions}>
           <PlatformSwitcher inline />
           <button type="button" className={styles.profileButton} aria-label="Perfil (em breve)" disabled>
-            <span aria-hidden="true">👤</span>
+            <Icon icon={User} />
           </button>
         </div>
       </header>
@@ -123,6 +186,8 @@ export function Home() {
         <h1 className={styles.greetingTitle}>Olá! 👋</h1>
         <p className={styles.greetingSubtitle}>Pra onde vamos dessa vez?</p>
       </div>
+
+      <DocumentAlerts documents={docs.documents} tripEndISO={tripEndISO} />
 
       {hasActiveTrip && <TripHeroCard trip={trip} onClick={() => navigate('/destinos')} />}
 
@@ -136,22 +201,45 @@ export function Home() {
         <p className={styles.pastTripsNote}>Suas viagens concluídas vão aparecer aqui.</p>
       </section>
 
-      <button type="button" className={styles.documentsRow} onClick={() => navigate('/documentos')}>
-        <span className={styles.documentsRowIcon} aria-hidden="true">📄</span>
-        <span className={styles.documentsRowText}>
-          <span className={styles.documentsRowLabel}>Meus documentos</span>
-          <span className={styles.documentsRowSubtitle}>
-            {documentsSubtitle}
-            {alertCount > 0 && (
-              <span className={styles.documentsRowAlert}>
-                {' '}
-                · ⚠ {alertCount} {alertCount === 1 ? 'precisa' : 'precisam'} de atenção
+      {/* Memórias + Meus documentos: linhas do mesmo tipo, agrupadas (12px entre si) */}
+      <div className={styles.rows}>
+        {hasActiveTrip && (
+          <button type="button" className={styles.documentsRow} onClick={() => navigate('/memorias')}>
+            <span className={styles.documentsRowIcon} aria-hidden="true"><Icon icon={Images} /></span>
+            <span className={styles.documentsRowText}>
+              <span className={styles.documentsRowLabel}>Memórias da viagem</span>
+              <span className={styles.documentsRowSubtitle}>
+                {[
+                  trip.photos.length === 0
+                    ? 'Fotos organizadas por dia'
+                    : `${trip.photos.length} ${trip.photos.length === 1 ? 'foto' : 'fotos'}`,
+                  trip.retrospective ? 'retrospectiva pronta' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </span>
-            )}
+            </span>
+            <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
+          </button>
+        )}
+
+        <button type="button" className={styles.documentsRow} onClick={() => navigate('/documentos')}>
+          <span className={styles.documentsRowIcon} aria-hidden="true"><Icon icon={FileText} /></span>
+          <span className={styles.documentsRowText}>
+            <span className={styles.documentsRowLabel}>Meus documentos</span>
+            <span className={styles.documentsRowSubtitle}>
+              {documentsSubtitle}
+              {alertCount > 0 && (
+                <span className={styles.documentsRowAlert}>
+                  {' '}
+                  · <Icon icon={TriangleAlert} /> {alertCount} {alertCount === 1 ? 'precisa' : 'precisam'} de atenção
+                </span>
+              )}
+            </span>
           </span>
-        </span>
-        <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
-      </button>
+          <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
+        </button>
+      </div>
 
       <div className={styles.actions}>
         <Button variant="primary" fullWidth onClick={handleNewTrip}>

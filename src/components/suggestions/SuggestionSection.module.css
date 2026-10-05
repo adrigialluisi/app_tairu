@@ -1,0 +1,81 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* atalhos rolam até aqui com scrollIntoView — folga pra não colar no topo */
+  scroll-margin-top: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  font-size: 20px;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+}
+
+.count {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/*
+  Sangra até a borda da tela (o conteúdo do ScreenShell tem --space-4 de
+  padding lateral) e devolve o mesmo padding por dentro — o primeiro card
+  alinha com o título, e os seguintes aparecem cortados na borda, sinal de
+  que dá pra rolar.
+*/
+/* lista dentro do Scroll Area (o que rola é o viewport dele): 16px nas pontas, folga pro anel de foco */
+.carousel {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-1) var(--space-4) var(--space-3);
+  list-style: none;
+}
+
+.carousel > li {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: flex;
+}

@@ -1,53 +1,76 @@
+import { useId } from 'react';
+import { Check } from 'lucide-react';
+import { FieldLegend, FieldSet } from '@/components/ui/field';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { ChipOption } from './OptionChipGroup';
-import styles from './OptionChipGroup.module.css';
+import { chipFieldsetClass, chipGroupClass, chipItemClass, chipLegendClass } from './chipClasses';
 
 interface MultiOptionChipGroupProps<T extends string> {
   legend: string;
   options: ChipOption<T>[];
   values: T[];
   onToggle: (value: T) => void;
+  /** texto auxiliar logo abaixo do legend (ex.: pra que serve a pergunta) */
+  hint?: string;
 }
 
 /**
- * Mesmo padrão visual de chip do OptionChipGroup (reaproveita o mesmo CSS
- * Module) — mas aqui vários chips podem ficar marcados ao mesmo tempo, por
- * isso os botões são role="checkbox" dentro de um role="group", não
- * role="radio" dentro de um role="radiogroup".
+ * Mesmo visual de chip do OptionChipGroup (mesmas classes, chipClasses.ts) —
+ * mas aqui vários chips podem ficar marcados ao mesmo tempo: ToggleGroup
+ * `type="multiple"` do shadcn, em que cada chip é um botão liga/desliga
+ * (aria-pressed).
  */
 export function MultiOptionChipGroup<T extends string>({
   legend,
   options,
   values,
   onToggle,
+  hint,
 }: MultiOptionChipGroupProps<T>) {
+  const hintId = useId();
+
+  // o ToggleGroup devolve a lista nova inteira; a API daqui avisa só qual chip mudou
+  function handleValueChange(next: string[]) {
+    const changed =
+      next.find((v) => !values.includes(v as T)) ?? values.find((v) => !next.includes(v));
+    if (changed) onToggle(changed as T);
+  }
+
   return (
-    <fieldset className={styles.fieldset}>
-      <legend className={styles.legend}>
+    <FieldSet className={chipFieldsetClass}>
+      <FieldLegend className={chipLegendClass}>
         {legend}
         <span className="visually-hidden"> (pode marcar mais de uma opção)</span>
-      </legend>
-      <div className={styles.options} role="group" aria-label={legend}>
+      </FieldLegend>
+      {hint && (
+        <p id={hintId} className="mt-1 mb-0 text-(length:--text-sm) leading-[1.4] text-muted-foreground">
+          {hint}
+        </p>
+      )}
+      <ToggleGroup
+        type="multiple"
+        variant="outline"
+        spacing={2}
+        className={chipGroupClass}
+        aria-label={legend}
+        aria-describedby={hint ? hintId : undefined}
+        value={values}
+        onValueChange={handleValueChange}
+      >
         {options.map((option) => {
           const selected = values.includes(option.value);
           return (
-            <button
-              key={option.value}
-              type="button"
-              role="checkbox"
-              aria-checked={selected}
-              className={`${styles.option} ${selected ? styles.optionSelected : ''}`}
-              onClick={() => onToggle(option.value)}
-            >
-              {selected && (
-                <span className={styles.check} aria-hidden="true">
-                  ✓
-                </span>
+            <ToggleGroupItem key={option.value} value={option.value} className={chipItemClass}>
+              {selected ? (
+                <Check className="size-4" aria-hidden="true" />
+              ) : (
+                option.icon && <option.icon className="size-4" aria-hidden="true" />
               )}
               {option.label}
-            </button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
-    </fieldset>
+      </ToggleGroup>
+    </FieldSet>
   );
 }

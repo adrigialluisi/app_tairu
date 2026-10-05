@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { HotelEntry } from '../../data';
 import { hotelPhotoUrl, priceLevelA11y, priceLevelLabel, stayTypeIcon } from '../../utils/staySummary';
+import { Icon } from '../shell/Icon';
+import { Badge } from '@/components/ui/badge';
 import styles from './HotelInfo.module.css';
 
 interface HotelInfoProps {
@@ -20,7 +22,7 @@ export function HotelInfo({ hotel, variant }: HotelInfoProps) {
           <img src={photo} alt="" loading="lazy" onError={() => setPhotoFailed(true)} />
         ) : (
           <span className={styles.photoFallback} aria-hidden="true">
-            {stayTypeIcon(hotel.type)}
+            <Icon icon={stayTypeIcon(hotel.type)} />
           </span>
         )}
       </span>
@@ -35,7 +37,7 @@ export function HotelInfo({ hotel, variant }: HotelInfoProps) {
           {hotel.stars ? (
             <span aria-label={`${hotel.stars} estrelas`}>{'★'.repeat(hotel.stars)}</span>
           ) : null}
-          {hotel.badge && <span className={styles.badge}>{hotel.badge}</span>}
+          {hotel.badge && <Badge variant="neutral">{hotel.badge}</Badge>}
         </span>
         <span className={styles.description}>{hotel.description}</span>
         <span className={styles.meta}>

@@ -1,9 +1,11 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../shell/Button';
 import { useTrip, type TripDestination } from '../../context/TripContext';
 import { formatISOToDisplay } from '../../utils/dateMask';
 import { TransportItemCard } from './TransportItemCard';
 import { TransportItemForm } from './TransportItemForm';
+import { Icon } from '../shell/Icon';
 import styles from './TransportDestinationGroup.module.css';
 
 interface TransportDestinationGroupProps {
@@ -63,7 +65,7 @@ export function TransportDestinationGroup({ destination }: TransportDestinationG
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>
-          + Adicionar transporte
+          <Icon icon={Plus} /> Adicionar transporte
         </Button>
       )}
     </div>

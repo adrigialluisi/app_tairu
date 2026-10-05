@@ -9,3 +9,16 @@
   font-size: 14px;
   color: var(--muted);
 }
+
+/* introdução + linha de offline: mesmo grupo */
+.introGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.offlineLine {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

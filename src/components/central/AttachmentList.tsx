@@ -1,6 +1,9 @@
+import { Paperclip } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
+import { Button } from '../shell/Button';
 import { UploadIcon, TrashIcon } from '../shell/Icons';
 import type { Attachment } from '../../context/TripContext';
+import { Icon } from '../shell/Icon';
 import styles from './VoucherUpload.module.css';
 import listStyles from './AttachmentList.module.css';
 
@@ -49,17 +52,17 @@ export function AttachmentList({ attachments, onChange, hint = DEFAULT_HINT }: A
             ? hint
             : `${attachments.length} ${attachments.length === 1 ? 'arquivo anexado' : 'arquivos anexados'}`}
         </span>
-        <button type="button" className={styles.voucherButton} onClick={() => inputRef.current?.click()}>
+        <Button variant="secondary" onClick={() => inputRef.current?.click()}>
           <UploadIcon />
           {attachments.length === 0 ? 'Anexar arquivos' : 'Anexar mais'}
-        </button>
+        </Button>
       </div>
 
       {attachments.length > 0 && (
         <ul className={listStyles.list}>
           {attachments.map((att) => (
             <li key={att.id} className={styles.voucherAttached}>
-              <span className={styles.voucherFileIcon} aria-hidden="true">📎</span>
+              <span className={styles.voucherFileIcon} aria-hidden="true"><Icon icon={Paperclip} /></span>
               <a
                 href={att.url}
                 target="_blank"

@@ -49,6 +49,18 @@ export const MOCK_TRANSPORT_VOUCHERS: Record<string, MockVoucherFields> = {
     departureAt: '24/11/2026 10:15',
     arrivalAt: '24/11/2026 11:45',
   },
+  'voucher-trem-buenosaires-tigre.pdf': {
+    type: 'trem',
+    company: 'Tren de la Costa',
+    trainNumber: 'Ramal Maipú–Delta',
+    origin: 'Estación Maipú (Olivos)',
+    destination: 'Estación Delta (Tigre)',
+    departureAt: '21/11/2026 10:00',
+    arrivalAt: '21/11/2026 10:30',
+    travelClass: 'Turista',
+    seat: 'Vagão 2 · assento livre',
+    bookingCode: 'TDC-48217',
+  },
 };
 
 /** Reconhecimento só por nome do arquivo (mock, sem OCR/backend) — case-insensitive. */

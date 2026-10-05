@@ -5,7 +5,7 @@
   flex-direction: column;
   gap: var(--space-6);
   padding: var(--space-6);
-  background-color: #ffffff;
+  background-color: var(--page);
 }
 
 .header {
@@ -31,8 +31,8 @@
   justify-content: center;
   width: var(--touch-target);
   height: var(--touch-target);
-  border-radius: 999px;
-  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--card-border);
   background: var(--card);
   font-size: 18px;
   opacity: 0.6;
@@ -58,15 +58,11 @@
 }
 
 .heroCard {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-photo);
   overflow: hidden;
-  box-shadow: var(--shadow-photo);
-  padding: 0;
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -76,7 +72,7 @@
   position: relative;
   width: 100%;
   height: 180px;
-  background: var(--bg-top);
+  background: var(--placeholder);
 }
 
 .heroPhoto {
@@ -94,30 +90,23 @@
   font-size: 40px;
 }
 
+/* visual do selo: Badge variant="accent" (shadcn, ver docs/ajustes-70-...md) */
 .heroBadge {
   position: absolute;
   top: var(--space-3);
   left: var(--space-3);
-  background: var(--accent);
-  color: var(--text-on-dark);
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px var(--space-2);
-  border-radius: 999px;
 }
 
 .heroContent {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-5);
+  gap: var(--space-1);
+  padding: var(--space-4);
 }
 
 .heroName {
-  font-size: var(--text-xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text);
 }
 
@@ -147,22 +136,19 @@
 }
 
 .pastTripCard {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
   flex: 0 0 auto;
   width: 180px;
   display: flex;
   flex-direction: column;
-  background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-photo);
   overflow: hidden;
-  box-shadow: var(--shadow-card);
 }
 
 .pastTripPhotoWrap {
   position: relative;
   width: 100%;
   height: 100px;
-  background: var(--bg-top);
+  background: var(--placeholder);
 }
 
 .pastTripPhoto {
@@ -180,37 +166,30 @@
   font-size: 28px;
 }
 
+/* visual do selo: Badge variant="neutral" */
 .exampleBadge {
   position: absolute;
   top: var(--space-2);
   left: var(--space-2);
-  font-size: 10px;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  background: var(--card);
-  border-radius: 999px;
-  padding: 2px var(--space-2);
 }
 
 .pastTripContent {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-4);
 }
 
 .pastTripName {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--text);
 }
 
 .pastTripMeta {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
@@ -220,6 +199,82 @@
   color: var(--muted);
 }
 
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alertRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.alertRowCritical {
+  border-left-color: var(--error);
+}
+
+.alertRowSoon {
+  border-left-color: var(--accent);
+}
+
+.alertIcon {
+  font-size: 18px;
+}
+
+.alertText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.alertTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.alertMeta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.alertMore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--touch-target);
+  background: none;
+  border: none;
+  padding: 0 var(--space-4);
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .documentsRow {
   display: flex;
   align-items: center;
@@ -227,8 +282,8 @@
   width: 100%;
   min-height: var(--touch-target);
   background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-android-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-4);
   color: var(--text);
   font-weight: var(--font-weight-semibold);
@@ -244,7 +299,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   text-align: left;
 }
 

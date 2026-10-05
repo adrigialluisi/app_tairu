@@ -1,5 +1,8 @@
+import { Check, Paperclip } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
+import { Button } from '../shell/Button';
 import { UploadIcon, ReplaceIcon, TrashIcon } from '../shell/Icons';
+import { Icon } from '../shell/Icon';
 import styles from './VoucherUpload.module.css';
 
 interface VoucherUploadProps {
@@ -31,16 +34,16 @@ export function VoucherUpload({ fileName, recognized, onFileSelected, onRemove }
       {!fileName && (
         <div className={styles.voucherUploadRow}>
           <span className={styles.voucherHint}>Tem um voucher? Anexe pra preencher os campos automaticamente.</span>
-          <button type="button" className={styles.voucherButton} onClick={() => fileInputRef.current?.click()}>
+          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
             <UploadIcon />
             Enviar voucher
-          </button>
+          </Button>
         </div>
       )}
 
       {fileName && (
         <div className={styles.voucherAttached}>
-          <span className={styles.voucherFileIcon} aria-hidden="true">📎</span>
+          <span className={styles.voucherFileIcon} aria-hidden="true"><Icon icon={Paperclip} /></span>
           <span className={styles.voucherFileName} title={fileName}>
             {fileName}
           </span>
@@ -69,7 +72,7 @@ export function VoucherUpload({ fileName, recognized, onFileSelected, onRemove }
 
       {recognized === true && (
         <p className={styles.voucherMessageSuccess}>
-          <span aria-hidden="true">✓</span> Campos preenchidos automaticamente. Confira antes de salvar.
+          <Icon icon={Check} /> Campos preenchidos automaticamente. Confira antes de salvar.
         </p>
       )}
       {recognized === false && (

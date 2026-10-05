@@ -1,0 +1,12 @@
+/* Abas + conteúdo formam um grupo (16px); entre os grupos de lançamento, 32px */
+.tabsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}

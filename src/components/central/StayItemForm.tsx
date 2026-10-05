@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { OptionChipGroup } from '../quiz/OptionChipGroup';
+import { OptionChipGroup, type ChipOption } from '../quiz/OptionChipGroup';
 import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
@@ -24,11 +24,11 @@ interface StayItemFormProps {
   onRemove?: () => void;
 }
 
-const TYPE_OPTIONS: { value: StayType; label: string }[] = [
-  { value: 'hotel', label: `${stayTypeIcon('hotel')} ${stayTypeLabel('hotel')}` },
-  { value: 'apartamento', label: `${stayTypeIcon('apartamento')} ${stayTypeLabel('apartamento')}` },
-  { value: 'hostel', label: `${stayTypeIcon('hostel')} ${stayTypeLabel('hostel')}` },
-  { value: 'pousada', label: `${stayTypeIcon('pousada')} ${stayTypeLabel('pousada')}` },
+const TYPE_OPTIONS: ChipOption<StayType>[] = [
+  { value: 'hotel', label: stayTypeLabel('hotel'), icon: stayTypeIcon('hotel') },
+  { value: 'apartamento', label: stayTypeLabel('apartamento'), icon: stayTypeIcon('apartamento') },
+  { value: 'hostel', label: stayTypeLabel('hostel'), icon: stayTypeIcon('hostel') },
+  { value: 'pousada', label: stayTypeLabel('pousada'), icon: stayTypeIcon('pousada') },
 ];
 
 export function StayItemForm({ destination, initialItem, onSave, onRemove }: StayItemFormProps) {
@@ -223,7 +223,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
 
       <div className={styles.actions}>
         <Button fullWidth onClick={handleSave}>
-          Salvar estadia
+          Salvar hospedagem
         </Button>
         {onRemove && (
           <div className={styles.secondaryActions}>
@@ -232,7 +232,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
               className={`${styles.textButton} ${styles.removeButton} ${formStyles.removeOnly}`}
               onClick={onRemove}
             >
-              Remover estadia
+              Remover hospedagem
             </button>
           </div>
         )}

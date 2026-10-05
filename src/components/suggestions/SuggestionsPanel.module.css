@@ -1,0 +1,172 @@
+/* Faixa do perfil + atalhos + adicionar por conta própria: um grupo só (16px entre si); 32px até as seções vem do .panel */
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Faixa "Com base no seu perfil" */
+.profileStrip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+
+.profileTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.profileHint {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* Link de texto com alvo de toque de 44px (Editar perfil, Ir pra Destinos) */
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0;
+  margin: calc(-1 * var(--space-2)) 0;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Atalhos das seções — linha rolável, sangrando até a borda como os carrosséis */
+/* lista dentro do Scroll Area (que rola e vaza 16px pros lados): 16px nas pontas, folga pro anel de foco */
+.shortcuts {
+  display: flex;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-4) var(--space-3);
+}
+
+.shortcuts > li {
+  flex: 0 0 auto;
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.shortcut:focus-visible {
+  border-radius: 999px;
+}
+
+/* contador: Badge variant="soft" (shadcn) — aqui só a largura mínima */
+.shortcutCount {
+  min-width: 20px;
+}
+
+/* Adicionar por conta própria */
+.customBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.customForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.customList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.customRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-1) 0 var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+}
+
+.customLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.removeButton:hover,
+.removeButton:active {
+  background: var(--bg-top);
+  color: var(--text);
+}
+
+/* Seções: 32px entre uma e outra (cabeçalho → carrossel é --space-4, dentro do SuggestionSection) */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+
+
+
+
+.noData {
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin: 0;
+}

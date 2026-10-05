@@ -12,7 +12,7 @@
 .voucherMessageSuccess {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   display: flex;
   align-items: flex-start;
@@ -45,28 +45,6 @@
   color: var(--muted);
 }
 
-/* #f6e2e5 é um tom claro do --accent — não existe token de "accent suave" no tokens.css hoje */
-.voucherButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-  min-height: 40px;
-  padding: 0 var(--space-4);
-  background: #f6e2e5;
-  border: 1.5px solid var(--accent);
-  border-radius: 999px;
-  color: var(--accent-dark);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.voucherButton:active {
-  transform: scale(0.98);
-}
-
 .voucherAttached {
   display: flex;
   align-items: center;
@@ -91,7 +69,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
 }
 

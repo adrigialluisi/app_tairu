@@ -1,9 +1,11 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTrip, type OtherItem, type TripDestination } from '../../context/TripContext';
 import { EmptyTripState } from '../shell/EmptyTripState';
 import { Button } from '../shell/Button';
 import { OtherItemCard } from './OtherItemCard';
 import { OtherItemForm } from './OtherItemForm';
+import { Icon } from '../shell/Icon';
 import styles from './TransportDestinationGroup.module.css';
 import sectionStyles from './OtherSection.module.css';
 
@@ -32,7 +34,7 @@ export function OtherSection() {
   return (
     <div className={styles.group}>
       <p className={sectionStyles.intro}>
-        Seguro viagem, passeios, ingressos, chip de internet e outros comprovantes da viagem.
+        Seguro viagem, passeios e ingressos da viagem.
       </p>
 
       {items.map((item) =>
@@ -73,7 +75,7 @@ export function OtherSection() {
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>
-          + Adicionar registro
+          <Icon icon={Plus} /> Adicionar registro
         </Button>
       )}
     </div>

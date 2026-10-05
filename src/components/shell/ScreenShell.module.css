@@ -5,18 +5,15 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: var(--page);
   overflow: hidden;
 }
 
 /*
-  Todo o conteúdo rolável (e o rodapé de ações) vive dentro deste "sheet"
-  de superfície --card, nunca solto direto sobre o `.screen`. Isso garante
-  que qualquer par texto/fundo aqui dentro já foi validado em WCAG AA (ver
-  nota em tokens.css) independente de quanto a tela rolar — o app bar, que
-  fica direto sobre o `.screen`, hoje branco sólido (ver
-  docs/ajustes-38-fase3-fundo-mais-branco.md; antes era o topo do
-  gradiente pêssego→verde-azulado), também não tem risco de contraste.
+  Todo o conteúdo rolável (e o rodapé de ações) vive dentro deste "sheet".
+  Visual shadcn (docs/ajustes-72-...md): plano, a divisória com o topo é a
+  borda inferior da AppBar. Fundo stone-100 (docs/ajustes-73-...md, item 1):
+  separa o miolo da AppBar e do menu (brancos) e destaca os cartões brancos.
 */
 .sheet {
   position: relative;
@@ -24,18 +21,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-top: 1px solid var(--card-border);
-}
-
-:global([data-platform='ios']) .sheet {
-  border-top-left-radius: var(--radius-ios-sheet);
-  border-top-right-radius: var(--radius-ios-sheet);
-}
-
-:global([data-platform='android']) .sheet {
-  border-top-left-radius: var(--radius-android-sheet);
-  border-top-right-radius: var(--radius-android-sheet);
+  background: var(--page);
 }
 
 .content {
@@ -46,12 +32,11 @@
   display: flex;
   flex-direction: column;
   /*
-    Espaço ENTRE grupos de campo (nome, datas, destinos... ou, no Quiz,
-    entre cada pergunta) — --space-8 (32px), deliberadamente bem maior que
-    o espaço DENTRO de um grupo (--space-2/--space-3, 8-12px, controlado
-    por cada componente). Ver CLAUDE.md, "Espaçamento e organização visual".
+    Espaço ENTRE seções/blocos da tela — --space-6 (24px, docs/ajustes-72-...md,
+    seção 3), maior que o espaço DENTRO de um bloco (6-16px, controlado por
+    cada componente). Margem lateral de 16px. Ver CLAUDE.md, "Espaçamento".
   */
-  gap: var(--space-8);
+  gap: var(--space-6);
 }
 
 .footer {

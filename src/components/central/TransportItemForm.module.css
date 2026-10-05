@@ -3,8 +3,8 @@
   flex-direction: column;
   gap: var(--space-4);
   background: var(--card);
-  border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-android-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
   padding: var(--space-4);
 }
 
@@ -24,7 +24,7 @@
   background: none;
   border: none;
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   min-height: var(--touch-target);
@@ -40,13 +40,41 @@
   margin-left: 0;
 }
 
+/* valor ~60% | moeda ~40% (ver docs/ajustes-70-...md, 2.1) — o exemplo do valor cabe inteiro */
 .costRow {
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: end;
   gap: var(--space-3);
 }
 
-.costRow > *:first-child {
-  flex: 1;
-  min-width: 0;
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Link dentro de um texto corrido: a área de toque cresce pra 44px de
+   altura com margem negativa, sem empurrar as linhas vizinhas. */
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  margin-block: calc(var(--space-3) * -1);
+  vertical-align: middle;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-dark);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Campo + texto auxiliar logo abaixo (8px), dentro do gap de 16px do .form */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }

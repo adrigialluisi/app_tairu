@@ -1,0 +1,78 @@
+.card {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.totalBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.totalLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--muted);
+}
+
+.total {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+}
+
+.perPerson {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* trilho vazio do tamanho do gráfico, enquanto ele carrega */
+.bar {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--bg-top);
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.legendLabel {
+  flex: 1;
+}
+
+.legendValue {
+  font-weight: var(--font-weight-semibold);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+
+

@@ -1,5 +1,8 @@
+import { Paperclip } from 'lucide-react';
 import { transportItemDetailRows, transportItemTitle, transportTypeIcon } from '../../utils/transportSummary';
 import type { TransportItem } from '../../context/TripContext';
+import { Icon } from '../shell/Icon';
+import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 
 interface TransportItemCardProps {
@@ -9,10 +12,10 @@ interface TransportItemCardProps {
 
 export function TransportItemCard({ item, onEdit }: TransportItemCardProps) {
   return (
-    <div className={styles.card}>
+    <Card className={`px-4 ${styles.card}`}>
       <div className={styles.header}>
         <span className={styles.icon} aria-hidden="true">
-          {transportTypeIcon(item.type)}
+          <Icon icon={transportTypeIcon(item.type)} />
         </span>
         <span className={styles.title}>{transportItemTitle(item)}</span>
         <button type="button" className={styles.editButton} onClick={onEdit}>
@@ -28,9 +31,9 @@ export function TransportItemCard({ item, onEdit }: TransportItemCardProps) {
       </div>
       {item.voucherFileName && (
         <p className={styles.voucherNote}>
-          <span aria-hidden="true">📎</span> Voucher anexado
+          <Icon icon={Paperclip} /> Voucher anexado
         </p>
       )}
-    </div>
+    </Card>
   );
 }

@@ -1,10 +1,9 @@
-import type { ReactNode } from 'react';
-import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PlatformProvider, usePlatform } from './context/PlatformContext';
-import { TripProvider, useTrip } from './context/TripContext';
+import { TripProvider } from './context/TripContext';
 import { DocumentsProvider } from './context/DocumentsContext';
 import { PlatformSwitcher } from './components/shell/PlatformSwitcher';
-import { BottomNav } from './components/shell/BottomNav';
 import { Splash } from './screens/Splash';
 import { Home } from './screens/Home';
 import { CreateTrip } from './screens/CreateTrip';
@@ -12,7 +11,8 @@ import { InviteCompanions } from './screens/InviteCompanions';
 import { Itinerary } from './screens/Itinerary';
 import { Central } from './screens/Central';
 import { Documents } from './screens/Documents';
-import { ComingSoon } from './screens/ComingSoon';
+import { Costs } from './screens/Costs';
+import { Memories } from './screens/Memories';
 
 /**
  * Aplica data-platform="ios" | "android" na raiz visível — é esse atributo
@@ -22,6 +22,11 @@ import { ComingSoon } from './screens/ComingSoon';
  */
 function PlatformRoot({ children }: { children: ReactNode }) {
   const { platform } = usePlatform();
+  // Também no <html>: componentes do shadcn/Radix que abrem em portal (Dialog, Popover…) ficam
+  // fora desta div e precisam herdar a fonte e o raio da plataforma (ver src/index.css).
+  useEffect(() => {
+    document.documentElement.dataset.platform = platform;
+  }, [platform]);
   return <div data-platform={platform}>{children}</div>;
 }
 
@@ -34,20 +39,6 @@ function GlobalPlatformSwitcher() {
   const location = useLocation();
   if (location.pathname === '/inicio') return null;
   return <PlatformSwitcher />;
-}
-
-/** Custos — seção de topo do menu fixo, ainda não desenhada. */
-function SectionComingSoon({ title }: { title: string }) {
-  const navigate = useNavigate();
-  const trip = useTrip();
-  return (
-    <ComingSoon
-      title={title}
-      headerSubtitle={trip.name || undefined}
-      bottomNav={<BottomNav />}
-      onHome={() => navigate('/inicio')}
-    />
-  );
 }
 
 export function App() {
@@ -65,8 +56,9 @@ export function App() {
                 <Route path="/central" element={<Central />} />
                 <Route path="/convidar" element={<InviteCompanions />} />
                 <Route path="/roteiro" element={<Itinerary />} />
-                <Route path="/custos" element={<SectionComingSoon title="Custos" />} />
+                <Route path="/custos" element={<Costs />} />
                 <Route path="/documentos" element={<Documents />} />
+                <Route path="/memorias" element={<Memories />} />
               </Routes>
             </HashRouter>
           </PlatformRoot>

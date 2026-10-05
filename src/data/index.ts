@@ -3,6 +3,7 @@ import currenciesRaw from './currencies.json';
 import placesRaw from './places.json';
 import localTipsRaw from './localTips.json';
 import hotelsRaw from './hotels.json';
+import eventsRaw from './events.json';
 import type { QuizInterest, QuizDiscovery, StayType } from '../context/TripContext';
 
 export interface CityEntry {
@@ -179,4 +180,49 @@ export function searchHotels(cityId: string, query: string): HotelEntry[] {
 
 export function getHotel(id: string | null): HotelEntry | undefined {
   return id ? hotels.find((h) => h.id === id) : undefined;
+}
+
+export type EventKind = 'show' | 'feira' | 'danca' | 'cerimonia' | 'ceu';
+
+/**
+ * Evento local real, com data fixa — pesquisado com fonte (`sourceUrl`) e
+ * data de checagem (`checkedAt`), nunca inventado. Ver
+ * docs/ajustes-60-sugestoes-por-categoria-e-eventos.md.
+ */
+export interface EventEntry {
+  id: string;
+  cityId: string;
+  name: string;
+  kind: EventKind;
+  /** ISO yyyy-mm-dd */
+  date: string;
+  time: string;
+  venue: string;
+  neighborhood: string;
+  categories: string[];
+  popularity: 'turistico' | 'fora-do-circuito';
+  price: string;
+  description: string;
+  lat: number | null;
+  lng: number | null;
+  sourceLabel: string;
+  sourceUrl: string;
+  checkedAt: string;
+  recurring?: string;
+  note?: string;
+}
+
+export const events: EventEntry[] = eventsRaw as EventEntry[];
+
+/** Eventos da cidade dentro do intervalo [startISO, endISO], inclusive, ordenados por data. */
+export function getEventsForDestination(cityId: string, startISO: string | null, endISO: string | null): EventEntry[] {
+  if (!startISO || !endISO) return [];
+  // ISO yyyy-mm-dd compara certo como string
+  return events
+    .filter((e) => e.cityId === cityId && e.date >= startISO && e.date <= endISO)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function getEventById(id: string): EventEntry | undefined {
+  return events.find((e) => e.id === id);
 }

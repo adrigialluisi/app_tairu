@@ -49,15 +49,23 @@ export function TripProfileQuiz() {
 
   return (
     <>
-      {trip.destinations.length > 1 && (
+      <div className={styles.intro}>
         <p className={styles.multiDestinationHint}>
-          Essa viagem tem {trip.destinations.length} destinos — marque tudo que fizer sentido pra qualquer um deles,
-          é isso que direciona as sugestões de dicas no roteiro.
+          Suas respostas montam as sugestões do Roteiro. Cada estilo e cada interesse que você marcar vira uma seção de
+          sugestões.
         </p>
-      )}
+
+        {trip.destinations.length > 1 && (
+          <p className={styles.multiDestinationHint}>
+            Essa viagem tem {trip.destinations.length} destinos — marque tudo que fizer sentido pra qualquer um deles,
+            é isso que direciona as sugestões de dicas no roteiro.
+          </p>
+        )}
+      </div>
 
       <MultiOptionChipGroup
         legend="Turístico ou fora do circuito?"
+        hint="Turístico mostra os pontos mais conhecidos; fora do circuito, o que os moradores frequentam. Equilibrado mostra os dois."
         options={DISCOVERY_OPTIONS}
         values={trip.quiz.discovery}
         onToggle={trip.toggleQuizDiscovery}
@@ -86,6 +94,7 @@ export function TripProfileQuiz() {
 
       <MultiOptionChipGroup
         legend="Interesses da viagem"
+        hint="Marque quantos quiser."
         options={INTEREST_OPTIONS}
         values={trip.quiz.interests}
         onToggle={trip.toggleQuizInterest}

@@ -1,3 +1,4 @@
+import { ShieldCheck, Ticket, TicketCheck, type LucideIcon } from 'lucide-react';
 import type { OtherItem, OtherItemType, TripDestination } from '../context/TripContext';
 import { formatISOToDisplay } from './dateMask';
 
@@ -5,25 +6,21 @@ const TYPE_LABELS: Record<OtherItemType, string> = {
   seguro: 'Seguro viagem',
   passeio: 'Passeio ou excursão',
   ingresso: 'Ingresso ou evento',
-  chip: 'Chip ou internet',
-  outro: 'Outro',
 };
 
-const TYPE_ICONS: Record<OtherItemType, string> = {
-  seguro: '🛡️',
-  passeio: '🎟️',
-  ingresso: '🎫',
-  chip: '📶',
-  outro: '📋',
+const TYPE_ICONS: Record<OtherItemType, LucideIcon> = {
+  seguro: ShieldCheck,
+  passeio: Ticket,
+  ingresso: TicketCheck,
 };
 
-export const OTHER_TYPES: OtherItemType[] = ['seguro', 'passeio', 'ingresso', 'chip', 'outro'];
+export const OTHER_TYPES: OtherItemType[] = ['seguro', 'passeio', 'ingresso'];
 
 export function otherTypeLabel(type: OtherItemType): string {
   return TYPE_LABELS[type];
 }
 
-export function otherTypeIcon(type: OtherItemType): string {
+export function otherTypeIcon(type: OtherItemType): LucideIcon {
   return TYPE_ICONS[type];
 }
 
@@ -61,15 +58,6 @@ export function otherItemDetailRows(item: OtherItem): string[] {
       if (item.provider && item.type === 'passeio') rows.push(item.provider);
       if (when) rows.push(when);
       if (item.location) rows.push(item.type === 'passeio' ? `Encontro: ${item.location}` : item.location);
-      if (item.referenceCode) rows.push(`Código ${item.referenceCode}`);
-      break;
-    case 'chip':
-      if (item.provider) rows.push(item.provider);
-      if (when) rows.push(`Validade: ${when}`);
-      break;
-    case 'outro':
-      if (item.provider) rows.push(item.provider);
-      if (when) rows.push(when);
       if (item.referenceCode) rows.push(`Código ${item.referenceCode}`);
       break;
   }

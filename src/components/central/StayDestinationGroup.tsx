@@ -1,9 +1,11 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../shell/Button';
 import { useTrip, type TripDestination } from '../../context/TripContext';
 import { formatISOToDisplay } from '../../utils/dateMask';
 import { StayItemCard } from './StayItemCard';
 import { StayItemForm } from './StayItemForm';
+import { Icon } from '../shell/Icon';
 import styles from './TransportDestinationGroup.module.css';
 
 interface StayDestinationGroupProps {
@@ -63,7 +65,7 @@ export function StayDestinationGroup({ destination }: StayDestinationGroupProps)
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>
-          + Adicionar estadia
+          <Icon icon={Plus} /> Adicionar hospedagem
         </Button>
       )}
     </div>

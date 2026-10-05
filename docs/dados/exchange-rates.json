@@ -1,0 +1,17 @@
+{
+  "base": "BRL",
+  "asOf": "2026-10-02",
+  "sourceLabel": "ExchangeRate-API (open.er-api.com)",
+  "sourceUrl": "https://open.er-api.com/v6/latest/BRL",
+  "note": "Quanto 1 BRL vale em cada moeda, cotação de 02/out/2026 00:02 UTC. Fixa no protótipo (funciona offline).",
+  "rates": {
+    "BRL": 1,
+    "ARS": 293.559874, "AUD": 0.277275, "BOB": 2.318849, "CAD": 0.274704, "CHF": 0.161054,
+    "CLP": 187.730397, "CNY": 1.2889, "COP": 636.812499, "CZK": 4.168404, "DKK": 1.275906,
+    "EGP": 10.035637, "EUR": 0.170455, "GBP": 0.145561, "HKD": 1.513582, "IDR": 3450.56405,
+    "ILS": 0.593573, "INR": 18.569391, "JPY": 30.491515, "KRW": 262.568224, "MAD": 1.87803,
+    "MXN": 3.504077, "MYR": 0.786029, "NOK": 1.856943, "NZD": 0.342989, "PEN": 0.663076,
+    "PLN": 0.745995, "PYG": 1126.840931, "SEK": 1.93138, "SGD": 0.246897, "THB": 6.490025,
+    "TRY": 9.466254, "UYU": 7.770238, "USD": 0.192532, "VND": 4974.275579, "ZAR": 3.193825
+  }
+}

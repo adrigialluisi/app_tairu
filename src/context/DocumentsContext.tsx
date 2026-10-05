@@ -1,12 +1,15 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { Attachment } from './TripContext';
 
-export type PersonalDocType = 'passaporte' | 'rg' | 'cnh' | 'pid' | 'visto' | 'vacina' | 'outro';
+export type PersonalDocType =
+  | 'passaporte' | 'rg' | 'cnh' | 'pid' | 'visto' | 'vacina' | 'seguro-anual' | 'outro';
+
+export type ReminderLead = '6m' | '3m' | '1m' | 'off';
 
 export interface PersonalDocument {
   id: string;
   type: PersonalDocType;
-  /** título livre — usado em "Outro" e opcional em Visto/Vacina (ex.: "Visto americano", "Febre amarela") */
+  /** título livre — usado em "Outro" e opcional em Visto/Vacina/Seguro anual (ex.: "Visto americano", "Febre amarela") */
   title: string;
   /** nome de quem é o documento; vazio = da própria pessoa */
   holderName: string;
@@ -19,6 +22,20 @@ export interface PersonalDocument {
   expiryDate: string;
   notes: string;
   attachments: Attachment[];
+  /** passaporte: nome completo exatamente como impresso (tem que bater com a passagem) */
+  fullName: string;
+  /** visto: '' (não informado) | 'unica' | 'multipla' */
+  visaEntries: '' | 'unica' | 'multipla';
+  /** visto: permanência máxima por entrada, em dias (texto numérico) */
+  maxStayDays: string;
+  /** vacina: "1ª dose", "reforço", "dose única"… */
+  vaccineDose: string;
+  /** seguro anual: telefone da central 24h */
+  emergencyPhone: string;
+  /** com quanto tempo de antecedência avisar antes da validade; padrão '6m' */
+  remindBefore: ReminderLead;
+  /** simulado no protótipo: documento marcado pra abrir sem internet (ajustes-66) */
+  availableOffline: boolean;
 }
 
 interface DocumentsContextValue {
