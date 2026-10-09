@@ -1,0 +1,571 @@
+{
+  "note": "Copiado de docs/dados/eventos-da-cidade-simulados.json (ajustes-81). Modelos FICTÍCIOS por dia da semana (0=domingo … 6=sábado), gerados nas datas da viagem por getEventsForDestination.",
+  "cities": {
+    "buenos-aires-ar": [
+      {
+        "id": "ba-festival-sabores",
+        "name": "Festival Sabores de Buenos Aires",
+        "kind": "festival",
+        "weekdays": [
+          5,
+          6,
+          0
+        ],
+        "time": "12:00–21:00",
+        "venue": "Plaza Francia",
+        "neighborhood": "Recoleta",
+        "categories": [
+          "gastronomia",
+          "cultura"
+        ],
+        "price": "Grátis (comida à parte)",
+        "description": "Festival de rua com barracas de chefs portenhos, empanadas, parrilla, doce de leite e música ao vivo no fim da tarde.",
+        "lat": -34.5869,
+        "lng": -58.3925
+      },
+      {
+        "id": "ba-galerias-abertas",
+        "name": "Noite de galerias abertas em Palermo",
+        "kind": "exposicao",
+        "weekdays": [
+          4,
+          5
+        ],
+        "time": "19:00–23:00",
+        "venue": "Galerias de Palermo Hollywood",
+        "neighborhood": "Palermo",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Galerias de arte contemporânea abrem à noite com vernissages, DJs e circuito a pé entre os espaços.",
+        "lat": -34.5815,
+        "lng": -58.437
+      },
+      {
+        "id": "ba-jazz-centenario",
+        "name": "Festival de Jazz no Parque Centenario",
+        "kind": "show",
+        "weekdays": [
+          6,
+          0
+        ],
+        "time": "17:00–22:00",
+        "venue": "Anfiteatro do Parque Centenario",
+        "neighborhood": "Caballito",
+        "categories": [
+          "vida-noturna",
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Bandas de jazz e música instrumental argentina no anfiteatro ao ar livre do parque.",
+        "lat": -34.6064,
+        "lng": -58.4356
+      },
+      {
+        "id": "ba-feira-design",
+        "name": "Feira de design independente",
+        "kind": "feira",
+        "weekdays": [
+          6,
+          0
+        ],
+        "time": "11:00–20:00",
+        "venue": "Plaza Serrano",
+        "neighborhood": "Palermo Soho",
+        "categories": [
+          "compras",
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Designers locais com roupas, joias, ilustração e objetos, com food trucks e música.",
+        "lat": -34.5885,
+        "lng": -58.4302
+      },
+      {
+        "id": "ba-milonga-dorrego",
+        "name": "Milonga de rua na Plaza Dorrego",
+        "kind": "danca",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": "20:00–23:30",
+        "venue": "Plaza Dorrego",
+        "neighborhood": "San Telmo",
+        "categories": [
+          "cultura",
+          "vida-noturna"
+        ],
+        "price": "Grátis (contribuição voluntária)",
+        "description": "Casais dançam tango na praça com DJ de tango; quem quiser pode entrar na roda.",
+        "lat": -34.6206,
+        "lng": -58.3716
+      },
+      {
+        "id": "ba-cinema-madero",
+        "name": "Cinema argentino ao ar livre",
+        "kind": "cinema",
+        "weekdays": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "time": "20:30",
+        "venue": "Dique 3, Puerto Madero",
+        "neighborhood": "Puerto Madero",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Mostra de clássicos e lançamentos do cinema argentino num telão à beira do dique, com cadeiras de praia.",
+        "lat": -34.611,
+        "lng": -58.363
+      },
+      {
+        "id": "ba-futebol-monumental",
+        "name": "Jogo do campeonato argentino",
+        "kind": "esporte",
+        "weekdays": [
+          0,
+          3
+        ],
+        "time": "19:00",
+        "venue": "Estádio Monumental",
+        "neighborhood": "Núñez",
+        "categories": [
+          "vida-noturna"
+        ],
+        "price": "Pago (ingresso)",
+        "description": "Partida do campeonato nacional, com a festa da torcida antes do jogo.",
+        "lat": -34.5453,
+        "lng": -58.4497
+      }
+    ],
+    "santiago-cl": [
+      {
+        "id": "sc-festival-cerveja",
+        "name": "Festival de cerveja artesanal",
+        "kind": "festival",
+        "weekdays": [
+          5,
+          6,
+          0
+        ],
+        "time": "13:00–22:00",
+        "venue": "Parque Bicentenario",
+        "neighborhood": "Vitacura",
+        "categories": [
+          "gastronomia",
+          "vida-noturna"
+        ],
+        "price": "Pago (entrada com copo)",
+        "description": "Cervejarias artesanais chilenas, comida de rua e bandas locais à beira da lagoa do parque.",
+        "lat": -33.399,
+        "lng": -70.601
+      },
+      {
+        "id": "sc-museus-lastarria",
+        "name": "Noite de museus abertos no Lastarria",
+        "kind": "exposicao",
+        "weekdays": [
+          4,
+          5
+        ],
+        "time": "19:00–23:00",
+        "venue": "Barrio Lastarria (GAM e museus do bairro)",
+        "neighborhood": "Lastarria",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Museus e centros culturais do bairro abertos até tarde, com visitas mediadas e música na rua.",
+        "lat": -33.4378,
+        "lng": -70.6396
+      },
+      {
+        "id": "sc-musica-andina-forestal",
+        "name": "Festival de música andina",
+        "kind": "show",
+        "weekdays": [
+          6,
+          0
+        ],
+        "time": "17:00–21:00",
+        "venue": "Parque Forestal",
+        "neighborhood": "Lastarria",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Grupos de música andina e folclore chileno no gramado do parque, perto do Museo de Bellas Artes.",
+        "lat": -33.4357,
+        "lng": -70.6435
+      },
+      {
+        "id": "sc-feira-antiguidades",
+        "name": "Feira de antiguidades do Barrio Italia",
+        "kind": "feira",
+        "weekdays": [
+          6,
+          0
+        ],
+        "time": "11:00–19:00",
+        "venue": "Avenida Italia",
+        "neighborhood": "Barrio Italia",
+        "categories": [
+          "compras",
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Antiquários, discos, móveis restaurados e cafés com mesas na calçada.",
+        "lat": -33.444,
+        "lng": -70.62
+      },
+      {
+        "id": "sc-cinema-quinta-normal",
+        "name": "Cinema ao ar livre na Quinta Normal",
+        "kind": "cinema",
+        "weekdays": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "time": "20:30",
+        "venue": "Parque Quinta Normal",
+        "neighborhood": "Quinta Normal",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Telão no parque com filmes latino-americanos legendados.",
+        "lat": -33.4407,
+        "lng": -70.6825
+      },
+      {
+        "id": "sc-cueca-bellavista",
+        "name": "Noite de cueca e cumbia",
+        "kind": "danca",
+        "weekdays": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": "21:00",
+        "venue": "Peña em Bellavista",
+        "neighborhood": "Bellavista",
+        "categories": [
+          "cultura",
+          "vida-noturna"
+        ],
+        "price": "Pago (entrada)",
+        "description": "Apresentação da dança nacional chilena com aula rápida pro público, depois pista de cumbia.",
+        "lat": -33.433,
+        "lng": -70.6355
+      },
+      {
+        "id": "sc-futebol-nacional",
+        "name": "Jogo do campeonato chileno",
+        "kind": "esporte",
+        "weekdays": [
+          0,
+          3
+        ],
+        "time": "18:00",
+        "venue": "Estádio Nacional",
+        "neighborhood": "Ñuñoa",
+        "categories": [
+          "vida-noturna"
+        ],
+        "price": "Pago (ingresso)",
+        "description": "Partida do campeonato nacional no maior estádio do Chile.",
+        "lat": -33.4646,
+        "lng": -70.6107
+      },
+      {
+        "id": "sc-orquestra-gam",
+        "name": "Concerto da orquestra jovem no GAM",
+        "kind": "show",
+        "weekdays": [
+          1,
+          2
+        ],
+        "time": "19:30",
+        "venue": "Centro Cultural Gabriela Mistral (GAM)",
+        "neighborhood": "Lastarria",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis (retirar ingresso)",
+        "description": "Orquestra jovem toca repertório latino-americano no auditório do GAM.",
+        "lat": -33.439,
+        "lng": -70.64
+      }
+    ],
+    "san-pedro-de-atacama-cl": [
+      {
+        "id": "at-festival-astronomia",
+        "name": "Festival de astronomia do deserto",
+        "kind": "ceu",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": "21:30",
+        "venue": "Observatório nos arredores de San Pedro",
+        "neighborhood": "San Pedro de Atacama",
+        "categories": [
+          "natureza"
+        ],
+        "price": "Pago (transporte incluso)",
+        "description": "Noite de observação com telescópios, palestras curtas sobre o céu do hemisfério sul e chocolate quente. Leve casaco.",
+        "lat": -22.952,
+        "lng": -68.18
+      },
+      {
+        "id": "at-feira-artesanato",
+        "name": "Feira de artesanato atacamenho",
+        "kind": "feira",
+        "weekdays": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": "10:00–18:00",
+        "venue": "Plaza de San Pedro de Atacama",
+        "neighborhood": "San Pedro de Atacama",
+        "categories": [
+          "compras",
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Tecidos de lã de alpaca, cerâmica e produtos de quinoa de comunidades da região.",
+        "lat": -22.911,
+        "lng": -68.2003
+      },
+      {
+        "id": "at-musica-praca",
+        "name": "Festival de música andina na praça",
+        "kind": "show",
+        "weekdays": [
+          5,
+          6,
+          0
+        ],
+        "time": "19:00–22:00",
+        "venue": "Plaza de San Pedro de Atacama",
+        "neighborhood": "San Pedro de Atacama",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Grupos locais com quena, charango e bumbo na praça central.",
+        "lat": -22.911,
+        "lng": -68.2003
+      },
+      {
+        "id": "at-mostra-arte",
+        "name": "Mostra de arte do deserto",
+        "kind": "exposicao",
+        "weekdays": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "time": "10:00–19:00",
+        "venue": "Centro cultural no centro de San Pedro",
+        "neighborhood": "San Pedro de Atacama",
+        "categories": [
+          "cultura"
+        ],
+        "price": "Grátis",
+        "description": "Fotografia e pintura de artistas da região sobre o deserto e o altiplano.",
+        "lat": -22.9105,
+        "lng": -68.2
+      },
+      {
+        "id": "at-festa-comunitaria",
+        "name": "Festa comunitária com comida típica",
+        "kind": "celebracao",
+        "weekdays": [
+          3,
+          6
+        ],
+        "time": "12:00–17:00",
+        "venue": "Ayllu de Quitor",
+        "neighborhood": "Quitor",
+        "categories": [
+          "cultura",
+          "gastronomia"
+        ],
+        "price": "Grátis (comida à parte)",
+        "description": "Almoço comunitário com pratos típicos do altiplano, música e venda de produtos locais.",
+        "lat": -22.893,
+        "lng": -68.205
+      }
+    ]
+  },
+  "generic": [
+    {
+      "id": "gen-musica-rua",
+      "name": "Festival de música de rua — {city}",
+      "kind": "show",
+      "weekdays": [
+        5,
+        6,
+        0
+      ],
+      "time": "16:00–22:00",
+      "venue": "Centro de {city}",
+      "neighborhood": "Centro",
+      "categories": [
+        "cultura",
+        "vida-noturna"
+      ],
+      "price": "Grátis",
+      "description": "Palcos espalhados pelo centro com bandas locais.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-feira-arte",
+      "name": "Feira de arte e design — {city}",
+      "kind": "feira",
+      "weekdays": [
+        6,
+        0
+      ],
+      "time": "10:00–19:00",
+      "venue": "Praça central de {city}",
+      "neighborhood": "Centro",
+      "categories": [
+        "compras",
+        "cultura"
+      ],
+      "price": "Grátis",
+      "description": "Artistas e designers locais vendendo direto ao público.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-museus",
+      "name": "Noite de museus abertos",
+      "kind": "exposicao",
+      "weekdays": [
+        4,
+        5
+      ],
+      "time": "19:00–23:00",
+      "venue": "Museus de {city}",
+      "neighborhood": "Centro",
+      "categories": [
+        "cultura"
+      ],
+      "price": "Grátis",
+      "description": "Museus da cidade abertos até tarde, com programação especial.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-cinema",
+      "name": "Cinema ao ar livre",
+      "kind": "cinema",
+      "weekdays": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "time": "20:30",
+      "venue": "Parque de {city}",
+      "neighborhood": "Centro",
+      "categories": [
+        "cultura"
+      ],
+      "price": "Grátis",
+      "description": "Telão no parque com filmes locais.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-gastronomico",
+      "name": "Festival gastronômico — {city}",
+      "kind": "festival",
+      "weekdays": [
+        5,
+        6,
+        0
+      ],
+      "time": "12:00–21:00",
+      "venue": "Centro de {city}",
+      "neighborhood": "Centro",
+      "categories": [
+        "gastronomia"
+      ],
+      "price": "Grátis (comida à parte)",
+      "description": "Barracas de restaurantes e produtores locais.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-teatro",
+      "name": "Teatro de rua na praça",
+      "kind": "show",
+      "weekdays": [
+        1,
+        2,
+        3
+      ],
+      "time": "19:00",
+      "venue": "Praça central",
+      "neighborhood": "Centro",
+      "categories": [
+        "cultura"
+      ],
+      "price": "Grátis",
+      "description": "Companhias locais apresentam esquetes e música ao ar livre.",
+      "lat": null,
+      "lng": null
+    },
+    {
+      "id": "gen-mercado-noturno",
+      "name": "Mercado noturno de produtores locais",
+      "kind": "feira",
+      "weekdays": [
+        2,
+        3,
+        4
+      ],
+      "time": "18:00–22:00",
+      "venue": "Mercado municipal",
+      "neighborhood": "Centro",
+      "categories": [
+        "gastronomia",
+        "compras"
+      ],
+      "price": "Grátis (comida à parte)",
+      "description": "Produtores e cozinheiros locais com barracas de comida, vinho e artesanato.",
+      "lat": null,
+      "lng": null
+    }
+  ]
+}

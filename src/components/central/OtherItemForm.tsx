@@ -6,6 +6,9 @@ import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
 import { DateRangeField } from '../inputs/DateRangeField';
 import { AttachmentList } from './AttachmentList';
+import { VoucherUpload } from './VoucherUpload';
+import { readOtherFile } from '../../data/mockVouchers';
+import { useAutofill } from '../../hooks/useAutofill';
 import { OTHER_TYPES, otherTypeIcon, otherTypeLabel } from '../../utils/otherSummary';
 import { maskTime } from '../../utils/dateMask';
 import type { Attachment, OtherItem, OtherItemType, TripDestination } from '../../context/TripContext';
@@ -100,6 +103,60 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
   const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [attachments, setAttachments] = useState<Attachment[]>(initialItem?.attachments ?? []);
+  const [datesKey, setDatesKey] = useState(0);
+  const af = useAutofill();
+
+  /**
+   * Leitura simulada (ajustes-84): o arquivo entra na lista de anexos e preenche os
+   * campos — com os dados do arquivo de exemplo, se for um deles e do tipo escolhido,
+   * ou com o preenchimento de exemplo do tipo. Sempre preenche.
+   */
+  function handleReadFile(file: File) {
+    if (!type) return;
+    setAttachments((prev) => [
+      ...prev,
+      {
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        fileName: file.name,
+        url: URL.createObjectURL(file),
+        mimeType: file.type,
+      },
+    ]);
+    const { fields } = readOtherFile(
+      file,
+      type,
+      destinations.find((d) => d.id === destinationId),
+      destinations,
+    );
+    af.read(() => {
+      const keys: string[] = [];
+      const set = <T,>(value: T | undefined, setter: (v: T) => void, key: string) => {
+        if (value === undefined) return;
+        setter(value);
+        keys.push(key);
+      };
+      set(fields.title, setTitle, 'title');
+      set(fields.provider, setProvider, 'provider');
+      set(fields.referenceCode, setReferenceCode, 'reference');
+      set(fields.time, setTime, 'time');
+      set(fields.location, setLocation, 'location');
+      set(fields.emergencyPhone, setEmergencyPhone, 'emergency-phone');
+      set(fields.costAmount, setCostAmount, 'cost-amount');
+      set(fields.costCurrencyCode, setCostCurrencyCode, 'cost-currency');
+      if (fields.startDate !== undefined) {
+        setStartDate(fields.startDate);
+        setEndDate(fields.endDate ?? null);
+        setDatesKey((k) => k + 1);
+      }
+      if (fields.scope === 'viagem') setDestinationId(null);
+      else if (fields.scope) {
+        const scope = fields.scope;
+        const match = destinations.find((d) => d.cityId === scope.cityId);
+        if (match) setDestinationId(match.id);
+      }
+      return keys;
+    });
+  }
 
   const scopeOptions = [
     { value: 'viagem', label: 'Viagem toda' },
@@ -173,8 +230,19 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
         </p>
       )}
 
-      <AttachmentList attachments={attachments} onChange={setAttachments} />
+      {type && (
+        <VoucherUpload
+          fileName={null}
+          reading={af.reading}
+          filled={af.filled}
+          onFileSelected={handleReadFile}
+          hint="Tem o ingresso, o voucher ou a apólice? Envie pra preencher os campos."
+          buttonLabel="Enviar arquivo"
+        />
+      )}
 
+      {/* campos desabilitados enquanto "lê" o arquivo (ajustes-84); display: contents mantém o gap do formulário */}
+      <fieldset disabled={af.reading} className="contents">
       {type && cfg && (
         <>
           <OptionChipGroup
@@ -187,6 +255,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           {cfg.providerLabel && (
             <TextField
               id={`${baseId}-provider`}
+              highlight={af.hl('provider')}
               label={cfg.providerLabel}
               value={provider}
               onChange={setProvider}
@@ -196,6 +265,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
 
           <TextField
             id={`${baseId}-title`}
+            highlight={af.hl('title')}
             label={cfg.titleLabel}
             placeholder={cfg.titlePlaceholder}
             value={title}
@@ -204,7 +274,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           />
 
           <DateRangeField
-            key={type ?? 'none'}
+            key={`${type ?? 'none'}-${datesKey}`}
             label={cfg.dateLabel}
             required={false}
             startISO={startDate}
@@ -218,6 +288,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           {cfg.showTime && (
             <TextField
               id={`${baseId}-time`}
+              highlight={af.hl('time')}
               label={cfg.timeLabel as string}
               placeholder={cfg.timePlaceholder}
               inputMode="numeric"
@@ -230,6 +301,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           {cfg.showLocation && (
             <TextField
               id={`${baseId}-location`}
+              highlight={af.hl('location')}
               label={cfg.locationLabel as string}
               value={location}
               onChange={setLocation}
@@ -240,6 +312,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           {cfg.referenceLabel && (
             <TextField
               id={`${baseId}-reference`}
+              highlight={af.hl('reference')}
               label={cfg.referenceLabel}
               value={referenceCode}
               onChange={setReferenceCode}
@@ -250,6 +323,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           {cfg.showEmergencyPhone && (
             <TextField
               id={`${baseId}-emergency-phone`}
+              highlight={af.hl('emergency-phone')}
               label="Telefone da central 24h"
               placeholder="Ex.: +55 11 0000-0000"
               inputMode="tel"
@@ -261,6 +335,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
 
           <TextField
             id={`${baseId}-notes`}
+            highlight={af.hl('notes')}
             label="Observações (opcional)"
             placeholder={cfg.notesPlaceholder}
             value={notes}
@@ -271,6 +346,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           <div className={styles.costRow}>
             <TextField
               id={`${baseId}-cost-amount`}
+              highlight={af.hl('cost-amount')}
               label="Custo (opcional)"
               placeholder="Ex.: 450"
               value={costAmount}
@@ -286,6 +362,10 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
           </div>
         </>
       )}
+
+      {/* o arquivo enviado lá em cima também aparece aqui; dá pra anexar mais sem ler de novo */}
+      <AttachmentList attachments={attachments} onChange={setAttachments} />
+      </fieldset>
 
       <div className={styles.actions}>
         <Button fullWidth disabled={!type} onClick={handleSave}>

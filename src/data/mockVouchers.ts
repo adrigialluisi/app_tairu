@@ -1,4 +1,21 @@
-import type { StayItem, TransportItem } from '../context/TripContext';
+import type { OtherItem, OtherItemType, StayItem, TransportItem, TripDestination } from '../context/TripContext';
+import type { PersonalDocType, PersonalDocument } from '../context/DocumentsContext';
+import { formatISOToDisplay } from '../utils/dateMask';
+
+/*
+  Leitura SIMULADA de voucher/documento (docs/ajustes-84-tudo-que-sobe-preenche-sozinho.md):
+  não existe OCR, backend nem IA. O app "lê" pelo nome do arquivo, em 2 níveis:
+  1. arquivo de exemplo conhecido (public/mock-vouchers/, nome exato, sem diferenciar maiúsculas)
+     → os dados daquele arquivo;
+  2. qualquer outro arquivo (ex.: foto do celular do participante) → preenchimento de exemplo
+     coerente com o contexto (destino, tipo). Nunca deixa de preencher.
+  `source` só serve pro código/moderador — a tela mostra a mesma mensagem nos dois casos.
+*/
+export type ReadSource = 'reconhecido' | 'exemplo';
+export interface ReadResult<T> {
+  fields: T;
+  source: ReadSource;
+}
 
 /**
  * `Omit` sobre uma união discriminada colapsa pras chaves em comum (perde
@@ -63,9 +80,38 @@ export const MOCK_TRANSPORT_VOUCHERS: Record<string, MockVoucherFields> = {
   },
 };
 
-/** Reconhecimento só por nome do arquivo (mock, sem OCR/backend) — case-insensitive. */
-export function lookupMockTransportVoucher(fileName: string): MockVoucherFields | null {
-  return MOCK_TRANSPORT_VOUCHERS[fileName.toLowerCase()] ?? null;
+/** voucher de exemplo cuja ORIGEM é a cidade do destino (pra foto qualquer enviada naquele destino) */
+const TRANSPORT_EXAMPLE_BY_CITY: Record<string, string> = {
+  'buenos-aires-ar': 'voucher-voo-buenosaires-santiago.pdf',
+  'santiago-cl': 'voucher-voo-santiago-calama.pdf',
+  'san-pedro-de-atacama-cl': 'voucher-transfer-calama-sanpedro.pdf',
+};
+
+function isoToDisplay(iso: string | null | undefined): string {
+  return iso ? formatISOToDisplay(iso) : '';
+}
+
+export function readTransportFile(
+  file: Pick<File, 'name'>,
+  destination: TripDestination | undefined,
+): ReadResult<MockVoucherFields> {
+  const known = MOCK_TRANSPORT_VOUCHERS[file.name.toLowerCase()];
+  if (known) return { fields: known, source: 'reconhecido' };
+  const byCity = destination && TRANSPORT_EXAMPLE_BY_CITY[destination.cityId];
+  if (byCity) return { fields: MOCK_TRANSPORT_VOUCHERS[byCity], source: 'exemplo' };
+  const day = isoToDisplay(destination?.dateStart);
+  return {
+    fields: {
+      type: 'voo',
+      company: 'Companhia aérea (exemplo)',
+      flightNumber: 'EX-0000',
+      origin: 'Origem (exemplo)',
+      destination: destination?.city ?? 'Destino (exemplo)',
+      departureAt: day ? `${day} 10:00` : '',
+      arrivalAt: day ? `${day} 12:00` : '',
+    },
+    source: 'exemplo',
+  };
 }
 
 type MockStayVoucherFields = Omit<
@@ -115,6 +161,186 @@ export const MOCK_STAY_VOUCHERS: Record<string, MockStayVoucherFields> = {
   },
 };
 
-export function lookupMockStayVoucher(fileName: string): MockStayVoucherFields | null {
-  return MOCK_STAY_VOUCHERS[fileName.toLowerCase()] ?? null;
+const STAY_EXAMPLE_BY_CITY: Record<string, string> = {
+  'buenos-aires-ar': 'voucher-hotel-buenosaires-magnolia.pdf',
+  'santiago-cl': 'voucher-hotel-santiago-cumbreslastarria.pdf',
+  'san-pedro-de-atacama-cl': 'voucher-pousada-sanpedro-casasolcor.pdf',
+};
+
+export function readStayFile(file: Pick<File, 'name'>, destination: TripDestination): ReadResult<MockStayVoucherFields> {
+  const known = MOCK_STAY_VOUCHERS[file.name.toLowerCase()];
+  if (known) return { fields: known, source: 'reconhecido' };
+  const byCity = STAY_EXAMPLE_BY_CITY[destination.cityId];
+  if (byCity) return { fields: MOCK_STAY_VOUCHERS[byCity], source: 'exemplo' };
+  return {
+    fields: {
+      type: 'hotel',
+      hotelId: null,
+      name: 'Hotel (exemplo)',
+      address: '',
+      locality: destination.city,
+      checkInDate: destination.dateStart,
+      checkInTime: '15:00',
+      checkOutDate: destination.dateEnd,
+      checkOutTime: '11:00',
+      confirmationCode: 'EX-0000',
+      roomType: '',
+    },
+    source: 'exemplo',
+  };
+}
+
+// ---------- Outros (Seguro, Passeio, Ingresso) ----------
+
+/** campos que a leitura preenche num registro de Outros; `destinationCityId` vira o "Vale para" se a viagem tiver essa cidade */
+export type OtherReadFields = Partial<
+  Pick<
+    OtherItem,
+    'title' | 'provider' | 'referenceCode' | 'startDate' | 'endDate' | 'time' | 'location' | 'emergencyPhone' | 'costAmount' | 'costCurrencyCode'
+  >
+> & { scope?: 'viagem' | { cityId: string } };
+
+const MOCK_OTHER_FILES: Record<string, { type: OtherItemType; fields: OtherReadFields }> = {
+  'seguro-viagem-exemplo.pdf': {
+    type: 'seguro',
+    fields: {
+      title: 'Mundo — cobertura médica USD 60.000',
+      provider: 'Seguro Viagem (exemplo)',
+      referenceCode: 'SV-2026-884120',
+      startDate: '2026-11-20',
+      endDate: '2026-11-25',
+      emergencyPhone: '+55 11 0000-0000',
+      scope: 'viagem',
+    },
+  },
+  'ingresso-passeio-valle-de-la-luna-exemplo.pdf': {
+    type: 'passeio',
+    fields: {
+      title: 'Valle de la Luna ao pôr do sol',
+      provider: 'Atacama Tours (exemplo)',
+      referenceCode: 'ATC-77310',
+      startDate: '2026-11-24',
+      endDate: null,
+      time: '15:30',
+      location: 'Agência — Caracoles 160, San Pedro de Atacama',
+      scope: { cityId: 'san-pedro-de-atacama-cl' },
+    },
+  },
+  'ingresso-festival-cerveja-santiago.pdf': {
+    type: 'ingresso',
+    fields: {
+      title: 'Festival de cerveja artesanal',
+      provider: 'EntradasYa (exemplo)',
+      referenceCode: 'EYA-48213',
+      startDate: '2026-11-22',
+      endDate: null,
+      time: '13:00',
+      location: 'Parque Bicentenario, Vitacura',
+      costAmount: '45000',
+      costCurrencyCode: 'CLP',
+      scope: { cityId: 'santiago-cl' },
+    },
+  },
+};
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** 2º dia do período (ou o 1º, se ele tiver um dia só) */
+function secondDay(start: string | null, end: string | null): string | null {
+  if (!start) return null;
+  const next = addDaysISO(start, 1);
+  return end && next > end ? start : next;
+}
+
+/**
+ * `destination`: o "Vale para" escolhido no formulário (undefined = viagem toda);
+ * `destinations`: todos, pra vigência do seguro e 2º dia da viagem.
+ */
+export function readOtherFile(
+  file: Pick<File, 'name'>,
+  type: OtherItemType,
+  destination: TripDestination | undefined,
+  destinations: TripDestination[],
+): ReadResult<OtherReadFields> {
+  const known = MOCK_OTHER_FILES[file.name.toLowerCase()];
+  // arquivo conhecido no formulário "errado" (ex.: seguro num Ingresso): vale o exemplo do tipo atual
+  if (known && known.type === type) return { fields: known.fields, source: 'reconhecido' };
+
+  const starts = destinations.map((d) => d.dateStart).filter((d): d is string => !!d).sort();
+  const ends = destinations.map((d) => d.dateEnd).filter((d): d is string => !!d).sort();
+  const tripStart = starts[0] ?? null;
+  const tripEnd = ends[ends.length - 1] ?? null;
+  if (type === 'seguro') {
+    return {
+      fields: {
+        title: 'Plano viagem (exemplo)',
+        provider: 'Seguradora (exemplo)',
+        referenceCode: 'EX-000000',
+        startDate: tripStart,
+        endDate: tripEnd,
+        emergencyPhone: '+55 11 0000-0000',
+      },
+      source: 'exemplo',
+    };
+  }
+  const day = destination ? secondDay(destination.dateStart, destination.dateEnd) : secondDay(tripStart, tripEnd);
+  return {
+    fields:
+      type === 'passeio'
+        ? { title: 'Passeio guiado (exemplo)', provider: 'Agência (exemplo)', referenceCode: 'EX-0000', startDate: day, endDate: null, time: '09:00' }
+        : { title: 'Ingresso (exemplo)', provider: 'Bilheteria (exemplo)', referenceCode: 'EX-0000', startDate: day, endDate: null, time: '20:00' },
+    source: 'exemplo',
+  };
+}
+
+// ---------- Documentos pessoais ----------
+
+export type DocumentReadFields = Partial<
+  Pick<
+    PersonalDocument,
+    'title' | 'fullName' | 'number' | 'issuer' | 'issueDate' | 'expiryDate' | 'visaEntries' | 'maxStayDays' | 'vaccineDose' | 'emergencyPhone'
+  >
+>;
+
+const TEST_NAME = 'PARTICIPANTE DO TESTE';
+
+/** exemplo por tipo — passaporte igual ao arquivo de exemplo, pra tarefa do aviso de validade funcionar com qualquer foto */
+const DOCUMENT_EXAMPLES: Record<Exclude<PersonalDocType, 'outro'>, DocumentReadFields> = {
+  passaporte: { fullName: TEST_NAME, number: 'XX0000000', issuer: 'Brasil', issueDate: '10/03/2017', expiryDate: '10/03/2027' },
+  rg: { fullName: TEST_NAME, number: '00.000.000-0', issuer: 'SSP-SP', issueDate: '01/01/2015' },
+  cnh: { fullName: TEST_NAME, number: '00000000000', issuer: 'SP', expiryDate: '01/01/2030' },
+  pid: { fullName: TEST_NAME, number: 'PID-0000', issuer: 'Brasil', expiryDate: '01/01/2027' },
+  visto: {
+    title: 'Visto (exemplo)',
+    fullName: TEST_NAME,
+    issuer: 'Estados Unidos',
+    expiryDate: '01/01/2030',
+    visaEntries: 'multipla',
+    maxStayDays: '90',
+  },
+  vacina: { title: 'Febre amarela', fullName: TEST_NAME, vaccineDose: 'Dose única', issueDate: '15/08/2019', expiryDate: '' },
+  'seguro-anual': {
+    title: 'Seguro anual (exemplo)',
+    issuer: 'Seguradora (exemplo)',
+    number: 'EX-000000',
+    expiryDate: '31/12/2026',
+    emergencyPhone: '+55 11 0000-0000',
+  },
+};
+
+const MOCK_DOCUMENT_FILES: Record<string, { type: PersonalDocType; fields: DocumentReadFields }> = {
+  'passaporte-exemplo.png': { type: 'passaporte', fields: DOCUMENT_EXAMPLES.passaporte },
+  // vale por toda a vida: validade em branco (o card mostra "Sem validade")
+  'certificado-vacina-febre-amarela-exemplo.png': { type: 'vacina', fields: DOCUMENT_EXAMPLES.vacina },
+};
+
+export function readDocumentFile(file: Pick<File, 'name'>, docType: PersonalDocType): ReadResult<DocumentReadFields> {
+  const known = MOCK_DOCUMENT_FILES[file.name.toLowerCase()];
+  if (known && known.type === docType) return { fields: known.fields, source: 'reconhecido' };
+  if (docType === 'outro') return { fields: { title: file.name.replace(/\.[^.]+$/, '') }, source: 'exemplo' };
+  return { fields: DOCUMENT_EXAMPLES[docType], source: 'exemplo' };
 }

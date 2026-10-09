@@ -27,6 +27,7 @@ export function AttachmentList({ attachments, onChange, hint = DEFAULT_HINT }: A
       id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       fileName: file.name,
       url: URL.createObjectURL(file),
+      mimeType: file.type,
     }));
     onChange([...attachments, ...added]);
   }

@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { getEventById, getPlaceById } from '../data';
 import type { RetroCard, Retrospective, TripContextValue, TripPhoto } from '../context/TripContext';
-import { buildCostEntries, CATEGORY_META, EXPENSE_CATEGORIES, getMembers } from './costs';
+import { activeMembers, buildCostEntries, CATEGORY_META, EXPENSE_CATEGORIES, getMembers } from './costs';
 import { formatISOToDisplay } from './dateMask';
 import { formatMoney } from './money';
 import {
@@ -25,6 +25,7 @@ type TripForRetro = Pick<
   | 'name'
   | 'destinations'
   | 'companions'
+  | 'formerCompanions'
   | 'selectedPlaces'
   | 'itineraryOverrides'
   | 'selectedEventIds'
@@ -205,7 +206,7 @@ export function buildRetrospective(trip: TripForRetro): Retrospective {
   }
 
   if (cards.length > 0) {
-    const people = getMembers(trip).map((m) => (m.id === 'voce' ? 'você' : m.label));
+    const people = activeMembers(getMembers(trip)).map((m) => (m.id === 'voce' ? 'você' : m.label));
     cards.push({
       id: id('fecho'),
       kind: 'fecho',

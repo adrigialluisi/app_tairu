@@ -14,8 +14,9 @@ import { ExpenseCard } from '../components/costs/ExpenseCard';
 import { ExpenseForm } from '../components/costs/ExpenseForm';
 import { SettlementPanel } from '../components/costs/SettlementPanel';
 import { useTrip } from '../context/TripContext';
-import { useSaveToast } from '../hooks/useSaveToast';
-import { buildCostEntries, getMembers, type CostEntry } from '../utils/costs';
+import { useSaveToast, withOffline } from '../hooks/useSaveToast';
+import { OfflineBadge } from '../components/shell/OfflineBadge';
+import { activeMembers, buildCostEntries, getMembers, type CostEntry } from '../utils/costs';
 import { formatISOToDisplay } from '../utils/dateMask';
 import { Icon } from '../components/shell/Icon';
 import groupStyles from '../components/central/TransportDestinationGroup.module.css';
@@ -64,6 +65,8 @@ export function Costs() {
   }
 
   const members = getMembers(trip);
+  // nos formulários só entra quem está na viagem; quem saiu continua nos cards e no rateio (ajustes-83)
+  const choosableMembers = activeMembers(members);
   const entries = buildCostEntries(trip);
   const destinationIds = new Set(trip.destinations.map((d) => d.id));
 
@@ -85,7 +88,7 @@ export function Costs() {
   function handleSaved() {
     setEditingId(null);
     setPrefill(undefined);
-    show('Gasto salvo');
+    show(withOffline('Gasto salvo'));
   }
 
   function renderEntry(entry: CostEntry) {
@@ -97,7 +100,7 @@ export function Costs() {
         <CentralCostForm
           key={entry.id}
           entry={entry}
-          members={members}
+          members={choosableMembers}
           onSave={(override) => {
             trip.saveCentralCostOverride(override);
             handleSaved();
@@ -110,7 +113,7 @@ export function Costs() {
       <ExpenseForm
         key={entry.id}
         destinations={trip.destinations}
-        members={members}
+        members={choosableMembers}
         initialExpense={expense}
         onSave={(updated) => {
           trip.saveExpense(updated);
@@ -156,7 +159,7 @@ export function Costs() {
               <ExpenseForm
                 key={prefill ? `new-${prefill.amount}-${prefill.currencyCode}` : 'new'}
                 destinations={trip.destinations}
-                members={members}
+                members={choosableMembers}
                 initialExpense={null}
                 prefill={prefill}
                 onSave={(expense) => {
@@ -176,6 +179,8 @@ export function Costs() {
                 <Icon icon={Plus} /> Lançar gasto
               </Button>
             )}
+
+            {groups.length > 0 && <OfflineBadge label="Lançamentos disponíveis offline" />}
 
             {groups.map((g) => (
               <div key={g.key} className={groupStyles.group}>

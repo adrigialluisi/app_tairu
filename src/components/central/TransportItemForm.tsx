@@ -4,7 +4,9 @@ import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
 import { VoucherUpload } from './VoucherUpload';
-import { lookupMockTransportVoucher } from '../../data/mockVouchers';
+import { readTransportFile } from '../../data/mockVouchers';
+import { useTrip } from '../../context/TripContext';
+import { useAutofill } from '../../hooks/useAutofill';
 import { transportTypeIcon } from '../../utils/transportSummary';
 import type { TransportItem, TransportType } from '../../context/TripContext';
 import styles from './TransportItemForm.module.css';
@@ -61,18 +63,21 @@ export function TransportItemForm({
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
   const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
-  const [voucherRecognized, setVoucherRecognized] = useState<boolean | null>(null);
+  const trip = useTrip();
+  const af = useAutofill();
 
+  /** leitura simulada (ajustes-84): arquivo de exemplo conhecido ou o voucher de exemplo do destino — sempre preenche */
   function handleVoucherFile(file: File) {
-    const match = lookupMockTransportVoucher(file.name);
     setVoucherFileName(file.name);
+    const { fields } = readTransportFile(
+      file,
+      trip.destinations.find((d) => d.id === destinationId),
+    );
+    af.read(() => applyVoucher(fields));
+  }
 
-    if (!match) {
-      setVoucherRecognized(false);
-      return;
-    }
-
-    setVoucherRecognized(true);
+  /** preenche os campos e devolve as chaves (sufixo do id) que mudaram, pro destaque */
+  function applyVoucher(match: ReturnType<typeof readTransportFile>['fields']): string[] {
     setType(match.type);
     setCompany(match.company);
     if (match.type === 'voo') {
@@ -81,11 +86,13 @@ export function TransportItemForm({
       setDestination(match.destination);
       setDepartureAt(match.departureAt);
       setArrivalAt(match.arrivalAt);
+      return ['company', 'flight-number', 'origin', 'destination', 'departure', 'arrival'];
     } else if (match.type === 'onibus') {
       setOrigin(match.origin);
       setDestination(match.destination);
       setDepartureAt(match.departureAt);
       setArrivalAt(match.arrivalAt);
+      return ['company', 'origin', 'destination', 'departure', 'arrival'];
     } else if (match.type === 'trem') {
       setTrainNumber(match.trainNumber);
       setOrigin(match.origin);
@@ -95,18 +102,20 @@ export function TransportItemForm({
       setTravelClass(match.travelClass);
       setSeat(match.seat);
       setBookingCode(match.bookingCode);
+      return ['company', 'train-number', 'origin', 'destination', 'departure', 'arrival', 'travel-class', 'seat', 'booking-code'];
     } else {
       setVehicleCategory(match.vehicleCategory);
       setPickupLocation(match.pickupLocation);
       setPickupAt(match.pickupAt);
       setDropoffLocation(match.dropoffLocation);
       setDropoffAt(match.dropoffAt);
+      return ['company', 'vehicle-category', 'pickup-location', 'pickup-at', 'dropoff-location', 'dropoff-at'];
     }
   }
 
   function handleRemoveVoucher() {
     setVoucherFileName(null);
-    setVoucherRecognized(null);
+    af.reset();
   }
 
   function handleSave() {
@@ -141,10 +150,14 @@ export function TransportItemForm({
     <div className={styles.form}>
       <VoucherUpload
         fileName={voucherFileName}
-        recognized={voucherRecognized}
+        reading={af.reading}
+        filled={af.filled}
         onFileSelected={handleVoucherFile}
         onRemove={handleRemoveVoucher}
       />
+
+      {/* campos desabilitados enquanto "lê" o arquivo (ajustes-84); display: contents mantém o gap do formulário */}
+      <fieldset disabled={af.reading} className="contents">
 
       <OptionChipGroup legend="Tipo de transporte" options={TYPE_OPTIONS} value={type} onChange={setType} />
 
@@ -152,6 +165,7 @@ export function TransportItemForm({
         <>
           <TextField
             id={`${baseId}-company`}
+            highlight={af.hl('company')}
             label="Companhia aérea"
             value={company}
             onChange={setCompany}
@@ -159,14 +173,16 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-flight-number`}
+            highlight={af.hl('flight-number')}
             label="Número do voo"
             value={flightNumber}
             onChange={setFlightNumber}
             autoComplete="off"
           />
-          <TextField id={`${baseId}-origin`} label="Origem" value={origin} onChange={setOrigin} autoComplete="off" />
+          <TextField id={`${baseId}-origin`} highlight={af.hl('origin')} label="Origem" value={origin} onChange={setOrigin} autoComplete="off" />
           <TextField
             id={`${baseId}-destination`}
+            highlight={af.hl('destination')}
             label="Destino"
             value={destination}
             onChange={setDestination}
@@ -174,6 +190,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-departure`}
+            highlight={af.hl('departure')}
             label="Data/hora de partida"
             placeholder={DATETIME_PLACEHOLDER}
             value={departureAt}
@@ -182,6 +199,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-arrival`}
+            highlight={af.hl('arrival')}
             label="Data/hora de chegada"
             placeholder={DATETIME_PLACEHOLDER}
             value={arrivalAt}
@@ -195,14 +213,16 @@ export function TransportItemForm({
         <>
           <TextField
             id={`${baseId}-company`}
+            highlight={af.hl('company')}
             label="Empresa"
             value={company}
             onChange={setCompany}
             autoComplete="off"
           />
-          <TextField id={`${baseId}-origin`} label="Origem" value={origin} onChange={setOrigin} autoComplete="off" />
+          <TextField id={`${baseId}-origin`} highlight={af.hl('origin')} label="Origem" value={origin} onChange={setOrigin} autoComplete="off" />
           <TextField
             id={`${baseId}-destination`}
+            highlight={af.hl('destination')}
             label="Destino"
             value={destination}
             onChange={setDestination}
@@ -210,6 +230,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-departure`}
+            highlight={af.hl('departure')}
             label="Data/hora de saída"
             placeholder={DATETIME_PLACEHOLDER}
             value={departureAt}
@@ -218,6 +239,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-arrival`}
+            highlight={af.hl('arrival')}
             label="Data/hora de chegada"
             placeholder={DATETIME_PLACEHOLDER}
             value={arrivalAt}
@@ -231,6 +253,7 @@ export function TransportItemForm({
         <>
           <TextField
             id={`${baseId}-company`}
+            highlight={af.hl('company')}
             label="Operadora"
             placeholder="Ex.: Tren de la Costa"
             value={company}
@@ -239,6 +262,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-train-number`}
+            highlight={af.hl('train-number')}
             label="Número do trem ou linha"
             value={trainNumber}
             onChange={setTrainNumber}
@@ -246,6 +270,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-origin`}
+            highlight={af.hl('origin')}
             label="Estação de embarque"
             value={origin}
             onChange={setOrigin}
@@ -253,6 +278,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-destination`}
+            highlight={af.hl('destination')}
             label="Estação de desembarque"
             value={destination}
             onChange={setDestination}
@@ -260,6 +286,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-departure`}
+            highlight={af.hl('departure')}
             label="Data/hora de partida"
             placeholder={DATETIME_PLACEHOLDER}
             value={departureAt}
@@ -268,6 +295,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-arrival`}
+            highlight={af.hl('arrival')}
             label="Data/hora de chegada"
             placeholder={DATETIME_PLACEHOLDER}
             value={arrivalAt}
@@ -276,6 +304,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-travel-class`}
+            highlight={af.hl('travel-class')}
             label="Classe (opcional)"
             placeholder="Ex.: Turista"
             value={travelClass}
@@ -284,6 +313,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-seat`}
+            highlight={af.hl('seat')}
             label="Vagão e assento (opcional)"
             placeholder="Ex.: Vagão 2, assento 14"
             value={seat}
@@ -292,6 +322,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-booking-code`}
+            highlight={af.hl('booking-code')}
             label="Código da reserva (opcional)"
             value={bookingCode}
             onChange={setBookingCode}
@@ -305,6 +336,7 @@ export function TransportItemForm({
         <>
           <TextField
             id={`${baseId}-company`}
+            highlight={af.hl('company')}
             label="Locadora"
             value={company}
             onChange={setCompany}
@@ -312,6 +344,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-vehicle-category`}
+            highlight={af.hl('vehicle-category')}
             label="Categoria do veículo"
             placeholder="Ex.: Econômico, SUV"
             value={vehicleCategory}
@@ -320,6 +353,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-pickup-location`}
+            highlight={af.hl('pickup-location')}
             label="Local de retirada"
             value={pickupLocation}
             onChange={setPickupLocation}
@@ -327,6 +361,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-pickup-at`}
+            highlight={af.hl('pickup-at')}
             label="Data/hora de retirada"
             placeholder={DATETIME_PLACEHOLDER}
             value={pickupAt}
@@ -335,6 +370,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-dropoff-location`}
+            highlight={af.hl('dropoff-location')}
             label="Local de devolução"
             value={dropoffLocation}
             onChange={setDropoffLocation}
@@ -342,6 +378,7 @@ export function TransportItemForm({
           />
           <TextField
             id={`${baseId}-dropoff-at`}
+            highlight={af.hl('dropoff-at')}
             label="Data/hora de devolução"
             placeholder={DATETIME_PLACEHOLDER}
             value={dropoffAt}
@@ -369,6 +406,8 @@ export function TransportItemForm({
           />
         </div>
       )}
+
+      </fieldset>
 
       <div className={styles.actions}>
         <Button fullWidth disabled={!type} onClick={handleSave}>

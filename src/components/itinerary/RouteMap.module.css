@@ -30,20 +30,91 @@
   border: none;
 }
 
-.popup {
+/* linha da rota de cada dia: a cor sai do token (ajustes-80) */
+.mapBox :global(.route-day-1) { stroke: var(--map-day-1); }
+.mapBox :global(.route-day-2) { stroke: var(--map-day-2); }
+.mapBox :global(.route-day-3) { stroke: var(--map-day-3); }
+.mapBox :global(.route-day-4) { stroke: var(--map-day-4); }
+
+/* popup no estilo do cartão do Google: cantos maiores, sombra suave, sem a setinha pesada */
+.mapBox :global(.leaflet-popup-content-wrapper) {
+  border-radius: var(--radius-card);
+  box-shadow: 0 2px 10px rgba(28, 25, 23, 0.2);
+}
+.mapBox :global(.leaflet-popup-content) {
+  margin: var(--space-2);
+  min-width: 200px;
+}
+
+/* controles: canto inferior direito, acima da atribuição */
+.controls {
+  position: absolute;
+  right: var(--space-2);
+  bottom: 28px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.zoomGroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 13px;
+}
+
+.popup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.popupPhoto {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-photo);
+  object-fit: cover;
+}
+
+.popupText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .popupName {
-  font-weight: 600;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
   color: var(--text);
 }
 
 .popupMeta {
+  font-size: var(--text-sm);
   color: var(--muted);
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
 }
 
 .missingNote {

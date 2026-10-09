@@ -1,7 +1,9 @@
 import {
   CalendarDays,
   Compass,
+  Clapperboard,
   Drum,
+  Frame,
   Landmark,
   Moon,
   MoonStar,
@@ -11,8 +13,10 @@ import {
   Scale,
   ShoppingBag,
   ShoppingBasket,
+  Sparkles,
   Theater,
   Trees,
+  Trophy,
   UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react';
@@ -45,6 +49,11 @@ export const EVENT_KIND_ICONS: Record<EventKind, LucideIcon> = {
   danca: PartyPopper,
   cerimonia: Drum,
   ceu: MoonStar,
+  festival: Sparkles,
+  exposicao: Frame,
+  cinema: Clapperboard,
+  esporte: Trophy,
+  celebracao: PartyPopper,
 };
 
 export function categoryIcon(category: string): LucideIcon | undefined {

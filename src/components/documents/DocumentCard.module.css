@@ -26,10 +26,3 @@
 }
 
 /* Selos de acesso (ajustes-66) — ícone + texto, nunca só cor */
-.accessBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-

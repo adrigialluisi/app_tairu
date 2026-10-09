@@ -1,0 +1,359 @@
+{
+  "source": "Wikimedia Commons (licenças CC BY / CC BY-SA — crédito obrigatório)",
+  "note": "Copiado de docs/dados/memorias-exemplo-fotos.json (ajustes-78/79), sem downloadUrl. Fotos em public/memorias-exemplo/<id>.jpg. Viajantes FICTÍCIOS (simulação).",
+  "travelers": [
+    {
+      "id": "voce",
+      "name": "Você",
+      "initials": "EU"
+    },
+    {
+      "id": "camila",
+      "name": "Camila Rocha",
+      "initials": "CR"
+    },
+    {
+      "id": "bruno",
+      "name": "Bruno Teixeira",
+      "initials": "BT"
+    }
+  ],
+  "photos": [
+    {
+      "id": "lis-comercio-1",
+      "stopId": "lis-comercio",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lisbon_Pra%C3%A7a_do_Com%C3%A9rcio_BW_2018-10-08_17-42-58.jpg",
+      "author": "Berthold Werner",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-comercio-2",
+      "stopId": "lis-comercio",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lisbon_Pra%C3%A7a_do_Com%C3%A9rcio_BW_2018-10-08_17-45-56.jpg",
+      "author": "Berthold Werner",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-rua-augusta-1",
+      "stopId": "lis-rua-augusta",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Arco_Triunfal_da_Rua_Augusta_von_unten.jpg",
+      "author": "Kritzolina",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-rua-augusta-2",
+      "stopId": "lis-rua-augusta",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Rua_Augusta_Arch_%28Lisbon%29_01.jpg",
+      "author": "Bernard Gagnon",
+      "license": "CC BY 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-santa-luzia-1",
+      "stopId": "lis-santa-luzia",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:View_from_Miradouro_de_Santa_Luzia%2C_Lisbon%2C_20250603_2016_9045.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-santa-luzia-2",
+      "stopId": "lis-santa-luzia",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lissabon_-_Santa_Luzia_-_Alfama_-_1.jpg",
+      "author": "Ingo Mehling",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-se-1",
+      "stopId": "lis-se",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Catedral_de_Lisboa%2C_Portugal%2C_2012-05-12%2C_DD_02.JPG",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-se-2",
+      "stopId": "lis-se",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Rose_window%2C_center_of_west_facade_of_S%C3%A9_de_Lisboa%2C_20250603_1954_9005.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-castelo-1",
+      "stopId": "lis-castelo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lisbon_Castelo_de_S%C3%A3o_Jorge_BW_2018-10-03_11-13-09.jpg",
+      "author": "Berthold Werner",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-castelo-2",
+      "stopId": "lis-castelo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Castelo_de_S%C3%A3o_Jorge%2C_Lisboa_116.jpg",
+      "author": "Simon Burchell",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-panteao-1",
+      "stopId": "lis-panteao",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lissabon_-_Santa_Luzia_-_Panteao_Nacional_-_1.jpg",
+      "author": "Ingo Mehling",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-panteao-2",
+      "stopId": "lis-panteao",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Church_of_Santa_Engr%C3%A1cia_-_National_Pantheon_-_Pante%C3%A3o_Nacional_%2828948190098%29.jpg",
+      "author": "Nan Palmero",
+      "license": "CC BY 2.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-jeronimos-1",
+      "stopId": "lis-jeronimos",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Monasterio_de_los_Jer%C3%B3nimos%2C_Lisboa%2C_Portugal%2C_2022-07-24%2C_DD_38-40_HDR.jpg",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-jeronimos-2",
+      "stopId": "lis-jeronimos",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:View_of_Mosteiro_dos_Jer%C3%B3nimos_from_Monument_of_the_Discoveries%2C_Bel%C3%A9m%2C_Lisbon%2C_20250604_1111_9124.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-padrao-1",
+      "stopId": "lis-padrao",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Padr%C3%A3o_Descobrimentos_April_2009-3c.jpg",
+      "author": "Alvesgaspar",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-padrao-2",
+      "stopId": "lis-padrao",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Contre-jour_image_of_Padr%C3%A3o_dos_Descobrimentos_at_sunrise%2C_Lisbon%2C_Portugal_julesvernex2.jpg",
+      "author": "Jules Verne Times Two",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-torre-belem-1",
+      "stopId": "lis-torre-belem",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Torre_Bel%C3%A9m_April_2009-4a.jpg",
+      "author": "Alvesgaspar",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-torre-belem-2",
+      "stopId": "lis-torre-belem",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Torre_de_Bel%C3%A9m_por_Rodrigo_Tetsuo_Argenton_%282%29.jpg",
+      "author": "Rodrigo.Argenton",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-lx-factory-1",
+      "stopId": "lis-lx-factory",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lisboa_LX_Factory_1.jpg",
+      "author": "Andrzej Otrębski",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "lis-lx-factory-2",
+      "stopId": "lis-lx-factory",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Lx_Factory_-_Lisboa_-_Portugal_%F0%9F%87%B5%F0%9F%87%B9_%2854100836401%29.jpg",
+      "author": "Vitor Oliveira",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-pena-1",
+      "stopId": "lis-pena",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Sintra_Portugal_Pal%C3%A1cio_da_Pena-01.jpg",
+      "author": "CEphoto, Uwe Aranas",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "lis-pena-2",
+      "stopId": "lis-pena",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Pal%C3%A1cio_Nacional_da_Pena%2C_Sintra%2C_Portugal%2C_20250606_1159_0132.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-regaleira-1",
+      "stopId": "lis-regaleira",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Quinta_da_Regaleira%2C_Sintra%2C_Portugal%2C_2019-05-25%2C_DD_69.jpg",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "lis-regaleira-2",
+      "stopId": "lis-regaleira",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Quinta_da_Regaleira%2C_Sintra%2C_Portugal%2C_2019-05-25%2C_DD_56.jpg",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-sao-bento-1",
+      "stopId": "opo-sao-bento",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Azulejos_%28Esta%C3%A7%C3%A3o_de_S%C3%A3o_Bento%29_%2814004154641%29.jpg",
+      "author": "jad99 from Graz, Austria",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-sao-bento-2",
+      "stopId": "opo-sao-bento",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Azulejos_%28Esta%C3%A7%C3%A3o_de_S%C3%A3o_Bento%29_%2814004129462%29.jpg",
+      "author": "jad99 from Graz, Austria",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-clerigos-1",
+      "stopId": "opo-clerigos",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Western_view_from_Torre_dos_Cl%C3%A9rigos_in_Porto%2C_20250605_1725_9969.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-clerigos-2",
+      "stopId": "opo-clerigos",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:South-western_view_from_Torre_dos_Cl%C3%A9rigos_in_Porto%2C_20250605_1725_9970.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-lello-1",
+      "stopId": "opo-lello",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Exterior_view_of_Livraria_Lello_02.jpg",
+      "author": "John Samuel",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-lello-2",
+      "stopId": "opo-lello",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Interior_view_of_Livraria_Lello_01.jpg",
+      "author": "John Samuel",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-ribeira-1",
+      "stopId": "opo-ribeira",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:View_of_Ribeira_from_Cais_de_Gaia%2C_20250605_1628_9890.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-ribeira-2",
+      "stopId": "opo-ribeira",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Rabelo_boats_and_Ribeira_seen_from_Cais_de_Gaia%2C_20250605_1623_9879.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-ponte-1",
+      "stopId": "opo-ponte",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Puente_Don_Luis_I%2C_Oporto%2C_Portugal%2C_2012-05-09%2C_DD_13.JPG",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-ponte-2",
+      "stopId": "opo-ponte",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Ponte_de_D._Lu%C3%ADs_2.jpg",
+      "author": "T meltzer",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-serra-pilar-1",
+      "stopId": "opo-serra-pilar",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Mosteiro_da_Serra_do_Pilar_%281%29.jpg",
+      "author": "Krzysztof Golik",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-serra-pilar-2",
+      "stopId": "opo-serra-pilar",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Monastery_of_Serra_do_Pilar%2C_Vila_Nova_de_Gaia%2C_Portugal%2C_20250605_1505_9844.jpg",
+      "author": "Jakub Hałun",
+      "license": "CC BY 4.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-caves-1",
+      "stopId": "opo-caves",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Caves_do_Vinho_do_Porto_-_Vila_Nova_de_Gaia_-_Portugal_%2853353793332%29.jpg",
+      "author": "Vitor Oliveira",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "voce"
+    },
+    {
+      "id": "opo-caves-2",
+      "stopId": "opo-caves",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Rabelos_en_el_r%C3%ADo_Duero%2C_Vila_Nova_de_Gaia%2C_Portugal%2C_2012-05-09%2C_DD_14.JPG",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 3.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-serralves-1",
+      "stopId": "opo-serralves",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Funda%C3%A7%C3%A3o_de_Serralves_%2825810599493%29.jpg",
+      "author": "bebatut",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "camila"
+    },
+    {
+      "id": "opo-serralves-2",
+      "stopId": "opo-serralves",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Porto_Serralves_Ryoji_Ikeda_%2853093657775%29.jpg",
+      "author": "tomislav medak",
+      "license": "CC BY-SA 2.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-queijo-1",
+      "stopId": "opo-queijo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Praia_do_Castelo_do_Queijo_%286%29.jpg",
+      "author": "Krzysztof Golik",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "bruno"
+    },
+    {
+      "id": "opo-queijo-2",
+      "stopId": "opo-queijo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Praia_do_Castelo_do_Queijo_%2812%29.jpg",
+      "author": "Krzysztof Golik",
+      "license": "CC BY-SA 4.0",
+      "addedBy": "voce"
+    }
+  ]
+}

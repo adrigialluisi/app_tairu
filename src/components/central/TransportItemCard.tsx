@@ -2,6 +2,7 @@ import { Paperclip } from 'lucide-react';
 import { transportItemDetailRows, transportItemTitle, transportTypeIcon } from '../../utils/transportSummary';
 import type { TransportItem } from '../../context/TripContext';
 import { Icon } from '../shell/Icon';
+import { OfflineBadge } from '../shell/OfflineBadge';
 import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 
@@ -34,6 +35,8 @@ export function TransportItemCard({ item, onEdit }: TransportItemCardProps) {
           <Icon icon={Paperclip} /> Voucher anexado
         </p>
       )}
+      {/* item salvo abre sem internet (ajustes-82) */}
+      <OfflineBadge />
     </Card>
   );
 }

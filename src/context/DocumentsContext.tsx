@@ -11,8 +11,6 @@ export interface PersonalDocument {
   type: PersonalDocType;
   /** título livre — usado em "Outro" e opcional em Visto/Vacina/Seguro anual (ex.: "Visto americano", "Febre amarela") */
   title: string;
-  /** nome de quem é o documento; vazio = da própria pessoa */
-  holderName: string;
   number: string;
   /** país emissor (passaporte, visto, PID) ou órgão/UF (RG, CNH) */
   issuer: string;
@@ -20,9 +18,11 @@ export interface PersonalDocument {
   issueDate: string;
   /** "dd/mm/aaaa" ou "" */
   expiryDate: string;
-  notes: string;
   attachments: Attachment[];
-  /** passaporte: nome completo exatamente como impresso (tem que bater com a passagem) */
+  /**
+   * nome como está no documento (todos os tipos desde o ajustes-82, que tirou o "De quem é"): no
+   * passaporte tem que bater com a passagem; na vacina é quem tomou; no seguro, o titular
+   */
   fullName: string;
   /** visto: '' (não informado) | 'unica' | 'multipla' */
   visaEntries: '' | 'unica' | 'multipla';
@@ -34,8 +34,6 @@ export interface PersonalDocument {
   emergencyPhone: string;
   /** com quanto tempo de antecedência avisar antes da validade; padrão '6m' */
   remindBefore: ReminderLead;
-  /** simulado no protótipo: documento marcado pra abrir sem internet (ajustes-66) */
-  availableOffline: boolean;
 }
 
 interface DocumentsContextValue {

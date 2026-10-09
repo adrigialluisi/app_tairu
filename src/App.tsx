@@ -12,7 +12,8 @@ import { Itinerary } from './screens/Itinerary';
 import { Central } from './screens/Central';
 import { Documents } from './screens/Documents';
 import { Costs } from './screens/Costs';
-import { Memories } from './screens/Memories';
+import { PastTrip } from './screens/PastTrip';
+import { PastTripRecap } from './screens/PastTripRecap';
 
 /**
  * Aplica data-platform="ios" | "android" na raiz visível — é esse atributo
@@ -58,7 +59,8 @@ export function App() {
                 <Route path="/roteiro" element={<Itinerary />} />
                 <Route path="/custos" element={<Costs />} />
                 <Route path="/documentos" element={<Documents />} />
-                <Route path="/memorias" element={<Memories />} />
+                <Route path="/viagem-passada/:id" element={<PastTrip />} />
+                <Route path="/viagem-passada/:id/recordacao" element={<PastTripRecap />} />
               </Routes>
             </HashRouter>
           </PlatformRoot>

@@ -15,27 +15,3 @@
   font-size: 14px;
   color: var(--muted);
 }
-
-/* Bloco "Acesso" (offline + compartilhar), antes de Salvar. Sem flex no fieldset de propósito
-   (gap com <legend> é inconsistente entre navegadores, ver OptionChipGroup.module.css). */
-.access {
-  margin: 0;
-  padding: var(--space-3) 0 0;
-  border: none;
-  border-top: 1px solid var(--card-border);
-}
-
-.accessLegend {
-  display: block;
-  padding: var(--space-3) 0 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.accessList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-}

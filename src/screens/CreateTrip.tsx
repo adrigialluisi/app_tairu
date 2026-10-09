@@ -9,7 +9,8 @@ import { TextField } from '../components/inputs/TextField';
 import { DestinationField } from '../components/inputs/DestinationField';
 import { TripProfileQuiz, quizSummaryLines } from '../components/quiz/TripProfileQuiz';
 import { useTrip, type TripDestination } from '../context/TripContext';
-import { useSaveToast } from '../hooks/useSaveToast';
+import { useSaveToast, withOffline } from '../hooks/useSaveToast';
+import { OfflineBadge } from '../components/shell/OfflineBadge';
 import { formatISOToDisplay } from '../utils/dateMask';
 import { getCurrency } from '../data';
 import styles from './CreateTrip.module.css';
@@ -60,7 +61,7 @@ export function CreateTrip() {
 
   function handleSaveDestinos() {
     trip.setDestinosSaved(true);
-    show('Destinos salvos');
+    show(withOffline('Destinos salvos'));
   }
 
   return (
@@ -99,24 +100,27 @@ export function CreateTrip() {
         saved={trip.destinosSaved}
         onEdit={() => trip.setDestinosSaved(false)}
         summary={
-          <ul className={styles.summaryList}>
-            {trip.destinations.map((d) => (
-              <li key={d.id}>{formatDestinoSummaryLine(d)}</li>
-            ))}
-          </ul>
+          <>
+            <ul className={styles.summaryList}>
+              {trip.destinations.map((d) => (
+                <li key={d.id}>{formatDestinoSummaryLine(d)}</li>
+              ))}
+            </ul>
+            <OfflineBadge />
+          </>
         }
       >
         <DestinationField
           destinations={trip.destinations}
           onAdd={(destination) => {
             trip.addDestination(destination);
-            show('Destino adicionado');
+            show(withOffline('Destino adicionado'));
           }}
           onRemove={trip.removeDestination}
           onCurrencyChange={trip.setDestinationCurrency}
           onDateRangeChange={(id, start, end) => {
             trip.setDestinationDateRange(id, start, end);
-            if (start && end) show('Datas salvas');
+            if (start && end) show(withOffline('Datas salvas'));
           }}
           dateOverlapError={overlapError}
         />
@@ -132,11 +136,14 @@ export function CreateTrip() {
           saved={trip.perfilSaved}
           onEdit={() => trip.setPerfilSaved(false)}
           summary={
-            <ul className={styles.summaryList}>
-              {quizSummaryLines(trip.quiz).map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
+            <>
+              <ul className={styles.summaryList}>
+                {quizSummaryLines(trip.quiz).map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+              <OfflineBadge />
+            </>
           }
         >
           <TripProfileQuiz />
@@ -144,7 +151,7 @@ export function CreateTrip() {
             fullWidth
             onClick={() => {
               trip.setPerfilSaved(true);
-              show('Perfil da viagem salvo');
+              show(withOffline('Perfil da viagem salvo'));
             }}
           >
             Salvar perfil da viagem

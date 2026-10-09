@@ -1,0 +1,264 @@
+{
+  "generatedAt": "2026-10-08",
+  "note": "Eventos SIMULADOS (fictícios), pedidos pela Adriana em 08/out/2026 pra ter atividades em todos os dias do cenário fixo. Locais reais (coordenadas aproximadas de landmark), eventos inventados. Campo simulated=true; sem sourceUrl. Ver docs/ajustes-80-...md.",
+  "events": [
+    {
+      "id": "sim-ba-jazz-thelonious-2026-11-20",
+      "cityId": "buenos-aires-ar",
+      "name": "Noite de jazz no Thelonious Club",
+      "kind": "show",
+      "date": "2026-11-20",
+      "time": "21:30",
+      "venue": "Thelonious Club",
+      "neighborhood": "Palermo",
+      "categories": [
+        "vida-noturna",
+        "cultura"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Pago (couvert)",
+      "description": "Quinteto de jazz argentino tocando standards e composições próprias num clube pequeno e intimista de Palermo.",
+      "lat": -34.5866,
+      "lng": -58.425,
+      "simulated": true
+    },
+    {
+      "id": "sim-ba-bike-puerto-madero-2026-11-20",
+      "cityId": "buenos-aires-ar",
+      "name": "Passeio noturno de bicicleta por Puerto Madero",
+      "kind": "passeio",
+      "date": "2026-11-20",
+      "time": "19:00",
+      "venue": "Puente de la Mujer",
+      "neighborhood": "Puerto Madero",
+      "categories": [
+        "natureza",
+        "pontos-turisticos"
+      ],
+      "popularity": "turistico",
+      "price": "Pago (bicicleta inclusa)",
+      "description": "Pedalada guiada de 2h pelas docas e pela Reserva Ecológica Costanera Sur, terminando na Puente de la Mujer iluminada.",
+      "lat": -34.6081,
+      "lng": -58.3653,
+      "simulated": true
+    },
+    {
+      "id": "sim-ba-feira-plaza-serrano-2026-11-21",
+      "cityId": "buenos-aires-ar",
+      "name": "Feira gastronômica na Plaza Serrano",
+      "kind": "gastronomia",
+      "date": "2026-11-21",
+      "time": "12:00–20:00",
+      "venue": "Plaza Serrano",
+      "neighborhood": "Palermo Soho",
+      "categories": [
+        "gastronomia",
+        "compras"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Grátis (comida à parte)",
+      "description": "Barracas de empanadas, choripán, cervejas artesanais e doces de doce de leite, com DJ no fim da tarde.",
+      "lat": -34.5885,
+      "lng": -58.4302,
+      "simulated": true
+    },
+    {
+      "id": "sim-ba-tango-la-ventana-2026-11-22",
+      "cityId": "buenos-aires-ar",
+      "name": "Jantar e show de tango na La Ventana",
+      "kind": "show",
+      "date": "2026-11-22",
+      "time": "20:30",
+      "venue": "La Ventana",
+      "neighborhood": "San Telmo",
+      "categories": [
+        "cultura",
+        "vida-noturna",
+        "gastronomia"
+      ],
+      "popularity": "turistico",
+      "price": "Pago (com jantar)",
+      "description": "Show clássico de tango com orquestra ao vivo e bailarinos, com opção de jantar antes.",
+      "lat": -34.6162,
+      "lng": -58.372,
+      "simulated": true
+    },
+    {
+      "id": "sim-ba-vinhos-palermo-2026-11-22",
+      "cityId": "buenos-aires-ar",
+      "name": "Degustação de vinhos argentinos",
+      "kind": "gastronomia",
+      "date": "2026-11-22",
+      "time": "18:00",
+      "venue": "Loja de vinhos em Palermo Hollywood",
+      "neighborhood": "Palermo",
+      "categories": [
+        "gastronomia"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Pago (5 taças)",
+      "description": "Sommelier apresenta 5 vinhos de Mendoza e Salta, com tábua de queijos.",
+      "lat": -34.5815,
+      "lng": -58.437,
+      "simulated": true
+    },
+    {
+      "id": "sim-sc-feira-bellavista-2026-11-22",
+      "cityId": "santiago-cl",
+      "name": "Feira de artesanato no Patio Bellavista",
+      "kind": "feira",
+      "date": "2026-11-22",
+      "time": "11:00–19:00",
+      "venue": "Patio Bellavista",
+      "neighborhood": "Bellavista",
+      "categories": [
+        "compras",
+        "cultura"
+      ],
+      "popularity": "turistico",
+      "price": "Grátis",
+      "description": "Artesãos chilenos com lápis-lazúli, cerâmica e tecidos, entre restaurantes do Patio Bellavista.",
+      "lat": -33.433,
+      "lng": -70.6355,
+      "simulated": true
+    },
+    {
+      "id": "sim-sc-concerto-forestal-2026-11-23",
+      "cityId": "santiago-cl",
+      "name": "Concerto ao ar livre no Parque Forestal",
+      "kind": "show",
+      "date": "2026-11-23",
+      "time": "19:00",
+      "venue": "Parque Forestal, perto do Museo de Bellas Artes",
+      "neighborhood": "Lastarria",
+      "categories": [
+        "cultura"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Grátis",
+      "description": "Orquestra jovem toca repertório latino-americano no gramado do parque, no fim da tarde.",
+      "lat": -33.4357,
+      "lng": -70.6435,
+      "simulated": true
+    },
+    {
+      "id": "sim-sc-santa-lucia-noturno-2026-11-24",
+      "cityId": "santiago-cl",
+      "name": "Visita guiada noturna ao Cerro Santa Lucía",
+      "kind": "passeio",
+      "date": "2026-11-24",
+      "time": "19:30",
+      "venue": "Cerro Santa Lucía",
+      "neighborhood": "Centro",
+      "categories": [
+        "pontos-turisticos",
+        "cultura"
+      ],
+      "popularity": "turistico",
+      "price": "Grátis (inscrição na hora)",
+      "description": "Subida guiada de 1h30 contando a história da fundação de Santiago, com vista da cidade ao anoitecer.",
+      "lat": -33.4405,
+      "lng": -70.644,
+      "simulated": true
+    },
+    {
+      "id": "sim-sc-food-trucks-araucano-2026-11-24",
+      "cityId": "santiago-cl",
+      "name": "Festival de food trucks no Parque Araucano",
+      "kind": "gastronomia",
+      "date": "2026-11-24",
+      "time": "12:00–21:00",
+      "venue": "Parque Araucano",
+      "neighborhood": "Las Condes",
+      "categories": [
+        "gastronomia"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Grátis (comida à parte)",
+      "description": "Mais de 30 food trucks de cozinha chilena, peruana e venezuelana, com música ao vivo.",
+      "lat": -33.403,
+      "lng": -70.574,
+      "simulated": true
+    },
+    {
+      "id": "sim-at-astronomico-2026-11-24",
+      "cityId": "san-pedro-de-atacama-cl",
+      "name": "Tour astronômico com telescópios",
+      "kind": "ceu",
+      "date": "2026-11-24",
+      "time": "21:00",
+      "venue": "Observatório nos arredores de San Pedro",
+      "neighborhood": "San Pedro de Atacama",
+      "categories": [
+        "natureza"
+      ],
+      "popularity": "turistico",
+      "price": "Pago (transporte incluso)",
+      "description": "Observação do céu do deserto com telescópios e explicação das constelações do hemisfério sul. Leve casaco.",
+      "lat": -22.952,
+      "lng": -68.18,
+      "simulated": true
+    },
+    {
+      "id": "sim-at-feira-artesanato-2026-11-25",
+      "cityId": "san-pedro-de-atacama-cl",
+      "name": "Feira de artesanato atacamenho",
+      "kind": "feira",
+      "date": "2026-11-25",
+      "time": "10:00–18:00",
+      "venue": "Plaza de San Pedro de Atacama",
+      "neighborhood": "San Pedro de Atacama",
+      "categories": [
+        "compras",
+        "cultura"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Grátis",
+      "description": "Tecidos de lã de alpaca, cerâmica e produtos de quinoa feitos por comunidades atacamenhas.",
+      "lat": -22.911,
+      "lng": -68.2003,
+      "simulated": true
+    },
+    {
+      "id": "sim-at-por-do-sol-kari-2026-11-25",
+      "cityId": "san-pedro-de-atacama-cl",
+      "name": "Pôr do sol com música andina no Mirador de Kari",
+      "kind": "show",
+      "date": "2026-11-25",
+      "time": "18:30",
+      "venue": "Mirador de Kari (Piedra del Coyote)",
+      "neighborhood": "Cordillera de la Sal",
+      "categories": [
+        "natureza",
+        "cultura"
+      ],
+      "popularity": "turistico",
+      "price": "Pago (transporte incluso)",
+      "description": "Saída em grupo pro mirante, com músicos tocando instrumentos andinos enquanto o sol se põe sobre o deserto.",
+      "lat": -22.93,
+      "lng": -68.24,
+      "simulated": true
+    },
+    {
+      "id": "sim-sc-cueca-2026-11-23",
+      "cityId": "santiago-cl",
+      "name": "Noite de cueca e comida chilena",
+      "kind": "danca",
+      "date": "2026-11-23",
+      "time": "21:00",
+      "venue": "Peña em Barrio Yungay",
+      "neighborhood": "Yungay",
+      "categories": [
+        "cultura",
+        "vida-noturna",
+        "gastronomia"
+      ],
+      "popularity": "fora-do-circuito",
+      "price": "Pago (entrada)",
+      "description": "Apresentação da dança nacional chilena com aula rápida pro público, empanadas e pisco sour.",
+      "lat": -33.44,
+      "lng": -70.672,
+      "simulated": true
+    }
+  ]
+}

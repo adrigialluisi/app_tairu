@@ -159,6 +159,8 @@ export interface Attachment {
   fileName: string;
   /** URL.createObjectURL(file) — só vale enquanto o app está aberto */
   url: string;
+  /** tipo do arquivo (File.type) — imagem vira miniatura em Documentos (ajustes-84); ausente nos anexos antigos */
+  mimeType?: string;
 }
 
 export interface OtherItem {
@@ -272,14 +274,15 @@ export type QuizRhythm = 'tranquilo' | 'moderado' | 'corrido';
 export type QuizBudget = 'economico' | 'moderado' | 'confortavel';
 export type QuizInterest = 'gastronomia' | 'cultura' | 'natureza' | 'vida-noturna' | 'compras';
 export type QuizKnowsDestination = 'sim' | 'nao';
-export type QuizCompanionType = 'sozinho' | 'casal' | 'amigos' | 'familia-criancas';
+export type QuizCompanionType = 'sozinho' | 'casal' | 'amigos' | 'familia' | 'com-criancas';
 
 export interface QuizAnswers {
   /** múltipla escolha desde 11/set/2026 — ver docs/ajustes-18-pace-multi-select.md */
   discovery: QuizDiscovery[];
   rhythm: QuizRhythm | null;
   budget: QuizBudget | null;
-  companionType: QuizCompanionType | null;
+  /** múltipla escolha desde 08/out/2026 (ex.: Família + Com crianças) */
+  companionType: QuizCompanionType[];
   /** voltaram a ser gerais da viagem em 10/set/2026 — ver docs/ajustes-17-perfil-geral-e-abas-mais-sutil.md */
   interests: QuizInterest[];
   knowsDestination: QuizKnowsDestination | null;
@@ -310,8 +313,11 @@ interface TripState {
   retrospective: Retrospective | null;
   /** "Agora não" no convite da retrospectiva */
   retroDismissed: boolean;
-  /** PersonalDocument.id compartilhados com o grupo desta viagem (ajustes-66) — o documento continua da pessoa */
-  sharedDocumentIds: string[];
+  /**
+   * quem entrou e depois foi removido da viagem (ajustes-83): sai de Convidados e das escolhas de
+   * "quem pagou/dividir com", mas os lugares e gastos que trouxe continuam — e com o nome dela
+   */
+  formerCompanions: TripCompanion[];
   /** chaves de contribuições simuladas que a pessoa removeu — nunca recriar (ajustes-67) */
   dismissedMockKeys: string[];
   /** aviso "Marina Duarte entrou na viagem…" (seq muda a cada entrada, pra tela mostrar o toast) */
@@ -325,10 +331,14 @@ export interface TripContextValue extends TripState {
   setDestinationCurrency: (id: string, currencyCode: string) => void;
   setDestinationDateRange: (id: string, start: string | null, end: string | null) => void;
   addCompanion: (email: string) => void;
+  /** cancela um convite pendente ou remove da viagem quem entrou (os lugares e gastos dele ficam) */
   removeCompanion: (id: string) => void;
+  /** "Corrigir e-mail" de um convite pendente (ajustes-83) */
+  updateCompanionEmail: (id: string, email: string) => void;
   setQuizAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   toggleQuizDiscovery: (discovery: QuizDiscovery) => void;
   toggleQuizInterest: (interest: QuizInterest) => void;
+  toggleQuizCompanionType: (value: QuizCompanionType) => void;
   togglePlace: (destinationId: string, place: { placeId: string; categories: string[] }) => void;
   addCustomPlace: (destinationId: string, label: string) => void;
   removeSelectedPlace: (id: string) => void;
@@ -355,7 +365,6 @@ export interface TripContextValue extends TripState {
   moveRetroCard: (id: string, direction: -1 | 1) => void;
   setRetroShowCosts: (value: boolean) => void;
   setRetroDismissed: (value: boolean) => void;
-  toggleSharedDocument: (id: string) => void;
   resetTrip: () => void;
 }
 
@@ -363,7 +372,7 @@ const initialQuiz: QuizAnswers = {
   discovery: [],
   rhythm: null,
   budget: null,
-  companionType: null,
+  companionType: [],
   interests: [],
   knowsDestination: null,
 };
@@ -389,12 +398,35 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [photos, setPhotos] = useState<TripPhoto[]>([]);
   const [retrospective, setRetrospective] = useState<Retrospective | null>(null);
   const [retroDismissed, setRetroDismissed] = useState(false);
-  const [sharedDocumentIds, setSharedDocumentIds] = useState<string[]>([]);
+  const [formerCompanions, setFormerCompanions] = useState<TripCompanion[]>([]);
   const [dismissedMockKeys, setDismissedMockKeys] = useState<string[]>([]);
   const [companionJoinNotice, setCompanionJoinNotice] = useState<{ seq: number; message: string } | null>(null);
   // SIMULAÇÃO (ajustes-67): timers de "entrada" dos convidados do cenário e quem já foi anunciado
   const joinTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const announcedJoins = useRef(new Set<string>());
+
+  function clearJoinTimer(id: string) {
+    const timer = joinTimers.current.get(id);
+    if (timer) clearTimeout(timer);
+    joinTimers.current.delete(id);
+  }
+
+  /** SIMULAÇÃO: só os convidados do cenário fixo "entram" (2,5 s depois); o resto fica em "Convite enviado" */
+  function scheduleMockJoin(id: string, email: string) {
+    const profile = findMockCompanion(email);
+    if (!profile) return;
+    const timer = setTimeout(() => {
+      joinTimers.current.delete(id);
+      setCompanions((prev) =>
+        prev.map((c) =>
+          c.id === id && c.status === 'convite-enviado'
+            ? { ...c, status: 'entrou', name: profile.name, initials: profile.initials }
+            : c,
+        ),
+      );
+    }, 2500);
+    joinTimers.current.set(id, timer);
+  }
 
   function dismissMockKeys(keys: string[]) {
     if (keys.length === 0) return;
@@ -479,7 +511,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       photos,
       retrospective,
       retroDismissed,
-      sharedDocumentIds,
+      formerCompanions,
       dismissedMockKeys,
       companionJoinNotice,
       setName,
@@ -501,27 +533,28 @@ export function TripProvider({ children }: { children: ReactNode }) {
       addCompanion: (email) => {
         const id = `${email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         setCompanions((prev) => [...prev, { id, email, status: 'convite-enviado' }]);
-        // SIMULAÇÃO: só os convidados do cenário fixo "entram" (2,5 s depois); o resto fica em "Convite enviado"
-        const profile = findMockCompanion(email);
-        if (profile) {
-          const timer = setTimeout(() => {
-            joinTimers.current.delete(id);
-            setCompanions((prev) =>
-              prev.map((c) =>
-                c.id === id ? { ...c, status: 'entrou', name: profile.name, initials: profile.initials } : c,
-              ),
-            );
-          }, 2500);
-          joinTimers.current.set(id, timer);
-        }
+        scheduleMockJoin(id, email);
+      },
+      updateCompanionEmail: (id, email) => {
+        clearJoinTimer(id);
+        setCompanions((prev) => prev.map((c) => (c.id === id && c.status === 'convite-enviado' ? { ...c, email } : c)));
+        // e-mail corrigido pra um convidado do cenário: ele "entra" como num convite normal
+        scheduleMockJoin(id, email);
       },
       removeCompanion: (id) => {
-        const timer = joinTimers.current.get(id);
-        if (timer) clearTimeout(timer);
-        joinTimers.current.delete(id);
-        announcedJoins.current.delete(id);
+        clearJoinTimer(id);
+        const companion = companions.find((c) => c.id === id);
         setCompanions((prev) => prev.filter((c) => c.id !== id));
-        // tira tudo o que esse convidado trouxe: lugares que só ele queria, o "também quer", gastos dele
+        if (companion?.status === 'entrou') {
+          // ajustes-83: remover da viagem NÃO apaga o que a pessoa trouxe — os lugares e gastos continuam,
+          // e ela vira ex-membro (mantém o nome nos rótulos e no rateio). Fica em announcedJoins, então
+          // não repete o aviso de entrada; se for convidada de novo, ganha outro id e outro aviso.
+          setFormerCompanions((prev) => [...prev, companion]);
+          return;
+        }
+        announcedJoins.current.delete(id);
+        // convite pendente (cancelado): não trouxe nada ainda, mas a limpeza continua por segurança —
+        // tira lugares que só ele queria, o "também quer", gastos dele
         const removedPlaceIds = selectedPlaces
           .filter((s) => s.addedBy === id && s.alsoWantedBy.filter((m) => m !== id).length === 0)
           .map((s) => s.id);
@@ -563,6 +596,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
           interests: prev.interests.includes(interest)
             ? prev.interests.filter((i) => i !== interest)
             : [...prev.interests, interest],
+        })),
+      toggleQuizCompanionType: (value) =>
+        setQuiz((prev) => ({
+          ...prev,
+          companionType: prev.companionType.includes(value)
+            ? prev.companionType.filter((v) => v !== value)
+            : [...prev.companionType, value],
         })),
       togglePlace: (destinationId, place) => {
         dismissMockKeys(
@@ -712,8 +752,6 @@ export function TripProvider({ children }: { children: ReactNode }) {
         }),
       setRetroShowCosts: (value) => setRetrospective((prev) => (prev ? { ...prev, showCosts: value } : prev)),
       setRetroDismissed,
-      toggleSharedDocument: (id) =>
-        setSharedDocumentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
       resetTrip: () => {
         joinTimers.current.forEach((t) => clearTimeout(t));
         joinTimers.current.clear();
@@ -723,6 +761,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setName('');
         setDestinations([]);
         setCompanions([]);
+        setFormerCompanions([]);
         setQuiz(initialQuiz);
         setSelectedPlaces([]);
         setItineraryOverrides([]);
@@ -743,8 +782,6 @@ export function TripProvider({ children }: { children: ReactNode }) {
         });
         setRetrospective(null);
         setRetroDismissed(false);
-        // desliga os compartilhamentos; os documentos (DocumentsContext) não são apagados
-        setSharedDocumentIds([]);
         setOtherItems((prev) => {
           prev.forEach((o) => o.attachments.forEach((a) => URL.revokeObjectURL(a.url)));
           return [];
@@ -770,7 +807,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       photos,
       retrospective,
       retroDismissed,
-      sharedDocumentIds,
+      formerCompanions,
       dismissedMockKeys,
       companionJoinNotice,
     ],

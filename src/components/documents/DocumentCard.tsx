@@ -1,4 +1,4 @@
-import { Download, Paperclip, TriangleAlert, Users } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,6 +12,8 @@ import {
 } from '../../utils/documentSummary';
 import type { PersonalDocument } from '../../context/DocumentsContext';
 import { Icon } from '../shell/Icon';
+import { OfflineBadge } from '../shell/OfflineBadge';
+import { DocumentThumbs } from './DocumentFiles';
 import { Card } from '@/components/ui/card';
 import styles from '../central/TransportItemCard.module.css';
 import stayStyles from '../central/StayItemCard.module.css';
@@ -21,24 +23,10 @@ import cardStyles from './DocumentCard.module.css';
 interface DocumentCardProps {
   doc: PersonalDocument;
   tripEndISO: string | null;
-  /** não usado em modo só leitura */
-  onEdit?: () => void;
-  /** Documentos do grupo, em Convidados: sem "Editar" (Mostrar do número e anexos continuam) */
-  readOnly?: boolean;
-  /** selos de acesso (ajustes-66) */
-  shared?: boolean;
-  /** linha "De: …" (Documentos do grupo) */
-  fromLabel?: string;
+  onEdit: () => void;
 }
 
-export function DocumentCard({
-  doc,
-  tripEndISO,
-  onEdit,
-  readOnly = false,
-  shared = false,
-  fromLabel,
-}: DocumentCardProps) {
+export function DocumentCard({ doc, tripEndISO, onEdit }: DocumentCardProps) {
   const [numberVisible, setNumberVisible] = useState(false);
   const status = expiryStatus(doc, tripEndISO);
   const badgeLabel = expiryStatusLabel(status);
@@ -61,7 +49,8 @@ export function DocumentCard({
       doc.issueDate ? `Vacinada em ${doc.issueDate}` : '',
       doc.expiryDate ? `${doc.issueDate ? 'válida' : 'Válida'} até ${doc.expiryDate}` : '',
     ].filter(Boolean);
-    dateRow = parts.length ? parts.join(', ') : null;
+    // sem validade preenchida = vale por toda a vida (ex.: febre amarela, ajustes-84)
+    dateRow = parts.length ? `${parts.join(', ')}${doc.expiryDate ? '' : ' · Sem validade'}` : null;
   } else if (isInsurance && (doc.issueDate || doc.expiryDate)) {
     dateRow = `Vigência: ${doc.issueDate || '—'} – ${doc.expiryDate || '—'}`;
   } else if (doc.expiryDate) {
@@ -87,33 +76,16 @@ export function DocumentCard({
           </span>
           <span className={stayStyles.typeLabel}>
             {docTypeShort(doc.type)}
-            {doc.holderName ? ` · ${doc.holderName}` : ''}
+            {/* o nome distingue, por ex., a vacina do filho da sua (ajustes-82, no lugar do "De quem é") */}
+            {doc.fullName ? ` · ${doc.fullName}` : ''}
           </span>
-          {(doc.availableOffline || shared) && (
-            <span className={cardStyles.accessBadges}>
-              {doc.availableOffline && (
-                <Badge variant="neutral">
-                  <Icon icon={Download} /> Offline
-                </Badge>
-              )}
-              {shared && (
-                <Badge variant="neutral">
-                  <Icon icon={Users} /> Compartilhado
-                </Badge>
-              )}
-            </span>
-          )}
         </span>
-        {!readOnly && onEdit && (
-          <button type="button" className={styles.editButton} onClick={onEdit}>
-            Editar
-          </button>
-        )}
+        <button type="button" className={styles.editButton} onClick={onEdit}>
+          Editar
+        </button>
       </div>
 
       <div className={styles.detailRows}>
-        {fromLabel && <p className={styles.detail}>De: {fromLabel}</p>}
-        {doc.type === 'passaporte' && doc.fullName && <p className={styles.detail}>{doc.fullName}</p>}
         {doc.number && (
           <p className={styles.detail}>
             Nº {numberVisible ? doc.number : maskDocNumber(doc.number)}{' '}
@@ -144,28 +116,17 @@ export function DocumentCard({
           </p>
         )}
         {doc.expiryDate && doc.remindBefore === 'off' && <p className={styles.detail}>Sem aviso de vencimento</p>}
-        {doc.notes && <p className={styles.detail}>{doc.notes}</p>}
       </div>
 
+      {/* imagem vira miniatura que abre em tela cheia; PDF continua com ícone (ajustes-84) */}
       {doc.attachments.length > 0 ? (
-        <div className={attachmentStyles.attachments}>
-          {doc.attachments.map((att) => (
-            <a
-              key={att.id}
-              href={att.url}
-              target="_blank"
-              rel="noreferrer"
-              className={attachmentStyles.attachmentLink}
-              title={att.fileName}
-            >
-              <Icon icon={Paperclip} />
-              <span className={attachmentStyles.attachmentName}>{att.fileName}</span>
-            </a>
-          ))}
-        </div>
+        <DocumentThumbs attachments={doc.attachments} docLabel={documentTitle(doc)} />
       ) : (
         <p className={styles.detail}>Nenhum arquivo anexado</p>
       )}
+
+      {/* todo documento salvo abre sem internet (ajustes-82) */}
+      <OfflineBadge />
     </Card>
   );
 }

@@ -1,25 +1,5 @@
 [
   {
-    "id": "ba-feria-san-telmo-2026-11-22",
-    "cityId": "buenos-aires-ar",
-    "name": "Feira de San Telmo",
-    "kind": "feira",
-    "date": "2026-11-22",
-    "time": "10:00–17:00",
-    "venue": "Plaza Dorrego e rua Defensa",
-    "neighborhood": "San Telmo",
-    "categories": ["cultura", "compras"],
-    "popularity": "turistico",
-    "price": "Grátis",
-    "description": "Feira de antiguidades e artesanato que acontece todo domingo, com músicos e casais de tango pela rua Defensa.",
-    "lat": -34.6206,
-    "lng": -58.3716,
-    "sourceLabel": "feriadesantelmo.com",
-    "sourceUrl": "https://feriadesantelmo.com/planea-tu-visita/",
-    "checkedAt": "2026-10-02",
-    "recurring": "Todo domingo"
-  },
-  {
     "id": "ba-milonga-glorieta-2026-11-21",
     "cityId": "buenos-aires-ar",
     "name": "Milonga ao ar livre na Glorieta de Belgrano",
@@ -28,7 +8,10 @@
     "time": "a partir das 20:00 (aula às 18:00)",
     "venue": "Glorieta das Barrancas de Belgrano",
     "neighborhood": "Belgrano",
-    "categories": ["cultura", "vida-noturna"],
+    "categories": [
+      "cultura",
+      "vida-noturna"
+    ],
     "popularity": "fora-do-circuito",
     "price": "Grátis (aula com contribuição voluntária)",
     "description": "Tango ao ar livre no coreto da praça, frequentado por moradores. Dá pra só assistir ou fazer a aula antes.",
@@ -49,7 +32,10 @@
     "time": "noite",
     "venue": "Teatro Gran Rex",
     "neighborhood": "Microcentro (Av. Corrientes)",
-    "categories": ["vida-noturna", "cultura"],
+    "categories": [
+      "vida-noturna",
+      "cultura"
+    ],
     "popularity": "turistico",
     "price": "Pago (ingresso)",
     "description": "Estreia da primeira ópera rock do músico argentino, sobre a conquista da América.",
@@ -60,6 +46,29 @@
     "checkedAt": "2026-10-02"
   },
   {
+    "id": "ba-feria-san-telmo-2026-11-22",
+    "cityId": "buenos-aires-ar",
+    "name": "Feira de San Telmo",
+    "kind": "feira",
+    "date": "2026-11-22",
+    "time": "10:00–17:00",
+    "venue": "Plaza Dorrego e rua Defensa",
+    "neighborhood": "San Telmo",
+    "categories": [
+      "cultura",
+      "compras"
+    ],
+    "popularity": "turistico",
+    "price": "Grátis",
+    "description": "Feira de antiguidades e artesanato que acontece todo domingo, com músicos e casais de tango pela rua Defensa.",
+    "lat": -34.6206,
+    "lng": -58.3716,
+    "sourceLabel": "feriadesantelmo.com",
+    "sourceUrl": "https://feriadesantelmo.com/planea-tu-visita/",
+    "checkedAt": "2026-10-02",
+    "recurring": "Todo domingo"
+  },
+  {
     "id": "scl-persa-biobio-2026-11-22",
     "cityId": "santiago-cl",
     "name": "Persa Biobío",
@@ -68,7 +77,10 @@
     "time": "11:00–16:00 (melhor horário)",
     "venue": "Rua Placer e arredores",
     "neighborhood": "Santiago Centro (sul)",
-    "categories": ["compras", "cultura"],
+    "categories": [
+      "compras",
+      "cultura"
+    ],
     "popularity": "fora-do-circuito",
     "price": "Grátis",
     "description": "Mercado de pulgas e antiguidades que funciona completo só aos sábados, domingos e feriados.",
@@ -88,7 +100,9 @@
     "time": "10:00",
     "venue": "Plaza de la Constitución",
     "neighborhood": "Santiago Centro",
-    "categories": ["cultura"],
+    "categories": [
+      "cultura"
+    ],
     "popularity": "turistico",
     "price": "Grátis",
     "description": "Cerimônia com banda e cavalaria dos Carabineros. Em novembro de 2026 acontece nos dias ímpares.",
@@ -107,7 +121,9 @@
     "time": "19:00",
     "venue": "Movistar Arena",
     "neighborhood": "Parque O'Higgins",
-    "categories": ["vida-noturna"],
+    "categories": [
+      "vida-noturna"
+    ],
     "popularity": "turistico",
     "price": "Pago (ingresso)",
     "description": "Show da dupla argentina na turnê mundial.",
@@ -126,7 +142,9 @@
     "time": "a noite toda",
     "venue": "Céu de San Pedro de Atacama",
     "neighborhood": "",
-    "categories": ["natureza"],
+    "categories": [
+      "natureza"
+    ],
     "popularity": "fora-do-circuito",
     "price": "—",
     "description": "Noite bem clara, boa pra caminhar e fotografar a paisagem. Em compensação, os tours astronômicos mostram bem menos estrelas: confirme com a agência se o tour acontece.",

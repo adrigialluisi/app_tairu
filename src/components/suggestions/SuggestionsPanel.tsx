@@ -21,7 +21,8 @@ import {
 } from '../../data';
 import { useTrip, type QuizInterest, type TripDestination } from '../../context/TripContext';
 import { EQUILIBRADO_ICON, SECTION_ICONS } from '../../utils/categoryVisuals';
-import { formatISOToDisplay } from '../../utils/dateMask';
+import { withOffline } from '../../hooks/useSaveToast';
+import { formatISOToDisplay, formatISOToWeekdayShortDate } from '../../utils/dateMask';
 import { YOU, getMembers, memberLabel } from '../../utils/costs';
 import { wantersOf } from '../../utils/members';
 import { Icon } from '../shell/Icon';
@@ -66,8 +67,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
 
   const cityPlaces = getPlacesForCity(destination.cityId);
   const ranked = rankPlacesByProfile(cityPlaces, interests, discovery);
-  const cityEvents = getEventsForDestination(destination.cityId, destination.dateStart, destination.dateEnd);
-  const hasDates = Boolean(destination.dateStart && destination.dateEnd);
+  const cityEvents = getEventsForDestination(destination.cityId, destination.dateStart, destination.dateEnd, destination.city);
 
   const selectedPlaceIds = new Set(
     trip.selectedPlaces.filter((s) => s.destinationId === destination.id && s.placeId).map((s) => s.placeId as string),
@@ -108,8 +108,27 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   */
   const groupPlaceIds = new Set(groupPlaces.map((p) => p.id));
   const placesBySection = new Map<PlaceSectionKey, PlaceEntry[]>();
+  /*
+    Reserva (08/out/2026): com interesses marcados, eles "puxavam" quase todos os
+    lugares e as seções Pontos turísticos / Fora do circuito sumiam (em Buenos
+    Aires 15 de 22 lugares são de cultura). Agora, antes dos interesses, cada
+    seção de popularidade ativa fica com os POPULARITY_RESERVE lugares mais bem
+    ranqueados daquele tipo; o resto segue a regra de sempre.
+  */
+  const POPULARITY_RESERVE = 4;
+  const reserved = new Set<string>();
+  if (!profileEmpty) {
+    for (const [key, want] of [['turistico', wantTuristico], ['fora-do-circuito', wantFora]] as const) {
+      if (!want) continue;
+      const picks = ranked
+        .filter((p) => !groupPlaceIds.has(p.id) && p.popularity === key)
+        .slice(0, POPULARITY_RESERVE);
+      for (const p of picks) reserved.add(p.id);
+      placesBySection.set(key, picks);
+    }
+  }
   for (const place of ranked) {
-    if (groupPlaceIds.has(place.id)) continue;
+    if (groupPlaceIds.has(place.id) || reserved.has(place.id)) continue;
     const interest = interestSections.find((i) => place.categories.includes(i));
     const byPopularity: PlaceSectionKey | undefined =
       place.popularity === 'turistico' && wantTuristico
@@ -194,7 +213,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   function handleTogglePlace(place: PlaceEntry) {
     const sel = selectionByPlaceId.get(place.id);
     trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
-    if (!sel) onToast('Lugar adicionado');
+    if (!sel) onToast(withOffline('Lugar adicionado'));
     else if (sel.addedBy !== YOU) {
       onToast(`Removido do roteiro. ${memberLabel(members, sel.addedBy).split(' ')[0]} tinha sugerido esse lugar.`);
     }
@@ -203,7 +222,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   function handleToggleEvent(event: EventEntry) {
     const wasSelected = trip.selectedEventIds.includes(event.id);
     trip.toggleEvent(event.id);
-    if (!wasSelected) onToast(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`);
+    if (!wasSelected) onToast(withOffline(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`));
   }
 
   function handleAddCustom() {
@@ -211,7 +230,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     if (trimmed.length === 0) return;
     trip.addCustomPlace(destination.id, trimmed);
     setCustomText('');
-    onToast('Lugar adicionado');
+    onToast(withOffline('Lugar adicionado'));
   }
 
   function handleCustomKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -347,35 +366,43 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
           icon={SECTION_ICONS.eventos}
           title="Eventos nas suas datas"
           countLabel={countLabel(cityEvents.length, 'evento', 'eventos')}
-          description={`Acontecendo em ${destination.city} enquanto você estiver lá.`}
+          description={`Festivais, feiras e shows acontecendo em ${destination.city} enquanto você estiver lá.`}
         >
           {cityEvents.length > 0 ? (
             <SuggestionCarousel label={`Eventos em ${destination.city}`}>
-              {cityEvents.map((event) => (
-                <li key={event.id}>
-                  <EventCard
-                    event={event}
-                    selected={trip.selectedEventIds.includes(event.id)}
-                    onToggle={() => handleToggleEvent(event)}
-                  />
-                </li>
-              ))}
+              {/* agrupado por dia (ajustes-80): rótulo antes do 1º card de cada dia; os outros
+                  levam um espaço do mesmo tamanho, pra os cards continuarem alinhados */}
+              {cityEvents.map((event, i) => {
+                const firstOfDay = i === 0 || cityEvents[i - 1].date !== event.date;
+                return (
+                  <li key={event.id} className="flex-col gap-1.5">
+                    <p
+                      className={`m-0 h-5 text-(length:--text-sm) font-semibold text-foreground ${firstOfDay ? '' : 'invisible'}`}
+                      aria-hidden={firstOfDay ? undefined : true}
+                    >
+                      {formatISOToWeekdayShortDate(event.date)}
+                    </p>
+                    <EventCard
+                      event={event}
+                      selected={trip.selectedEventIds.includes(event.id)}
+                      onToggle={() => handleToggleEvent(event)}
+                    />
+                  </li>
+                );
+              })}
             </SuggestionCarousel>
           ) : (
             <EmptyState
               icon={<CalendarDays />}
               tone="muted"
               action={
-                hasDates ? undefined : (
-                  <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos')}>
-                    Ir pra Destinos
-                  </button>
-                )
+                <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos')}>
+                  Ir pra Destinos
+                </button>
               }
             >
-              {hasDates
-                ? `Nenhum evento encontrado em ${destination.city} nas suas datas.`
-                : `Preencha as datas de ${destination.city} em Destinos pra ver eventos.`}
+              {/* com datas sempre há evento (modelos por dia da semana, ajustes-81): o vazio é só sem datas */}
+              {`Preencha as datas de ${destination.city} em Destinos pra ver o que vai rolar.`}
             </EmptyState>
           )}
         </SuggestionSection>

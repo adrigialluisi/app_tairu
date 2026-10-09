@@ -4,6 +4,7 @@ import { getHotel } from '../../data';
 import { hotelPhotoUrl, stayItemDetailRows, stayItemTitle, stayTypeIcon, stayTypeLabel } from '../../utils/staySummary';
 import type { StayItem } from '../../context/TripContext';
 import { Icon } from '../shell/Icon';
+import { OfflineBadge } from '../shell/OfflineBadge';
 import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 import stayStyles from './StayItemCard.module.css';
@@ -57,6 +58,8 @@ export function StayItemCard({ item, onEdit }: { item: StayItem; onEdit: () => v
           <Icon icon={Paperclip} /> Voucher anexado
         </p>
       )}
+      {/* item salvo abre sem internet (ajustes-82) */}
+      <OfflineBadge />
     </Card>
   );
 }

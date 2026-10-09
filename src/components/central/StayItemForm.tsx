@@ -7,7 +7,8 @@ import { DateRangeField } from '../inputs/DateRangeField';
 import { VoucherUpload } from './VoucherUpload';
 import { HotelSearchField } from './HotelSearchField';
 import { HotelInfo } from './HotelInfo';
-import { lookupMockStayVoucher } from '../../data/mockVouchers';
+import { readStayFile } from '../../data/mockVouchers';
+import { useAutofill } from '../../hooks/useAutofill';
 import { stayTypeIcon, stayTypeLabel } from '../../utils/staySummary';
 import { maskTime } from '../../utils/dateMask';
 import { getHotel, type HotelEntry } from '../../data';
@@ -49,7 +50,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
   const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
-  const [voucherRecognized, setVoucherRecognized] = useState<boolean | null>(null);
+  const af = useAutofill();
 
   const selectedHotel = getHotel(hotelId);
 
@@ -66,16 +67,19 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
     setLocality(hotel.locality);
   }
 
+  /** leitura simulada (ajustes-84): arquivo de exemplo conhecido ou o hotel de exemplo do destino — sempre preenche */
   function handleVoucherFile(file: File) {
-    const match = lookupMockStayVoucher(file.name);
     setVoucherFileName(file.name);
+    const { fields: match } = readStayFile(file, destination);
+    af.read(() => {
+      applyVoucher(match);
+      return ['hotel-name', 'address', 'locality', 'checkin-time', 'checkout-time', 'confirmation', 'room-type'].filter(
+        (key) => key !== 'address' || match.address !== '',
+      );
+    });
+  }
 
-    if (!match) {
-      setVoucherRecognized(false);
-      return;
-    }
-
-    setVoucherRecognized(true);
+  function applyVoucher(match: ReturnType<typeof readStayFile>['fields']) {
     setType(match.type);
     setHotelId(match.hotelId);
     setName(match.name);
@@ -92,7 +96,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
 
   function handleRemoveVoucher() {
     setVoucherFileName(null);
-    setVoucherRecognized(null);
+    af.reset();
   }
 
   function handleSave() {
@@ -121,10 +125,14 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
     <div className={styles.form}>
       <VoucherUpload
         fileName={voucherFileName}
-        recognized={voucherRecognized}
+        reading={af.reading}
+        filled={af.filled}
         onFileSelected={handleVoucherFile}
         onRemove={handleRemoveVoucher}
       />
+
+      {/* campos desabilitados enquanto "lê" o arquivo (ajustes-84); display: contents mantém o gap do formulário */}
+      <fieldset disabled={af.reading} className="contents">
 
       <OptionChipGroup legend="Tipo de hospedagem" options={TYPE_OPTIONS} value={type} onChange={setType} />
 
@@ -143,10 +151,11 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
         </div>
       )}
 
-      <TextField id={`${baseId}-address`} label="Endereço" value={address} onChange={setAddress} autoComplete="off" />
+      <TextField id={`${baseId}-address`} highlight={af.hl('address')} label="Endereço" value={address} onChange={setAddress} autoComplete="off" />
 
       <TextField
         id={`${baseId}-locality`}
+        highlight={af.hl('locality')}
         label="Cidade / local"
         placeholder="Ex.: Viña del Mar"
         value={locality}
@@ -169,6 +178,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
       <div className={formStyles.timeRow}>
         <TextField
           id={`${baseId}-checkin-time`}
+          highlight={af.hl('checkin-time')}
           label="Horário do check-in"
           placeholder="Ex.: 15:00"
           inputMode="numeric"
@@ -178,6 +188,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
         />
         <TextField
           id={`${baseId}-checkout-time`}
+          highlight={af.hl('checkout-time')}
           label="Horário do check-out"
           placeholder="Ex.: 11:00"
           inputMode="numeric"
@@ -189,6 +200,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
 
       <TextField
         id={`${baseId}-confirmation`}
+        highlight={af.hl('confirmation')}
         label="Código da reserva (opcional)"
         value={confirmationCode}
         onChange={setConfirmationCode}
@@ -197,6 +209,7 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
 
       <TextField
         id={`${baseId}-room-type`}
+        highlight={af.hl('room-type')}
         label="Tipo de quarto (opcional)"
         placeholder="Ex.: Duplo, Suíte"
         value={roomType}
@@ -220,6 +233,8 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
           onChange={setCostCurrencyCode}
         />
       </div>
+
+      </fieldset>
 
       <div className={styles.actions}>
         <Button fullWidth onClick={handleSave}>

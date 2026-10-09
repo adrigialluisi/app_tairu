@@ -15,7 +15,7 @@ export function isRoteiroComplete(trip: Pick<TripContextValue, 'selectedPlaces' 
 export function isCustosComplete(
   trip: Pick<
     TripContextValue,
-    'companions' | 'expenses' | 'transportItems' | 'stayItems' | 'otherItems' | 'centralCostOverrides'
+    'companions' | 'formerCompanions' | 'expenses' | 'transportItems' | 'stayItems' | 'otherItems' | 'centralCostOverrides'
   >,
 ): boolean {
   return buildCostEntries(trip).length > 0;

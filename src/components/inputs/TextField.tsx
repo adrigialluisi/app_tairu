@@ -13,6 +13,8 @@ interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'on
   onChange: (value: string) => void;
   error?: string | null;
   rightElement?: ReactNode;
+  /** acabou de ser preenchido pela leitura de um arquivo (ajustes-84): fundo --accent-soft por uns segundos */
+  highlight?: boolean;
 }
 
 /*
@@ -31,6 +33,7 @@ export function TextField({
   error,
   required,
   rightElement,
+  highlight = false,
   ...rest
 }: TextFieldProps) {
   const errorId = `${id}-error`;
@@ -44,7 +47,9 @@ export function TextField({
       </FieldLabel>
       <div
         className={cn(
-          'relative flex h-11 items-center rounded-md border border-input bg-background transition-[color,box-shadow]',
+          'relative flex h-11 items-center rounded-md border border-input bg-background transition-[color,box-shadow,background-color] duration-300 motion-reduce:transition-none',
+          // texto stone-900 sobre --accent-soft continua ≥ 16:1
+          highlight && 'bg-accent-soft',
           // foco (ajustes-72, seção 4): borda bordô + anel de 2px bordô/20%
           'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
           error && 'border-destructive focus-within:border-destructive focus-within:ring-destructive/20',

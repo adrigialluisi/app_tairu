@@ -1,4 +1,4 @@
-import { Download, Plus } from 'lucide-react';
+import { CloudCheck, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
@@ -40,28 +40,19 @@ export function Documents() {
 
   const tripEndISO = getTripEndISO(trip.destinations);
   const items = sortDocuments(docs.documents);
-  // Compartilhar vale pra viagem atual (ajustes-66): só aparece com viagem em andamento
-  const hasActiveTrip = trip.name.trim().length > 0 || trip.destinations.length > 0;
-  const tripName = hasActiveTrip ? trip.name.trim() || 'esta viagem' : null;
-  const offlineCount = docs.documents.filter((d) => d.availableOffline).length;
 
-  /** grava o documento e acerta o compartilhamento dele na viagem atual */
-  function handleSave(doc: PersonalDocument, shared: boolean) {
+  function handleSave(doc: PersonalDocument) {
     docs.saveDocument(doc);
-    if (shared !== trip.sharedDocumentIds.includes(doc.id)) trip.toggleSharedDocument(doc.id);
     setEditingId(null);
   }
 
   function handleRemove(id: string) {
     docs.removeDocument(id);
-    if (trip.sharedDocumentIds.includes(id)) trip.toggleSharedDocument(id);
     setEditingId(null);
   }
 
   const formTripProps = {
     tripEndISO,
-    tripName,
-    companionCount: trip.companions.length,
     onSave: handleSave,
   };
 
@@ -70,14 +61,11 @@ export function Documents() {
       <div className={styles.wrap}>
         <div className={styles.introGroup}>
           <p className={styles.intro}>Seus documentos ficam guardados aqui e valem pra todas as suas viagens.</p>
-          {offlineCount > 0 && (
-            <p className={styles.offlineLine}>
-              <Icon icon={Download} />{' '}
-              {offlineCount === 1
-                ? '1 documento disponível sem internet.'
-                : `${offlineCount} documentos disponíveis sem internet.`}
-            </p>
-          )}
+          {/* offline é o padrão (ajustes-82): linha fixa, não mais uma contagem */}
+          <p className={styles.offlineLine}>
+            <Icon icon={CloudCheck} className="text-success" /> Seus documentos ficam salvos no celular e abrem sem
+            internet.
+          </p>
         </div>
 
         <div className={groupStyles.group}>
@@ -87,7 +75,6 @@ export function Documents() {
                 <DocumentForm
                   {...formTripProps}
                   initialDoc={doc}
-                  initiallyShared={trip.sharedDocumentIds.includes(doc.id)}
                   onRemove={() => handleRemove(doc.id)}
                 />
               </div>
@@ -96,14 +83,13 @@ export function Documents() {
                 key={doc.id}
                 doc={doc}
                 tripEndISO={tripEndISO}
-                shared={trip.sharedDocumentIds.includes(doc.id)}
                 onEdit={() => setEditingId(doc.id)}
               />
             ),
           )}
 
           {editingId === 'new' && (
-            <DocumentForm {...formTripProps} initialDoc={null} initiallyShared={false} />
+            <DocumentForm {...formTripProps} initialDoc={null} />
           )}
 
           {editingId === null && (

@@ -33,7 +33,8 @@ const COMPANION_TYPE_OPTIONS: { value: QuizCompanionType; label: string }[] = [
   { value: 'sozinho', label: 'Sozinho(a)' },
   { value: 'casal', label: 'Casal' },
   { value: 'amigos', label: 'Amigos' },
-  { value: 'familia-criancas', label: 'Família com crianças' },
+  { value: 'familia', label: 'Família' },
+  { value: 'com-criancas', label: 'Com crianças' },
 ];
 
 /**
@@ -85,11 +86,12 @@ export function TripProfileQuiz() {
         onChange={(v) => trip.setQuizAnswer('budget', v)}
       />
 
-      <OptionChipGroup
+      <MultiOptionChipGroup
         legend="Como vai ser essa viagem?"
+        hint="Marque quantos quiser. Ex.: Família e Com crianças."
         options={COMPANION_TYPE_OPTIONS}
-        value={trip.quiz.companionType}
-        onChange={(v) => trip.setQuizAnswer('companionType', v)}
+        values={trip.quiz.companionType}
+        onToggle={trip.toggleQuizCompanionType}
       />
 
       <MultiOptionChipGroup
@@ -130,8 +132,8 @@ export function quizSummaryLines(quiz: QuizAnswers): string[] {
   if (quiz.budget) {
     lines.push(`Orçamento: ${BUDGET_OPTIONS.find((o) => o.value === quiz.budget)?.label}`);
   }
-  if (quiz.companionType) {
-    lines.push(`Viagem: ${COMPANION_TYPE_OPTIONS.find((o) => o.value === quiz.companionType)?.label}`);
+  if (quiz.companionType.length > 0) {
+    lines.push(`Viagem: ${quiz.companionType.map((c) => COMPANION_TYPE_OPTIONS.find((o) => o.value === c)?.label).join(', ')}`);
   }
   if (quiz.interests.length > 0) {
     lines.push(`Interesses: ${quiz.interests.map((i) => INTEREST_OPTIONS.find((o) => o.value === i)?.label).join(', ')}`);

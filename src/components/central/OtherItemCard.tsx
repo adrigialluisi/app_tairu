@@ -8,6 +8,7 @@ import {
 } from '../../utils/otherSummary';
 import type { OtherItem, TripDestination } from '../../context/TripContext';
 import { Icon } from '../shell/Icon';
+import { OfflineBadge } from '../shell/OfflineBadge';
 import { Card } from '@/components/ui/card';
 import styles from './TransportItemCard.module.css';
 import stayStyles from './StayItemCard.module.css';
@@ -72,6 +73,8 @@ export function OtherItemCard({ item, destinations, onEdit }: OtherItemCardProps
           ))}
         </div>
       )}
+      {/* item salvo abre sem internet (ajustes-82) */}
+      <OfflineBadge />
     </Card>
   );
 }

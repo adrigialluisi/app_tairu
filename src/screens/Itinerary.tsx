@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Banknote, CalendarDays, CalendarX, Camera, Clock, Lightbulb, List, Map as MapIcon, MapPin, Pencil, RotateCcw, SkipForward, X } from 'lucide-react';
+import { ArrowLeftRight, Banknote, CalendarDays, CalendarX, Camera, Clock, Lightbulb, List, Map as MapIcon, MapPin, Pencil, RotateCcw, Route, SkipForward, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
@@ -49,6 +49,7 @@ import {
   formatISOToWeekdayDisplay,
 } from '../utils/dateMask';
 import { Icon } from '../components/shell/Icon';
+import { OfflineBadge } from '../components/shell/OfflineBadge';
 import { Button } from '../components/shell/Button';
 import { StopPhotos } from '../components/itinerary/StopPhotos';
 import { PhotoViewer } from '../components/memories/PhotoViewer';
@@ -98,6 +99,10 @@ function selectedEvents(selectedEventIds: string[]): EventEntry[] {
  * Lugares customizados (sem placeId) não têm coordenada — ficam de fora do
  * mapa, só na lista. Eventos escolhidos com lat/lng entram como pin no dia
  * deles; evento sem coordenada (ex.: Lua cheia) fica de fora.
+ * Desde o ajustes-80: cada dia tem a sua cor (`colorIndex` = dia local do
+ * destino), o número no pino é a ordem da parada no dia (a mesma "Parada N"
+ * da lista: ativas na ordem da rota, depois as puladas) e o evento ganha pino
+ * de calendário na cor do dia dele.
  */
 function buildMapPins(
   range: DestinationDayRange | undefined,
@@ -108,7 +113,11 @@ function buildMapPins(
   if (!range) return { pins: [], missingCount: 0 };
   const pins: RouteMapPin[] = [];
   let missingCount = 0;
-  for (const a of assignments) {
+  const ordered = [...assignments.filter((a) => !a.skipped), ...assignments.filter((a) => a.skipped)];
+  const nextOrder = new Map<number, number>();
+  for (const a of ordered) {
+    const order = (nextOrder.get(a.localDayIndex) ?? 0) + 1;
+    nextOrder.set(a.localDayIndex, order);
     const place = a.place.placeId ? getPlaceById(a.place.placeId) : undefined;
     if (!place) {
       missingCount++;
@@ -122,23 +131,45 @@ function buildMapPins(
       lng: place.lng,
       dayNumber: range.globalDayIndexes[a.localDayIndex] + 1,
       skipped: a.skipped,
+      colorIndex: a.localDayIndex,
+      order,
+      kind: 'place',
+      photoTitle: place.wikiTitle ?? place.name,
     });
   }
   if (tripStartISO) {
     for (const e of events) {
       if (e.cityId !== range.cityId || e.lat === null || e.lng === null) continue;
+      const globalDay = daysBetween(tripStartISO, e.date) - 1;
+      const local = range.globalDayIndexes.indexOf(globalDay);
+      // dia de fronteira que o roteiro dá pro outro destino: usa a cor do dia mais perto deste destino
+      const colorIndex = local >= 0 ? local : globalDay < range.globalDayIndexes[0] ? 0 : range.globalDayIndexes.length - 1;
       pins.push({
         id: e.id,
-        name: `Evento: ${e.name}`,
+        name: e.name,
         neighborhood: e.neighborhood,
         lat: e.lat,
         lng: e.lng,
-        dayNumber: daysBetween(tripStartISO, e.date),
+        dayNumber: globalDay + 1,
         skipped: false,
+        colorIndex,
+        kind: 'event',
+        detail: `Dia ${globalDay + 1} · Evento · ${e.time}`,
       });
     }
   }
   return { pins, missingCount };
+}
+
+/** Até 2 bairros mais frequentes entre os lugares do dia (empate: o que aparece primeiro na rota) — ajustes-80. */
+function dayNeighborhoods(assignments: ItineraryItemAssignment[]): string {
+  const counts = new Map<string, number>();
+  for (const a of assignments) {
+    const place = a.place.placeId ? getPlaceById(a.place.placeId) : undefined;
+    if (place?.neighborhood) counts.set(place.neighborhood, (counts.get(place.neighborhood) ?? 0) + 1);
+  }
+  const top = [...counts.entries()].sort((x, y) => y[1] - x[1]).slice(0, 2).map(([name]) => name);
+  return joinPt(top);
 }
 
 export function Itinerary() {
@@ -390,20 +421,6 @@ export function Itinerary() {
     );
   }
 
-  /** "📷 Fotos do dia" → Memórias filtrada nesse dia (docs/ajustes-64-memorias-fotos.md) */
-  function photosLink(dateISO: string) {
-    const count = trip.photos.filter((p) => p.dayISO === dateISO).length;
-    return (
-      <button
-        type="button"
-        className={styles.dayTipsLink}
-        onClick={() => navigate('/memorias', { state: { dayISO: dateISO } })}
-      >
-        <Icon icon={Camera} /> {count > 0 ? `Fotos do dia (${count})` : 'Adicionar fotos do dia'}
-      </button>
-    );
-  }
-
   /** Atalho pro Conversor de Custos já com a moeda da cidade (docs/ajustes-62-conversor-de-moedas.md). */
   function converterLink(currencyCode: string) {
     return (
@@ -539,11 +556,19 @@ export function Itinerary() {
                     />
                   )}
 
+                  {isRoteiroComplete(trip) && (
+                    <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-(length:--text-sm) text-muted-foreground">
+                      <OfflineBadge label="Roteiro disponível offline." />
+                      <span>O mapa precisa de internet; a lista funciona sem.</span>
+                    </p>
+                  )}
+
                   {activeDestination && (
                     <RouteMap
                       cityLabel={activeDestination.city}
                       pins={filteredMapPins}
                       missingCount={mapMissingCount}
+                      routeByDay
                     />
                   )}
                 </div>
@@ -578,6 +603,15 @@ export function Itinerary() {
                     />
                   )}
 
+                  {trip.selectedPlaces.length > 0 && (
+                    <p className="m-0 flex items-start gap-2 text-(length:--text-sm) text-muted-foreground">
+                      <Icon icon={Route} className="mt-0.5" />
+                      Organizamos os dias juntando os lugares que ficam perto. Você pode mover o que quiser.
+                    </p>
+                  )}
+                  {/* roteiro salvo abre sem internet (ajustes-82); vazio não mostra */}
+                  {isRoteiroComplete(trip) && <OfflineBadge label="Roteiro disponível offline" />}
+
                   <ul className={styles.dayList}>
                     {Array.from({ length: totalDays }, (_, i) => i)
                       .filter((globalDay) => listDayFilter === 'all' || globalDay === listDayFilter)
@@ -607,7 +641,6 @@ export function Itinerary() {
                                   {renderAgenda(freeDayAgenda)}
                                 </div>
                               )}
-                              <div className={styles.dayLinks}>{photosLink(dateISO)}</div>
                             </li>
                             </Card>
                           );
@@ -618,6 +651,7 @@ export function Itinerary() {
                         const dayItems = assignments.filter((a) => a.localDayIndex === localDay);
                         const active = dayItems.filter((a) => !a.skipped);
                         const skipped = dayItems.filter((a) => a.skipped);
+                        const neighborhoods = dayNeighborhoods(active);
                         // Agenda entra pela data (evento, voo, check-in…), mesmo num dia de fronteira
                         // que o roteiro atribui ao destino seguinte (ex.: Feira de San Telmo no 22/11).
                         const dayAgenda = agenda.filter((a) => a.dateISO === dateISO);
@@ -629,6 +663,8 @@ export function Itinerary() {
                               <h3 className={styles.dayTitle}>
                                 <Icon icon={CalendarDays} />{' '}
                                 {formatISOToLongWeekday(dateISO)}
+                                {/* bairro(s) onde o dia se concentra (ajustes-80) */}
+                                {neighborhoods && <span className="font-normal"> · {neighborhoods}</span>}
                               </h3>
                               <span className={styles.daySubtitle}>
                                 <Icon icon={MapPin} />{' '}
@@ -752,7 +788,6 @@ export function Itinerary() {
                               >
                                 <Icon icon={Lightbulb} /> Ver dicas locais desse dia →
                               </button>
-                              {photosLink(dateISO)}
                             </div>
                           </li>
                           </Card>

@@ -12,13 +12,16 @@ interface TimelineStopProps {
   tags?: ReactNode;
   /** título de busca na Wikipedia (wikiTitle ?? name) — só quando é um lugar real, não texto livre */
   photoSearchTitle?: string;
+  /** foto já conhecida da parada (1ª foto de exemplo da viagem passada, ajustes-78) — usada no lugar da busca na Wikipedia */
+  photoUrl?: string;
   /** ilustração quando não há foto (ícone da categoria, lápis se adicionado à mão — ver placeIllustrationIcon) */
   fallbackIcon?: LucideIcon;
   skipped: boolean;
   isLast: boolean;
   /** fotos tiradas nessa parada (StopPhotos) — aparecem também se a parada foi pulada (ajustes-75) */
   photos?: ReactNode;
-  actions: ReactNode;
+  /** ações da parada — omitido no roteiro só de leitura (viagem passada, ajustes-76) */
+  actions?: ReactNode;
 }
 
 export function TimelineStop({
@@ -27,13 +30,16 @@ export function TimelineStop({
   tags,
   description,
   photoSearchTitle,
+  photoUrl,
   fallbackIcon,
   skipped,
   isLast,
   photos,
   actions,
 }: TimelineStopProps) {
-  const thumbnailUrl = usePlaceThumbnail(photoSearchTitle ?? '');
+  // com photoUrl, nem busca na Wikipedia (título vazio = o hook não faz nada)
+  const wikiUrl = usePlaceThumbnail(photoUrl ? '' : (photoSearchTitle ?? ''));
+  const thumbnailUrl = photoUrl ?? (photoSearchTitle ? wikiUrl : null);
 
   return (
     <li className={`${styles.stop} ${isLast ? styles.stopLast : ''}`}>
@@ -47,7 +53,7 @@ export function TimelineStop({
         {tags && !skipped && <div className={styles.tags}>{tags}</div>}
         {description && !skipped && <p className={styles.description}>{description}</p>}
         {!skipped &&
-          (photoSearchTitle && thumbnailUrl ? (
+          (thumbnailUrl ? (
             <img src={thumbnailUrl} alt="" loading="lazy" className={styles.photo} />
           ) : (
             fallbackIcon && (
@@ -57,7 +63,7 @@ export function TimelineStop({
             )
           ))}
         {photos}
-        <div className={styles.actions}>{actions}</div>
+        {actions && <div className={styles.actions}>{actions}</div>}
       </div>
     </li>
   );

@@ -1,11 +1,15 @@
-import { useEffect, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { CircleCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
+import type { ToastAction } from '../../hooks/useSaveToast';
 
 interface SaveToastProps {
   visible: boolean;
   message: string;
+  /** botão no toast (ex.: "Desfazer") — `onDone` esconde o toast depois do toque */
+  action?: ToastAction | null;
+  onDone?: () => void;
 }
 
 const TOAST_ID = 'tairu-save';
@@ -35,7 +39,13 @@ const TOAST_STYLE: CSSProperties = { left: 0, right: 0, width: '100%', display: 
  * id — então aparece uma mensagem por vez, e a nova substitui a anterior. O
  * <section> do Sonner já é aria-live="polite".
  */
-export function SaveToast({ visible, message }: SaveToastProps) {
+export function SaveToast({ visible, message, action, onDone }: SaveToastProps) {
+  // sempre a ação mais recente (dois "Cancelar convite" seguidos têm a mesma mensagem, mas desfazem coisas diferentes)
+  const actionRef = useRef(action);
+  const onDoneRef = useRef(onDone);
+  actionRef.current = action;
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     if (!visible) {
       toast.dismiss(TOAST_ID);
@@ -47,11 +57,25 @@ export function SaveToast({ visible, message }: SaveToastProps) {
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground shadow-[0_4px_12px_rgba(28,25,23,0.1)]">
           <CircleCheck className="size-4 flex-none text-success" aria-hidden="true" />
           {message}
+          {action && (
+            // texto --accent-dark no branco 9.67:1; 44px de alvo
+            <button
+              type="button"
+              className="-my-3 ml-1 min-h-11 cursor-pointer border-0 bg-transparent px-2 font-medium text-(--accent-dark) underline-offset-4 hover:underline"
+              onClick={() => {
+                actionRef.current?.onClick();
+                onDoneRef.current?.();
+              }}
+            >
+              {action.label}
+            </button>
+          )}
         </div>
       ),
       { id: TOAST_ID, duration: Infinity },
     );
-  }, [visible, message]);
+    // a ação em si é lida do ref no toque; o toast só é redesenhado quando muda o que aparece
+  }, [visible, message, action?.label]);
 
   // saiu da tela: o toast não acompanha a pessoa pra próxima (era assim antes, o estado era da tela)
   useEffect(() => () => void toast.dismiss(TOAST_ID), []);

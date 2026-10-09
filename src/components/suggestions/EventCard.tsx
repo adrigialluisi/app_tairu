@@ -1,7 +1,7 @@
 import { Check, Clock, MapPin, Ticket } from 'lucide-react';
 import { Button } from '../shell/Button';
 import { EVENT_KIND_ICONS } from '../../utils/categoryVisuals';
-import { formatISOToDayPill, formatISOToDisplay, formatISOToWeekdayAbbrev } from '../../utils/dateMask';
+import { formatISOToDayPill, formatISOToDisplay, formatISOToShortDay, formatISOToWeekdayAbbrev } from '../../utils/dateMask';
 import type { EventEntry } from '../../data';
 import { Icon } from '../shell/Icon';
 import { Card } from '@/components/ui/card';
@@ -34,6 +34,10 @@ export function EventCard({ event, selected, onToggle }: EventCardProps) {
           </span>
         </div>
         <div className={styles.info}>
+          {/* o dia também por escrito, não só no bloco de data (ajustes-80): --accent-dark no branco, 9.67:1 */}
+          <p className="m-0 text-(length:--text-sm) font-medium text-(--accent-dark)">
+            {formatISOToShortDay(event.date)} · {event.time}
+          </p>
           <h4 className={styles.name}>
             <span aria-hidden="true"><Icon icon={EVENT_KIND_ICONS[event.kind]} /> </span>
             {event.name}
@@ -51,10 +55,13 @@ export function EventCard({ event, selected, onToggle }: EventCardProps) {
         </div>
       </div>
 
-      <a className={styles.source} href={event.sourceUrl} target="_blank" rel="noreferrer">
-        Fonte: {event.sourceLabel}
-        <span className="visually-hidden"> (abre em nova aba)</span>
-      </a>
+      {/* evento simulado (ajustes-80) não tem fonte — e não ganha selo de "fictício" pro participante */}
+      {event.sourceUrl && (
+        <a className={styles.source} href={event.sourceUrl} target="_blank" rel="noreferrer">
+          Fonte: {event.sourceLabel}
+          <span className="visually-hidden"> (abre em nova aba)</span>
+        </a>
+      )}
       {event.note && <p className={styles.note}>{event.note}</p>}
 
       <Button

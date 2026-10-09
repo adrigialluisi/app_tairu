@@ -1,4 +1,4 @@
-import { Bell, FileText, Images, Luggage, TriangleAlert, User } from 'lucide-react';
+import { Bell, FileText, Luggage, TriangleAlert, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
@@ -11,35 +11,9 @@ import { getTripEndISO } from '../utils/itinerary';
 import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
 import { Icon } from '../components/shell/Icon';
 import { Card } from '@/components/ui/card';
+import { OfflineBadge } from '../components/shell/OfflineBadge';
+import { EXAMPLE_PAST_TRIPS, type ExamplePastTrip } from '../data/examplePastTrips';
 import styles from './Home.module.css';
-
-/**
- * O protótipo não guarda histórico real de viagens (tudo em memória) —
- * estas são viagens de exemplo fixas, só pra ilustrar o layout do
- * carrossel. Nunca vêm do TripContext, nunca são clicáveis, sempre
- * marcadas com o selo "Exemplo". Nomes de ocasião (não nome de cidade) e
- * destinos fora do cenário fixo de teste. `cityForPhoto` busca uma foto
- * real (Wikipedia) do destino real do exemplo — não é dado fingido, só a
- * "viagem" em si que é ilustrativa.
- */
-const EXAMPLE_PAST_TRIPS = [
-  {
-    id: 'exemplo-1',
-    name: 'Réveillon em família',
-    cityForPhoto: 'Rio de Janeiro',
-    destinationsLabel: 'Rio de Janeiro',
-    datesLabel: '28/12 – 02/01',
-    companionsLabel: '4 convidados',
-  },
-  {
-    id: 'exemplo-2',
-    name: 'Aniversário de 30 anos',
-    cityForPhoto: 'Lisboa',
-    destinationsLabel: 'Lisboa, Porto',
-    datesLabel: '10/05 – 18/05',
-    companionsLabel: '2 convidados',
-  },
-];
 
 function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onClick: () => void }) {
   const heroCity = trip.destinations[0]?.city ?? '';
@@ -64,17 +38,25 @@ function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onC
           {formatDestinationsLabel(trip.destinations)} · {formatDatesLabel(trip.destinations)}
         </span>
         <span className={styles.heroMeta}>{formatCompanionsLabel(trip.companions.length)}</span>
+        {/* o card só aparece com algo salvo (nome ou destino) — e o que está salvo abre sem internet (ajustes-82) */}
+        <OfflineBadge label="Viagem disponível offline" className="mt-1" />
       </div>
     </button>
     </Card>
   );
 }
 
-function PastTripCard({ trip }: { trip: (typeof EXAMPLE_PAST_TRIPS)[number] }) {
+/**
+ * Card de viagem passada de EXEMPLO (src/data/examplePastTrips.ts, sempre com o
+ * selo "Exemplo"). Desde o docs/ajustes-76-viagem-passada-e-recordacao.md, o
+ * exemplo que tem roteiro (Lisboa + Porto) é clicável e abre a viagem passada;
+ * o outro continua só ilustrando o carrossel.
+ */
+function PastTripCard({ trip, onOpen }: { trip: ExamplePastTrip; onOpen?: () => void }) {
   const thumbnailUrl = usePlaceThumbnail(trip.cityForPhoto);
 
-  return (
-    <Card className={`gap-0 py-0 ${styles.pastTripCard}`}>
+  const inner = (
+    <>
       <div className={styles.pastTripPhotoWrap}>
         {thumbnailUrl ? (
           <img src={thumbnailUrl} alt="" loading="lazy" className={styles.pastTripPhoto} />
@@ -92,6 +74,15 @@ function PastTripCard({ trip }: { trip: (typeof EXAMPLE_PAST_TRIPS)[number] }) {
         </p>
         <p className={styles.pastTripMeta}>{trip.companionsLabel}</p>
       </div>
+    </>
+  );
+
+  if (!onOpen) return <Card className={`gap-0 py-0 ${styles.pastTripCard}`}>{inner}</Card>;
+  return (
+    <Card asChild className={`cursor-pointer gap-0 py-0 text-left ${styles.pastTripCard}`}>
+      <button type="button" onClick={onOpen} aria-label={`${trip.name} (exemplo): ver roteiro e recordação`}>
+        {inner}
+      </button>
     </Card>
   );
 }
@@ -135,7 +126,7 @@ function DocumentAlerts({ documents, tripEndISO }: { documents: PersonalDocument
               <span className={styles.alertTitle}>{attentionText(doc, status)}</span>
               <span className={styles.alertMeta}>
                 {dateLabel}
-                {doc.holderName ? ` · ${doc.holderName}` : ''}
+                {doc.fullName ? ` · ${doc.fullName}` : ''}
               </span>
             </span>
             <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
@@ -195,34 +186,18 @@ export function Home() {
         <h2 className={styles.sectionTitle}>Viagens passadas</h2>
         <div className={styles.carousel}>
           {EXAMPLE_PAST_TRIPS.map((t) => (
-            <PastTripCard key={t.id} trip={t} />
+            <PastTripCard
+              key={t.id}
+              trip={t}
+              onOpen={t.cities ? () => navigate(`/viagem-passada/${t.id}`) : undefined}
+            />
           ))}
         </div>
         <p className={styles.pastTripsNote}>Suas viagens concluídas vão aparecer aqui.</p>
       </section>
 
-      {/* Memórias + Meus documentos: linhas do mesmo tipo, agrupadas (12px entre si) */}
+      {/* Meus documentos (Memórias saiu da viagem em andamento no ajustes-76 — virou recordação da viagem passada) */}
       <div className={styles.rows}>
-        {hasActiveTrip && (
-          <button type="button" className={styles.documentsRow} onClick={() => navigate('/memorias')}>
-            <span className={styles.documentsRowIcon} aria-hidden="true"><Icon icon={Images} /></span>
-            <span className={styles.documentsRowText}>
-              <span className={styles.documentsRowLabel}>Memórias da viagem</span>
-              <span className={styles.documentsRowSubtitle}>
-                {[
-                  trip.photos.length === 0
-                    ? 'Fotos organizadas por dia'
-                    : `${trip.photos.length} ${trip.photos.length === 1 ? 'foto' : 'fotos'}`,
-                  trip.retrospective ? 'retrospectiva pronta' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </span>
-            </span>
-            <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
-          </button>
-        )}
-
         <button type="button" className={styles.documentsRow} onClick={() => navigate('/documentos')}>
           <span className={styles.documentsRowIcon} aria-hidden="true"><Icon icon={FileText} /></span>
           <span className={styles.documentsRowText}>

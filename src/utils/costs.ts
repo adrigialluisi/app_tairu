@@ -1,5 +1,5 @@
 import { BedDouble, ClipboardList, ShoppingBag, Ticket, TrainFront, UtensilsCrossed, type LucideIcon } from 'lucide-react';
-import type { ExpenseCategory, MemberId, OtherItem, TripContextValue } from '../context/TripContext';
+import type { ExpenseCategory, MemberId, OtherItem, TripCompanion, TripContextValue } from '../context/TripContext';
 import { isValidCalendarDate, toISODate } from './dateMask';
 import { parseAmount, toBRL } from './money';
 import { otherItemTitle } from './otherSummary';
@@ -14,7 +14,7 @@ import { transportItemTitle } from './transportSummary';
 
 type TripForCosts = Pick<
   TripContextValue,
-  'companions' | 'expenses' | 'transportItems' | 'stayItems' | 'otherItems' | 'centralCostOverrides'
+  'companions' | 'formerCompanions' | 'expenses' | 'transportItems' | 'stayItems' | 'otherItems' | 'centralCostOverrides'
 >;
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
@@ -46,6 +46,11 @@ export interface Member {
   shortName: string;
   /** "EU" pra você; iniciais do convidado */
   initials: string;
+  /**
+   * saiu da viagem (ajustes-83): continua pra dar nome aos lugares/gastos que trouxe e entra no
+   * rateio pelo que pagou, mas não aparece em "quem pagou/dividir com" nem no "todos" da divisão
+   */
+  former?: boolean;
 }
 
 export interface CostEntry {
@@ -64,19 +69,31 @@ export interface CostEntry {
   date: string | null;
 }
 
-export function getMembers(trip: Pick<TripContextValue, 'companions'>): Member[] {
+function toMember(c: TripCompanion, former: boolean): Member {
+  const label = c.name ?? (c.email.split('@')[0] || c.email);
+  return {
+    id: c.id,
+    label: former ? `${label} (saiu da viagem)` : label,
+    shortName: c.name ? c.name.split(' ')[0] : label,
+    initials: c.initials ?? label.slice(0, 2).toUpperCase(),
+    ...(former ? { former: true } : {}),
+  };
+}
+
+/** Você + quem está na viagem + quem saiu (marcado `former`, ver Member.former). */
+export function getMembers(
+  trip: Pick<TripContextValue, 'companions'> & Partial<Pick<TripContextValue, 'formerCompanions'>>,
+): Member[] {
   return [
     { id: YOU, label: 'Você', shortName: 'Você', initials: 'EU' },
-    ...trip.companions.map((c) => {
-      const label = c.name ?? (c.email.split('@')[0] || c.email);
-      return {
-        id: c.id,
-        label,
-        shortName: c.name ? c.name.split(' ')[0] : label,
-        initials: c.initials ?? label.slice(0, 2).toUpperCase(),
-      };
-    }),
+    ...trip.companions.map((c) => toMember(c, false)),
+    ...(trip.formerCompanions ?? []).map((c) => toMember(c, true)),
   ];
+}
+
+/** Só quem está na viagem agora — pra escolher quem pagou/divide e pro "todos" da divisão. */
+export function activeMembers(members: Member[]): Member[] {
+  return members.filter((m) => !m.former);
 }
 
 export function memberLabel(members: Member[], id: MemberId): string {
@@ -85,7 +102,7 @@ export function memberLabel(members: Member[], id: MemberId): string {
 
 /** null → todos; ids de convidados removidos são ignorados; se sobrar ninguém, volta pra todos. */
 export function resolveSplit(splitWith: MemberId[] | null, members: Member[]): MemberId[] {
-  const all = members.map((m) => m.id);
+  const all = activeMembers(members).map((m) => m.id);
   if (!splitWith) return all;
   const valid = splitWith.filter((id) => all.includes(id));
   return valid.length > 0 ? valid : all;

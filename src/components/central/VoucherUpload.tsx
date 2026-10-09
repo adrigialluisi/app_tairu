@@ -1,19 +1,67 @@
-import { Check, Paperclip } from 'lucide-react';
+import { Check, LoaderCircle, Paperclip, ScanText } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '../shell/Button';
 import { UploadIcon, ReplaceIcon, TrashIcon } from '../shell/Icons';
 import { Icon } from '../shell/Icon';
 import styles from './VoucherUpload.module.css';
 
-interface VoucherUploadProps {
-  fileName: string | null;
-  /** true = reconhecido e preencheu os campos; false = não reconhecido; null = nada enviado nesta edição */
-  recognized: boolean | null;
-  onFileSelected: (file: File) => void;
-  onRemove: () => void;
+interface ReadStatusProps {
+  /** "Lendo o documento…" (leitura simulada em andamento) */
+  reading: boolean;
+  /** leitura terminou e preencheu os campos */
+  filled: boolean;
 }
 
-export function VoucherUpload({ fileName, recognized, onFileSelected, onRemove }: VoucherUploadProps) {
+/**
+ * Feedback da leitura simulada (docs/ajustes-84-...md, seção 1), igual em todo
+ * formulário: "Lendo o documento…" com spinner (sem spinner com movimento
+ * reduzido) e, depois, a faixa "Preenchemos os campos…". A região é sempre
+ * montada com aria-live, pra o leitor de tela anunciar as duas mensagens.
+ */
+export function ReadStatus({ reading, filled }: ReadStatusProps) {
+  return (
+    <div aria-live="polite" className="w-full empty:hidden">
+      {reading && (
+        <p className="m-0 flex items-center gap-2 text-(length:--text-sm) font-medium text-foreground">
+          <Icon icon={ScanText} />
+          Lendo o documento…
+          <LoaderCircle className="size-4 animate-spin motion-reduce:hidden" aria-hidden="true" />
+        </p>
+      )}
+      {filled && !reading && (
+        // mesma mensagem pra arquivo reconhecido e preenchimento de exemplo (o moderador sabe pelo roteiro)
+        <Alert className="border-solid border-success/40 bg-success-soft">
+          <Check className="text-success" aria-hidden="true" />
+          <AlertDescription className="text-(length:--text-sm) text-foreground">
+            Preenchemos os campos com o que lemos do arquivo. Confira antes de salvar.
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
+interface VoucherUploadProps {
+  /** arquivo enviado; null = mostra só o botão de enviar (Outros: o arquivo vai pra lista de anexos) */
+  fileName: string | null;
+  reading: boolean;
+  filled: boolean;
+  onFileSelected: (file: File) => void;
+  onRemove?: () => void;
+  hint?: string;
+  buttonLabel?: string;
+}
+
+export function VoucherUpload({
+  fileName,
+  reading,
+  filled,
+  onFileSelected,
+  onRemove,
+  hint = 'Tem um voucher? Envie pra preencher os campos automaticamente.',
+  buttonLabel = 'Enviar voucher',
+}: VoucherUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -33,10 +81,10 @@ export function VoucherUpload({ fileName, recognized, onFileSelected, onRemove }
       />
       {!fileName && (
         <div className={styles.voucherUploadRow}>
-          <span className={styles.voucherHint}>Tem um voucher? Anexe pra preencher os campos automaticamente.</span>
-          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+          <span className={styles.voucherHint}>{hint}</span>
+          <Button variant="secondary" disabled={reading} onClick={() => fileInputRef.current?.click()}>
             <UploadIcon />
-            Enviar voucher
+            {buttonLabel}
           </Button>
         </div>
       )}
@@ -57,29 +105,22 @@ export function VoucherUpload({ fileName, recognized, onFileSelected, onRemove }
             >
               <ReplaceIcon />
             </button>
-            <button
-              type="button"
-              className={`${styles.voucherIconButton} ${styles.voucherIconButtonDanger}`}
-              onClick={onRemove}
-              aria-label="Excluir voucher"
-              title="Excluir voucher"
-            >
-              <TrashIcon />
-            </button>
+            {onRemove && (
+              <button
+                type="button"
+                className={`${styles.voucherIconButton} ${styles.voucherIconButtonDanger}`}
+                onClick={onRemove}
+                aria-label="Excluir voucher"
+                title="Excluir voucher"
+              >
+                <TrashIcon />
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {recognized === true && (
-        <p className={styles.voucherMessageSuccess}>
-          <Icon icon={Check} /> Campos preenchidos automaticamente. Confira antes de salvar.
-        </p>
-      )}
-      {recognized === false && (
-        <p className={styles.voucherMessageMuted}>
-          Não reconhecemos esse voucher automaticamente — confira/preencha os campos manualmente abaixo.
-        </p>
-      )}
+      <ReadStatus reading={reading} filled={filled} />
     </div>
   );
 }

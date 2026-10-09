@@ -59,6 +59,19 @@
   --success-soft: #ecf6f0; /* fundo do selo de sucesso — --success sobre ele 5.70:1 */
 
   /*
+    Cor de cada dia no mapa do Roteiro (docs/ajustes-80-...md): pino, linha da
+    rota e legenda. Número/ícone branco sobre a cor ≥ 5.89:1; a cor contra o
+    fundo claro dos tiles CARTO Voyager ≥ 5.14:1 (e ≥ 4.46:1 sobre parque).
+    Do 5º dia em diante as cores repetem — o número no pino e o rótulo da
+    legenda dizem o dia, a cor nunca está sozinha.
+  */
+  --map-day-1: var(--accent); /* bordô */
+  --map-day-2: #1d5b7a; /* azul — branco 7.42:1 */
+  --map-day-3: var(--success); /* verde — branco 6.29:1 */
+  --map-day-4: #8a5a1f; /* âmbar escuro — branco 5.89:1 */
+  --map-skipped: var(--field-border); /* stone-500, pino de lugar pulado — branco 4.8:1 */
+
+  /*
     Gráfico de Custos (docs/ajustes-74-...md): 6 categorias, tons da paleta
     (bordô e stone) alternando escuro/claro na ordem das categorias, pra que
     vizinhos na barra se diferenciem (≥ 3.03:1 entre vizinhos) — e uma linha

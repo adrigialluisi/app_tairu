@@ -115,6 +115,13 @@ export function formatISOToShortDay(iso: string): string {
   return `${weekday}, ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
 }
 
+/** "Sexta, 20/11" — rótulo de dia antes dos eventos daquele dia no carrossel (ajustes-80). */
+export function formatISOToWeekdayShortDate(iso: string): string {
+  const { day, month, year } = fromISODate(iso);
+  const weekday = WEEKDAYS_PT[new Date(year, month - 1, day).getDay()].replace('-feira', '');
+  return `${weekday}, ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
+}
+
 /** "SÁB" — dia da semana abreviado, pro bloco de data do card de evento. */
 export function formatISOToWeekdayAbbrev(iso: string): string {
   const { day, month, year } = fromISODate(iso);
