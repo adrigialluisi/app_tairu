@@ -29,3 +29,14 @@
   color: var(--text);
 }
 
+
+/* aviso de datas faltando ao tentar salvar os destinos (bug 08/out/2026) */
+.missingDates {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--error);
+}

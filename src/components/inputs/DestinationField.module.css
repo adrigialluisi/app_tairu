@@ -103,3 +103,28 @@
   font-size: var(--text-sm);
   color: var(--muted);
 }
+
+/* botão Remover no cabeçalho do cartão do destino — alvo de 44px */
+.detailsRemove {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.detailsRemove:hover {
+  color: var(--error);
+  text-decoration: underline;
+}
+.detailsRemove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

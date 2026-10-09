@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Icon } from '../components/shell/Icon';
 import { AppBar } from '../components/shell/AppBar';
 import { ScreenShell } from '../components/shell/ScreenShell';
 import { BottomNav } from '../components/shell/BottomNav';
@@ -59,7 +62,20 @@ export function CreateTrip() {
     ? `As datas de ${overlap[0].city} e ${overlap[1].city} não podem se sobrepor.`
     : null;
 
+  // Bug de 08/out/2026: dava pra salvar destino sem datas e o Roteiro ficava vazio.
+  const missingDates = trip.destinations.filter((d) => !d.dateStart || !d.dateEnd);
+  const [triedSave, setTriedSave] = useState(false);
+  const missingDatesError =
+    triedSave && missingDates.length > 0
+      ? `Preencha as datas de ${missingDates.map((d) => d.city).join(', ')} pra salvar (início e fim).`
+      : null;
+
   function handleSaveDestinos() {
+    if (missingDates.length > 0) {
+      setTriedSave(true);
+      return;
+    }
+    setTriedSave(false);
     trip.setDestinosSaved(true);
     show(withOffline('Destinos salvos'));
   }
@@ -124,7 +140,17 @@ export function CreateTrip() {
           }}
           dateOverlapError={overlapError}
         />
-        <Button fullWidth disabled={trip.destinations.length === 0 || !!overlapError} onClick={handleSaveDestinos}>
+        {missingDatesError && (
+          <p id="destinos-missing-dates" role="alert" className={styles.missingDates}>
+            <Icon icon={TriangleAlert} /> {missingDatesError}
+          </p>
+        )}
+        <Button
+          fullWidth
+          disabled={trip.destinations.length === 0 || !!overlapError}
+          aria-describedby={missingDatesError ? 'destinos-missing-dates' : undefined}
+          onClick={handleSaveDestinos}
+        >
           Salvar destinos
         </Button>
       </StepSection>

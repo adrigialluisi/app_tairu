@@ -1,4 +1,4 @@
-import { MapPin, TriangleAlert } from 'lucide-react';
+import { MapPin, Trash2, TriangleAlert } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { CommandItem } from '@/components/ui/command';
 import { searchCities, type CityEntry } from '../../data';
@@ -128,6 +128,16 @@ export function DestinationField({
                       <h4 className={styles.detailsCity}>{d.city}</h4>
                       <p className={styles.detailsCountry}>{d.country}</p>
                     </div>
+                    {/* remover direto do cartão (08/out/2026): o × do chip lá em cima não era encontrado */}
+                    <button
+                      type="button"
+                      className={styles.detailsRemove}
+                      onClick={() => onRemove(d.id)}
+                      aria-label={`Remover destino ${d.city}, ${d.country}`}
+                    >
+                      <Icon icon={Trash2} />
+                      <span>Remover</span>
+                    </button>
                   </div>
                   <CurrencySelect
                     id={currencyId}
