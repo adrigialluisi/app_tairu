@@ -4,11 +4,17 @@ export function digitsOnly(value: string): string {
   return value.replace(/\D/g, '').slice(0, 16);
 }
 
-/** Só dígitos, no máximo 4, insere ":" depois do 2º ("1500" -> "15:00"). Sem validação de erro nessa fase. */
+/** Só dígitos, no máximo 4, insere ":" depois do 2º ("1500" -> "15:00"). Quem valida é o TimeField (isValidTime). */
 export function maskTime(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 4);
   if (digits.length <= 2) return digits;
   return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+/** "08:15" completo e dentro de 00:00–23:59 */
+export function isValidTime(value: string): boolean {
+  const m = value.match(/^(\d{2}):(\d{2})$/);
+  return !!m && Number(m[1]) <= 23 && Number(m[2]) <= 59;
 }
 
 function formatSingleDateDigits(d: string): string {
@@ -174,4 +180,39 @@ export function parseDateRangeDigits(digits: string): DateRangeParseResult {
   }
 
   return { startISO, endISO, error: null, complete: true };
+}
+
+/** ISO → só dígitos ddmmaaaa (estado de digitação do DateField) */
+export function isoToDigits(iso: string | null): string {
+  if (!iso) return '';
+  const { day, month, year } = fromISODate(iso);
+  return `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}${year}`;
+}
+
+/** Data única digitada (só dígitos): ISO quando completa e válida; erro quando completa e inválida. */
+export function parseSingleDate(digits: string): { iso: string | null; error: string | null } {
+  const d = parseSingleDateDigits(digits.slice(0, 8));
+  if (!d) return { iso: null, error: null };
+  if (!isValidCalendarDate(d)) return { iso: null, error: 'Data inválida.' };
+  return { iso: toISODate(d), error: null };
+}
+
+/** "dd/mm/aaaa" (como Documentos guarda) → ISO, ou null */
+export function displayToISO(value: string): string | null {
+  return parseSingleDate(digitsOnly(value)).iso;
+}
+
+/**
+ * Transporte guarda data e hora juntas, "22/11/2026 14:00" (o formato que a Agenda do dia lê).
+ * A tela mostra dois campos (DateField + TimeField, ajustes-86): estas duas funções fazem a ponte.
+ */
+export function splitDisplayDateTime(value: string): { dateISO: string | null; time: string } {
+  const v = value.trim();
+  const m = v.match(/^(\d{2}\/\d{2}\/\d{4})?\s*(\d{1,2}:?\d{0,2})?$/);
+  if (!m) return { dateISO: null, time: '' };
+  return { dateISO: m[1] ? displayToISO(m[1]) : null, time: m[2] ? maskTime(m[2]) : '' };
+}
+
+export function joinDisplayDateTime(dateISO: string | null, time: string): string {
+  return [dateISO ? formatISOToDisplay(dateISO) : '', time].filter(Boolean).join(' ');
 }

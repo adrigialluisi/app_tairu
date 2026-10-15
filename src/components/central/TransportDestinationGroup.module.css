@@ -21,3 +21,10 @@
   font-size: 13px;
   color: var(--muted);
 }
+
+/* destino sem item: só esta linha + "Adicionar …" (ajustes-85) */
+.empty {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--muted);
+}

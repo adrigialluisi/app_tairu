@@ -213,61 +213,114 @@
   font-size: var(--text-sm);
 }
 
-/* grade de fotos */
-.grid {
-  margin-top: var(--space-4);
+/*
+  Cartões de foto (ajustes-91): borda a borda, sem grade de 4. A barra do topo continua legível
+  pelo degradê do .top. Legenda branca sobre degradê stone-900 a 85% (≥ 12:1 no pior caso).
+*/
+.photoSlide {
+  position: absolute;
+  inset: 0;
   display: grid;
-  gap: var(--space-2);
+  gap: 4px;
+  background: var(--text);
+}
+.photo-full {
+  grid-template-rows: 1fr;
+}
+.photo-split {
+  grid-template-rows: 1fr 1fr;
+}
+.photo-hero {
+  grid-template-rows: 2fr 1fr;
+}
+.heroRow {
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-auto-rows: 1fr;
-  height: min(56vh, 460px);
+  gap: 4px;
+  min-height: 0;
 }
-.grid1 {
-  grid-template-columns: 1fr;
-}
-.grid2 {
-  grid-template-columns: 1fr;
-}
-.grid3 > :first-child {
-  grid-column: span 2;
-}
-.tile {
+.frame {
   position: relative;
   margin: 0;
+  min-height: 0;
   overflow: hidden;
-  border-radius: var(--radius-photo);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
 }
-.tileImg {
+.frameImg {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+}
+/* zoom lento (Ken Burns): 1.0 → 1.08 durante o cartão; a duração vem do cartão, a pausa também */
+.kenBurns {
+  animation-name: kenBurns;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  transform-origin: 50% 40%;
+}
+@keyframes kenBurns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+.frameCaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  background: linear-gradient(to top, rgba(28, 25, 23, 0.85), rgba(28, 25, 23, 0));
+}
+.frameCaptionSmall {
+  padding: var(--space-5) var(--space-3) var(--space-2);
+  font-size: var(--text-sm);
 }
 .tileEmpty {
   display: block;
   width: 100%;
   height: 100%;
 }
-.tileCaption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: var(--space-5) var(--space-2) var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  background: linear-gradient(to top, rgba(28, 25, 23, 0.85), rgba(28, 25, 23, 0));
-}
-/* crédito da foto de exemplo (ajustes-78): 11px embaixo do nome, sobre o mesmo degradê escuro */
-.tileCredit {
-  display: block;
-  margin-top: 2px;
+/* linha bem pequena no cartão da cidade: de onde vêm as fotos (o crédito de cada uma vai pro cartão final) */
+.sourceLine {
+  margin: var(--space-2) 0 0;
   font-size: 11px;
-  font-weight: var(--font-weight-regular);
+  opacity: 0.85;
+}
+
+/* Créditos das fotos: lista que rola (recebe toque — o resto da tela continua avançando) */
+.creditsSlide {
+  justify-content: flex-start;
+  /* a lista rola dentro da tela, em vez de crescer o cartão pra fora dela */
+  min-height: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.creditsList {
+  pointer-events: auto;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+.creditPlace {
+  font-weight: var(--font-weight-semibold);
+}
+.creditLink {
+  color: var(--text-on-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* destaque */

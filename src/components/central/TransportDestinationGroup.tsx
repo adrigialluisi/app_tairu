@@ -20,7 +20,8 @@ function formatDestinationDates(destination: TripDestination): string | null {
 export function TransportDestinationGroup({ destination }: TransportDestinationGroupProps) {
   const trip = useTrip();
   const items = trip.transportItems.filter((t) => t.destinationId === destination.id);
-  const [editingId, setEditingId] = useState<string | 'new' | null>(() => (items.length === 0 ? 'new' : null));
+  // destino sem item não abre formulário vazio (ajustes-85): o formulário só abre ao tocar em "Adicionar"
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const dates = formatDestinationDates(destination);
 
   return (
@@ -42,6 +43,7 @@ export function TransportDestinationGroup({ destination }: TransportDestinationG
               trip.saveTransportItem(updated);
               setEditingId(null);
             }}
+            onCancel={() => setEditingId(null)}
             onRemove={() => {
               trip.removeTransportItem(item.id);
               setEditingId(null);
@@ -60,8 +62,11 @@ export function TransportDestinationGroup({ destination }: TransportDestinationG
             trip.saveTransportItem(item);
             setEditingId(null);
           }}
+          onCancel={() => setEditingId(null)}
         />
       )}
+
+      {editingId === null && items.length === 0 && <p className={styles.empty}>Nenhum transporte ainda</p>}
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>

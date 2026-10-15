@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Icon } from '../shell/Icon';
+import { NewBadge } from '../shell/NewBadge';
 import { usePlaceThumbnail } from '../../hooks/usePlaceThumbnail';
 import styles from './TimelineStop.module.css';
 
@@ -20,9 +21,21 @@ interface TimelineStopProps {
   isLast: boolean;
   /** fotos tiradas nessa parada (StopPhotos) — aparecem também se a parada foi pulada (ajustes-75) */
   photos?: ReactNode;
-  /** ações da parada — omitido no roteiro só de leitura (viagem passada, ajustes-76) */
+  /** faixa única de ações no rodapé da parada (ajustes-88) — omitida no roteiro só de leitura (viagem passada, ajustes-76) */
   actions?: ReactNode;
+  /** à direita do nome, na mesma linha — o "Desfazer" da parada pulada (ajustes-88) */
+  titleAction?: ReactNode;
+  /** conteúdo extra antes das ações (ex.: gasto lançado pela parada, formulário de gasto aberto) */
+  extra?: ReactNode;
+  /** sugerida por convidado na simulação "2 dias depois" e ainda não vista (ajustes-89) */
+  isNew?: boolean;
 }
+
+/*
+  Parada pulada (ajustes-88): só o nome riscado e o "Desfazer" à direita — sem foto, tags,
+  descrição, fotos do grupo nem ações. Entre uma parada e outra, divisória fina sob o conteúdo
+  (a linha da timeline segue à esquerda).
+*/
 
 export function TimelineStop({
   orderLabel,
@@ -36,6 +49,9 @@ export function TimelineStop({
   isLast,
   photos,
   actions,
+  titleAction,
+  extra,
+  isNew = false,
 }: TimelineStopProps) {
   // com photoUrl, nem busca na Wikipedia (título vazio = o hook não faz nada)
   const wikiUrl = usePlaceThumbnail(photoUrl ? '' : (photoSearchTitle ?? ''));
@@ -46,10 +62,14 @@ export function TimelineStop({
       <span className={styles.dot} aria-hidden="true" />
       <div className={styles.content}>
         <span className={styles.orderLabel}>{orderLabel}</span>
-        <p className={`${styles.title} ${skipped ? styles.titleSkipped : ''}`}>
-          {title}
-          {skipped && <span className="visually-hidden"> (pulado)</span>}
-        </p>
+        <div className={styles.titleRow}>
+          <p className={`${styles.title} ${skipped ? styles.titleSkipped : ''}`}>
+            {title}
+            {skipped && <span className="visually-hidden"> (pulado)</span>}
+          </p>
+          {isNew && !skipped && <NewBadge />}
+          {titleAction}
+        </div>
         {tags && !skipped && <div className={styles.tags}>{tags}</div>}
         {description && !skipped && <p className={styles.description}>{description}</p>}
         {!skipped &&
@@ -62,8 +82,9 @@ export function TimelineStop({
               </span>
             )
           ))}
-        {photos}
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {!skipped && photos}
+        {!skipped && extra}
+        {!skipped && actions && <div className={styles.actions}>{actions}</div>}
       </div>
     </li>
   );

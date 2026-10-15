@@ -61,7 +61,7 @@ export function Documents() {
       <div className={styles.wrap}>
         <div className={styles.introGroup}>
           <p className={styles.intro}>Seus documentos ficam guardados aqui e valem pra todas as suas viagens.</p>
-          {/* offline é o padrão (ajustes-82): linha fixa, não mais uma contagem */}
+          {/* único aviso de offline do app (ajustes-85): uma vez, no topo de Meus documentos */}
           <p className={styles.offlineLine}>
             <Icon icon={CloudCheck} className="text-success" /> Seus documentos ficam salvos no celular e abrem sem
             internet.

@@ -29,17 +29,31 @@ export interface RecapPhoto {
   placeName?: string;
   /** foto de exemplo: "Berthold Werner · CC BY-SA 4.0" (crédito obrigatório do Wikimedia Commons) */
   credit?: string;
+  /** foto de exemplo: página do arquivo no Commons — vai no cartão "Créditos das fotos" (ajustes-91) */
+  sourceUrl?: string;
+  /** foto em pé (medida ao abrir a recordação): vai de preferência em tela cheia (ajustes-91) */
+  portrait?: boolean;
   /** ExampleTraveler.id de quem adicionou (ajustes-79); foto do celular = "voce" */
   addedBy?: string;
 }
+
+/*
+  Cartões de foto (ajustes-91, substituem a grade de 4 do "Lisboa em fotos"): a maioria em tela
+  cheia com zoom lento, alternando com montagens de 2 (split) e 3 (hero) pra dar ritmo. Nunca
+  grade de 4 ou mais. Créditos saem de cima das fotos e vão pro cartão "Créditos das fotos".
+*/
+type PhotoLayout = 'photo-full' | 'photo-split' | 'photo-hero';
 
 type Slide =
   | { kind: 'cover' }
   | { kind: 'numbers' }
   | { kind: 'route' }
   | { kind: 'city-map'; cityIndex: number }
-  | { kind: 'city-photos'; cityIndex: number; photos: RecapPhoto[] | null; part: number; parts: number }
+  | { kind: PhotoLayout; cityIndex: number; photos: RecapPhoto[] }
+  /** cidade sem foto escolhida: foto real do lugar (Wikipedia), em tela cheia */
+  | { kind: 'place-full'; cityIndex: number; stop: PastTripStop }
   | { kind: 'highlight' }
+  | { kind: 'credits' }
   | { kind: 'outro' };
 
 const DURATION: Record<Slide['kind'], number> = {
@@ -47,12 +61,47 @@ const DURATION: Record<Slide['kind'], number> = {
   numbers: 6000,
   route: 6500,
   'city-map': 7000,
-  'city-photos': 5500,
+  // foto cheia ~3,5 s; montagens ~4,5 s (têm mais pra ver)
+  'photo-full': 3500,
+  'place-full': 3500,
+  'photo-split': 4500,
+  'photo-hero': 4500,
   highlight: 5500,
+  credits: 9000,
   outro: Number.POSITIVE_INFINITY, // último slide fica parado, com as ações
 };
 
-const PHOTOS_PER_SLIDE = 4;
+/** cidade sem foto escolhida: quantos lugares viram foto cheia (Wikipedia) */
+const FALLBACK_PLACES = 3;
+/** ritmo por cidade: cheia → 2 → cheia → 3 → cheia… */
+const LAYOUT_CYCLE: PhotoLayout[] = ['photo-full', 'photo-split', 'photo-full', 'photo-hero'];
+
+/** tira `count` fotos da fila, de preferência as que `prefer` aceita (na ordem do roteiro) */
+function takeFrom(queue: RecapPhoto[], count: number, prefer: (p: RecapPhoto) => boolean): RecapPhoto[] {
+  const order = new Map(queue.map((p, i) => [p, i]));
+  const picked = queue.filter(prefer).slice(0, count);
+  for (const p of queue) if (picked.length < count && !picked.includes(p)) picked.push(p);
+  for (const p of picked) queue.splice(queue.indexOf(p), 1);
+  // devolve na ordem do roteiro
+  return picked.sort((a, b) => order.get(a)! - order.get(b)!);
+}
+
+/** foto em pé → tela cheia; deitadas → montagem de 2. Sobrou pouco, a montagem encolhe. */
+function layoutPhotos(photos: RecapPhoto[]): { kind: PhotoLayout; photos: RecapPhoto[] }[] {
+  const queue = [...photos];
+  const out: { kind: PhotoLayout; photos: RecapPhoto[] }[] = [];
+  let step = 0;
+  while (queue.length > 0) {
+    let kind = LAYOUT_CYCLE[step % LAYOUT_CYCLE.length];
+    if (kind === 'photo-hero' && queue.length < 3) kind = queue.length === 2 ? 'photo-split' : 'photo-full';
+    if (kind === 'photo-split' && queue.length < 2) kind = 'photo-full';
+    if (kind === 'photo-full') out.push({ kind, photos: takeFrom(queue, 1, (p) => !!p.portrait) });
+    else if (kind === 'photo-split') out.push({ kind, photos: takeFrom(queue, 2, (p) => !p.portrait) });
+    else out.push({ kind, photos: takeFrom(queue, 3, () => true) });
+    step++;
+  }
+  return out;
+}
 /** toque mais longo que isto é "segurar pra pausar", não "avançar" */
 const HOLD_MS = 250;
 
@@ -60,24 +109,18 @@ function buildSlides(cities: PastTripCity[], photos: Record<string, RecapPhoto[]
   const slides: Slide[] = [{ kind: 'cover' }, { kind: 'numbers' }];
   if (cities.length > 1) slides.push({ kind: 'route' });
   cities.forEach((city, cityIndex) => {
+    // o mapa da cidade é o "título da cidade" antes das fotos dela
     slides.push({ kind: 'city-map', cityIndex });
     const mine = photos[city.id] ?? [];
     if (mine.length === 0) {
-      slides.push({ kind: 'city-photos', cityIndex, photos: null, part: 0, parts: 1 });
+      for (const stop of spreadStops(city.stops, FALLBACK_PLACES)) slides.push({ kind: 'place-full', cityIndex, stop });
     } else {
-      const parts = Math.ceil(mine.length / PHOTOS_PER_SLIDE);
-      for (let part = 0; part < parts; part++) {
-        slides.push({
-          kind: 'city-photos',
-          cityIndex,
-          photos: mine.slice(part * PHOTOS_PER_SLIDE, (part + 1) * PHOTOS_PER_SLIDE),
-          part,
-          parts,
-        });
-      }
+      for (const card of layoutPhotos(mine)) slides.push({ ...card, cityIndex });
     }
   });
-  slides.push({ kind: 'highlight' }, { kind: 'outro' });
+  slides.push({ kind: 'highlight' });
+  if (Object.values(photos).some((list) => list.some((p) => p.credit))) slides.push({ kind: 'credits' });
+  slides.push({ kind: 'outro' });
   return slides;
 }
 
@@ -114,27 +157,48 @@ function CountUp({ value, reduceMotion }: { value: number; reduceMotion: boolean
   return <>{shown.toLocaleString('pt-BR')}</>;
 }
 
-/** Foto real do lugar (Wikipedia) quando a pessoa não escolheu fotos da cidade. */
-function PlacePhotoTile({ stop }: { stop: PastTripStop }) {
-  const url = usePlaceThumbnail(stop.wikiTitle ?? '');
+/** "Castelo de São Jorge · por Camila" — legenda da foto, sem crédito (que fica no cartão de créditos) */
+function captionOf(p: RecapPhoto, cityName: string): string {
+  return `${p.placeName ?? cityName}${p.addedBy ? ` · por ${shortName(p.addedBy)}` : ''}`;
+}
+
+interface PhotoFrameProps {
+  url: string | null;
+  caption: string;
+  /** zoom lento (Ken Burns) na foto cheia; com movimento reduzido, parada */
+  zoom?: { durationMs: number; paused: boolean } | null;
+  small?: boolean;
+}
+
+/** Uma foto da montagem: cobre o espaço todo, legenda no rodapé sobre degradê escuro. */
+function PhotoFrame({ url, caption, zoom = null, small = false }: PhotoFrameProps) {
   return (
-    <figure className={styles.tile}>
-      {url ? <img src={url} alt="" className={styles.tileImg} /> : <span className={styles.tileEmpty} aria-hidden="true" />}
-      <figcaption className={styles.tileCaption}>{stop.name}</figcaption>
+    <figure className={styles.frame}>
+      {url ? (
+        <img
+          src={url}
+          alt=""
+          className={`${styles.frameImg} ${zoom ? styles.kenBurns : ''}`}
+          style={zoom ? { animationDuration: `${zoom.durationMs}ms`, animationPlayState: zoom.paused ? 'paused' : 'running' } : undefined}
+        />
+      ) : (
+        <span className={styles.tileEmpty} aria-hidden="true" />
+      )}
+      <figcaption className={`${styles.frameCaption} ${small ? styles.frameCaptionSmall : ''}`}>{caption}</figcaption>
     </figure>
   );
 }
 
-/** Até 4 lugares espalhados pelo roteiro da cidade (não só os do primeiro dia). */
+/** Foto real do lugar (Wikipedia) quando a pessoa não escolheu fotos da cidade. */
+function PlacePhotoFull({ stop, zoom }: { stop: PastTripStop; zoom: PhotoFrameProps['zoom'] }) {
+  const url = usePlaceThumbnail(stop.wikiTitle ?? '');
+  return <PhotoFrame url={url} caption={stop.name} zoom={zoom} />;
+}
+
+/** Lugares espalhados pelo roteiro da cidade (não só os do primeiro dia). */
 function spreadStops(stops: PastTripStop[], count: number): PastTripStop[] {
   if (stops.length <= count) return stops;
   return Array.from({ length: count }, (_, i) => stops[Math.round((i * (stops.length - 1)) / (count - 1))]);
-}
-
-function rangeLabel(days: string[]): string {
-  const first = formatISOToDisplay(days[0]).slice(0, 5);
-  const last = formatISOToDisplay(days[days.length - 1]).slice(0, 5);
-  return first === last ? first : `${first} a ${last}`;
 }
 
 interface StoryPlayerProps {
@@ -341,38 +405,76 @@ export function StoryPlayer({ trip, photos, onClose }: StoryPlayerProps) {
               ))}
               {city.stops.length > 4 && <li className={styles.chip}>+{city.stops.length - 4}</li>}
             </ul>
+            {/* de onde vêm as fotos dessa cidade — o crédito de cada uma fica no cartão de créditos */}
+            {(photos[city.id] ?? []).some((p) => p.credit) ? (
+              <p className={styles.sourceLine}>Fotos de exemplo · Wikimedia Commons</p>
+            ) : (photos[city.id] ?? []).length === 0 ? (
+              <p className={styles.sourceLine}>Fotos dos lugares · Wikipedia</p>
+            ) : null}
           </div>
         );
       }
-      case 'city-photos': {
+      case 'photo-full':
+      case 'photo-split':
+      case 'photo-hero': {
         const city = cities[slide.cityIndex];
-        const days = cityDays(city);
-        const count = slide.photos ? slide.photos.length : Math.min(PHOTOS_PER_SLIDE, city.stops.length);
+        const zoom = reduceMotion ? null : { durationMs: duration, paused: paused || held };
+        const [first, ...rest] = slide.photos;
         return (
-          <div className={`${styles.slide} ${styles.bgAccentDark}`}>
-            <p className={styles.eyebrow}>
-              {rangeLabel(days)}
-              {slide.parts > 1 ? ` · ${slide.part + 1}/${slide.parts}` : ''}
-            </p>
-            <h2 className={styles.headline}>{city.city} em fotos</h2>
-            <div className={`${styles.grid} ${styles[`grid${count}`]}`}>
-              {slide.photos
-                ? slide.photos.map((p) => (
-                    <figure key={p.id} className={styles.tile}>
-                      <img src={p.url} alt="" className={styles.tileImg} />
-                      {p.placeName && (
-                        <figcaption className={styles.tileCaption}>
-                          {p.placeName}
-                          {p.addedBy && ` · por ${shortName(p.addedBy)}`}
-                          {p.credit && <span className={styles.tileCredit}>{p.credit}</span>}
-                        </figcaption>
-                      )}
-                    </figure>
-                  ))
-                : spreadStops(city.stops, PHOTOS_PER_SLIDE).map((s) => <PlacePhotoTile key={s.id} stop={s} />)}
-            </div>
-            {!slide.photos && <p className={styles.footnote}>Fotos dos lugares visitados · Wikipedia</p>}
-            {slide.photos?.some((p) => p.credit) && <p className={styles.footnote}>Fotos de exemplo · Wikimedia Commons</p>}
+          <div className={`${styles.photoSlide} ${styles[slide.kind]}`}>
+            {slide.kind === 'photo-full' ? (
+              <PhotoFrame url={first.url} caption={captionOf(first, city.city)} zoom={zoom} />
+            ) : slide.kind === 'photo-split' ? (
+              slide.photos.map((p) => <PhotoFrame key={p.id} url={p.url} caption={captionOf(p, city.city)} small />)
+            ) : (
+              <>
+                <PhotoFrame url={first.url} caption={captionOf(first, city.city)} />
+                <div className={styles.heroRow}>
+                  {rest.map((p) => (
+                    <PhotoFrame key={p.id} url={p.url} caption={captionOf(p, city.city)} small />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      }
+      case 'place-full':
+        return (
+          <div className={`${styles.photoSlide} ${styles['photo-full']}`}>
+            <PlacePhotoFull
+              stop={slide.stop}
+              zoom={reduceMotion ? null : { durationMs: duration, paused: paused || held }}
+            />
+          </div>
+        );
+      case 'credits': {
+        const credited = [
+          ...new Map(
+            Object.values(photos)
+              .flat()
+              .filter((p) => p.credit)
+              .map((p) => [p.id, p]),
+          ).values(),
+        ];
+        return (
+          <div className={`${styles.slide} ${styles.bgDark} ${styles.creditsSlide}`}>
+            <p className={styles.eyebrow}>Fotos de exemplo · Wikimedia Commons</p>
+            <h2 className={styles.headline}>Créditos das fotos</h2>
+            <ul className={styles.creditsList}>
+              {credited.map((p) => (
+                <li key={p.id}>
+                  <span className={styles.creditPlace}>{p.placeName}</span> — {p.credit} ·{' '}
+                  {p.sourceUrl ? (
+                    <a href={p.sourceUrl} target="_blank" rel="noreferrer" className={styles.creditLink}>
+                      Wikimedia Commons
+                    </a>
+                  ) : (
+                    'Wikimedia Commons'
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         );
       }

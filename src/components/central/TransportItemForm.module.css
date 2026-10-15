@@ -78,3 +78,11 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+/* Data + hora lado a lado (ajustes-86): a data fica com o resto, a hora com 8rem (cabe "08:15" + relógio) */
+.dateTimeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  align-items: start;
+  gap: var(--space-3);
+}

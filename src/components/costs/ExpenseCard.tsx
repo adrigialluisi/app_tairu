@@ -4,16 +4,27 @@ import { formatMoney } from '../../utils/money';
 import { MOCK_EXPENSE_PREFIX } from '../../utils/mockContributions';
 import { Badge } from '@/components/ui/badge';
 import { Icon } from '../shell/Icon';
+import { NewBadge } from '../shell/NewBadge';
+import { DocumentThumbs, isImageAttachment } from '../documents/DocumentFiles';
+import type { Attachment } from '../../context/TripContext';
 import { Card } from '@/components/ui/card';
 import styles from './ExpenseCard.module.css';
+
+/** id do cartão — a parada do Roteiro leva até o gasto lançado por ela (ajustes-88) */
+export const expenseCardId = (expenseId: string) => `gasto-${expenseId}`;
 
 interface ExpenseCardProps {
   entry: CostEntry;
   members: Member[];
   onEdit: () => void;
+  /** veio na simulação "2 dias depois" e ainda não foi visto (ajustes-89) */
+  isNew?: boolean;
+  /** comprovantes do gasto: foto da nota vira miniatura que abre em tela cheia (ajustes-90) */
+  attachments?: Attachment[];
 }
 
-export function ExpenseCard({ entry, members, onEdit }: ExpenseCardProps) {
+export function ExpenseCard({ entry, members, onEdit, isNew = false, attachments = [] }: ExpenseCardProps) {
+  const receiptPhotos = attachments.filter(isImageAttachment);
   const meta = CATEGORY_META[entry.category];
   const payer = memberLabel(members, entry.paidBy);
   const splitCount = entry.splitWith.length;
@@ -24,7 +35,7 @@ export function ExpenseCard({ entry, members, onEdit }: ExpenseCardProps) {
 
   return (
     <Card asChild className="px-4">
-    <article className={styles.card}>
+    <article id={expenseCardId(entry.id)} className={styles.card}>
       <div className={styles.main}>
         <span className={styles.icon} aria-hidden="true">
           <Icon icon={meta.icon} />
@@ -45,7 +56,9 @@ export function ExpenseCard({ entry, members, onEdit }: ExpenseCardProps) {
           )}
         </div>
       </div>
+      {receiptPhotos.length > 0 && <DocumentThumbs attachments={receiptPhotos} docLabel={`Nota de ${entry.description}`} />}
       <div className={styles.footer}>
+        {isNew && <NewBadge />}
         {entry.origin === 'central' && (
           <Badge variant="neutral">
             <Icon icon={Receipt} /> Da Central

@@ -1,10 +1,39 @@
-import { ArrowLeftRight, Banknote, CalendarDays, CalendarX, Camera, Clock, Lightbulb, List, Map as MapIcon, MapPin, Pencil, RotateCcw, Route, SkipForward, X } from 'lucide-react';
-import { useRef, useState, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  Banknote,
+  CalendarDays,
+  CalendarX,
+  Camera,
+  ChevronRight,
+  Clock,
+  Ellipsis,
+  Lightbulb,
+  List,
+  Map as MapIcon,
+  MapPin,
+  Pencil,
+  RotateCcw,
+  Route,
+  SkipForward,
+  Wallet,
+  X,
+} from 'lucide-react';
+import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
 import { ScreenShell } from '../components/shell/ScreenShell';
 import { BottomNav } from '../components/shell/BottomNav';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ExpenseForm } from '../components/costs/ExpenseForm';
+import { formatMoney, parseAmount, toBRL } from '../utils/money';
 import { SaveToast } from '../components/shell/SaveToast';
 import { DestinationTabs } from '../components/itinerary/DestinationTabs';
 import { SuggestionCard } from '../components/shell/SuggestionCard';
@@ -14,9 +43,10 @@ import { RouteMap, type RouteMapPin } from '../components/itinerary/RouteMap';
 import { TimelineStop } from '../components/itinerary/TimelineStop';
 import { AgendaRow } from '../components/itinerary/AgendaRow';
 import { MemberAvatars } from '../components/shell/MemberAvatars';
-import { YOU, getMembers, memberLabel } from '../utils/costs';
+import { YOU, activeMembers, getMembers, memberLabel } from '../utils/costs';
 import { joinPt } from '../utils/retrospective';
 import { CategoryTags } from '../components/suggestions/CategoryTags';
+import { PlaceSearchBar } from '../components/suggestions/PlaceSearchBar';
 import { SuggestionsPanel } from '../components/suggestions/SuggestionsPanel';
 import {
   INTEREST_LABELS,
@@ -25,13 +55,17 @@ import {
   getEventById,
   getLocalTipsForCity,
   getPlaceById,
+  placePhotoUrl,
   type EventEntry,
+  type PlaceEntry,
 } from '../data';
-import { useTrip, type QuizInterest, type TripDestination, type TripPhoto, type TripPlaceSelection } from '../context/TripContext';
+import { useTrip, type ExpenseCategory, type QuizInterest, type TripDestination, type TripPhoto, type TripPlaceSelection } from '../context/TripContext';
 import { useSaveToast } from '../hooks/useSaveToast';
 import { isRoteiroComplete } from '../utils/tripProgress';
+import { useMarkSectionSeen } from '../hooks/useMarkSectionSeen';
 import {
   computeDestinationAssignments,
+  proximityOptionsFor,
   daysBetween,
   getTripEndISO,
   getTripStartISO,
@@ -46,10 +80,10 @@ import {
   formatISOToDayPill,
   formatISOToDisplay,
   formatISOToLongWeekday,
+  formatISOToShortDay,
   formatISOToWeekdayDisplay,
 } from '../utils/dateMask';
 import { Icon } from '../components/shell/Icon';
-import { OfflineBadge } from '../components/shell/OfflineBadge';
 import { Button } from '../components/shell/Button';
 import { StopPhotos } from '../components/itinerary/StopPhotos';
 import { PhotoViewer } from '../components/memories/PhotoViewer';
@@ -95,6 +129,11 @@ function selectedEvents(selectedEventIds: string[]): EventEntry[] {
   return selectedEventIds.map((id) => getEventById(id)).filter((e): e is EventEntry => Boolean(e));
 }
 
+/** "Sex 20/11" — legenda do mapa com as mesmas datas das pílulas (ajustes-88) */
+function mapDayLabel(iso: string): string {
+  return formatISOToShortDay(iso).replace(',', '');
+}
+
 /**
  * Lugares customizados (sem placeId) não têm coordenada — ficam de fora do
  * mapa, só na lista. Eventos escolhidos com lat/lng entram como pin no dia
@@ -130,11 +169,13 @@ function buildMapPins(
       lat: place.lat,
       lng: place.lng,
       dayNumber: range.globalDayIndexes[a.localDayIndex] + 1,
+      dayLabel: tripStartISO ? mapDayLabel(globalDayToISO(tripStartISO, range.globalDayIndexes[a.localDayIndex])) : undefined,
       skipped: a.skipped,
       colorIndex: a.localDayIndex,
       order,
       kind: 'place',
       photoTitle: place.wikiTitle ?? place.name,
+      photoUrl: placePhotoUrl(place),
     });
   }
   if (tripStartISO) {
@@ -151,6 +192,7 @@ function buildMapPins(
         lat: e.lat,
         lng: e.lng,
         dayNumber: globalDay + 1,
+        dayLabel: mapDayLabel(e.date),
         skipped: false,
         colorIndex,
         kind: 'event',
@@ -159,6 +201,18 @@ function buildMapPins(
     }
   }
   return { pins, missingCount };
+}
+
+/** classe de item dos menus ⋯ (mesma de Convidados): 44px de toque */
+const MENU_ITEM = 'min-h-11 px-3 text-(length:--text-base)';
+
+/** categoria do gasto deduzida do lugar (ajustes-88): comer → Alimentação; ver → Passeios; comprar → Compras */
+function expenseCategoryFor(place: PlaceEntry | undefined): ExpenseCategory | null {
+  const first = place?.categories[0];
+  if (!first) return null;
+  if (first === 'gastronomia') return 'alimentacao';
+  if (first === 'compras') return 'compras';
+  return 'passeios';
 }
 
 /** Até 2 bairros mais frequentes entre os lugares do dia (empate: o que aparece primeiro na rota) — ajustes-80. */
@@ -175,13 +229,24 @@ function dayNeighborhoods(assignments: ItineraryItemAssignment[]): string {
 export function Itinerary() {
   const trip = useTrip();
   const navigate = useNavigate();
+  // "Novidades na viagem" da Início (ajustes-89) abre as Sugestões já na cidade com mais novidades
+  const navState = (useLocation().state as { tab?: 'lugares'; destinationId?: string } | null) ?? {};
   // valor interno 'lugares' mantido; o rótulo visível é "Sugestões" (ajustes-60)
-  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>('lugares');
-  const [activeDestinationId, setActiveDestinationId] = useState(() => trip.destinations[0]?.id ?? '');
+  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>(navState.tab ?? 'lugares');
+  const [activeDestinationId, setActiveDestinationId] = useState(
+    () =>
+      (navState.destinationId && trip.destinations.some((d) => d.id === navState.destinationId)
+        ? navState.destinationId
+        : trip.destinations[0]?.id) ?? '',
+  );
+  // ajustes-89: lugares dos convidados são novidade até a pessoa sair do Roteiro
+  useMarkSectionSeen('roteiro');
   const [tipsDestinationId, setTipsDestinationId] = useState(() => trip.destinations[0]?.id ?? '');
   const [roteiroView, setRoteiroView] = useState<'lista' | 'mapa'>('lista');
   const [mapDayFilter, setMapDayFilter] = useState<'all' | number>('all');
   const [listDayFilter, setListDayFilter] = useState<'all' | number>('all');
+  // parada com o formulário de gasto aberto (ajustes-88)
+  const [expenseStopId, setExpenseStopId] = useState<string | null>(null);
   const { message, visible, show } = useSaveToast();
 
   // --- fotos por atração (docs/ajustes-75-fotos-por-atracao.md) ---
@@ -218,11 +283,20 @@ export function Itinerary() {
     show(`${added.length} ${added.length === 1 ? 'foto adicionada' : 'fotos adicionadas'} em ${target.label}`);
   }
 
-  /** botão + miniaturas de uma parada/evento */
-  function stopPhotoParts(target: StopPhotoTarget) {
+  /** botão + miniaturas de uma parada/evento (na parada, o botão é o "Foto" compacto da faixa de ações, ajustes-88) */
+  function stopPhotoParts(target: StopPhotoTarget, compact = false) {
     const photos = photosOfTarget(trip.photos, target.key);
     return {
-      button: (
+      button: compact ? (
+        <Button
+          variant="secondary"
+          className={styles.stopAction}
+          onClick={() => pickPhotosFor(target)}
+          aria-label={`Adicionar foto de ${target.label}`}
+        >
+          <Icon icon={Camera} /> Foto
+        </Button>
+      ) : (
         <Button variant="link" onClick={() => pickPhotosFor(target)} aria-label={`Adicionar foto de ${target.label}`}>
           <Icon icon={Camera} /> Adicionar foto
         </Button>
@@ -248,6 +322,146 @@ export function Itinerary() {
         ? `Lugar movido. As fotos continuam no dia ${formatISOToDisplay(photoDays[0]).slice(0, 5)}.`
         : 'Lugar movido. As fotos continuam nos dias em que foram tiradas.',
     );
+  }
+
+  /*
+    Ações da parada (ajustes-88). Normal: faixa única [Foto] [Gasto] … [⋯] — o seletor de dia não
+    cabia junto em 375px, então foi pro ⋯ como "Mudar de dia", com o "Pulei". Pulada: só o nome
+    riscado e "Desfazer" à direita. "Gasto" abre o ExpenseForm ali mesmo, já preenchido com o lugar,
+    a cidade, a moeda, o dia e a categoria — a pessoa só digita o valor. O gasto guarda a parada
+    (placeSelectionId) e aparece nela como "ARS 120.000 · ≈ R$ 409", que leva ao lançamento em Custos.
+  */
+  function stopControls({
+    assignment,
+    range,
+    dateISO,
+    place,
+    photoButton,
+  }: {
+    assignment: ItineraryItemAssignment;
+    range: DestinationDayRange;
+    dateISO: string;
+    place: PlaceEntry | undefined;
+    photoButton: ReactNode;
+  }) {
+    const label = placeLabel(assignment.place);
+    if (assignment.skipped) {
+      return {
+        titleAction: (
+          <Button
+            variant="secondary"
+            className={styles.stopAction}
+            onClick={() => trip.toggleItinerarySkipped(assignment.place.id)}
+            aria-label={`Desfazer: ${label} volta pro roteiro`}
+          >
+            <Icon icon={RotateCcw} /> Desfazer
+          </Button>
+        ),
+      };
+    }
+    const destination = trip.destinations.find((d) => d.id === range.destinationId);
+    const stopExpenses = trip.expenses.filter((e) => e.placeSelectionId === assignment.place.id);
+    const formOpen = expenseStopId === assignment.place.id;
+    const startISO = getTripStartISO(trip.destinations);
+    return {
+      extra:
+        stopExpenses.length > 0 || formOpen ? (
+          <>
+            {stopExpenses.map((e) => {
+              const amount = parseAmount(e.amount);
+              const brl = amount !== null && e.currencyCode !== 'BRL' ? toBRL(amount, e.currencyCode) : null;
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  className={styles.stopExpense}
+                  onClick={() => navigate('/custos', { state: { expenseId: e.id } })}
+                  aria-label={`Gasto em ${label}: ${amount !== null ? formatMoney(amount, e.currencyCode) : e.amount}. Ver em Custos`}
+                >
+                  <Icon icon={Wallet} />
+                  <span>
+                    {amount !== null ? formatMoney(amount, e.currencyCode) : `${e.currencyCode} ${e.amount}`}
+                    {brl !== null && ` · ≈ ${formatMoney(brl, 'BRL')}`}
+                  </span>
+                  <Icon icon={ChevronRight} />
+                </button>
+              );
+            })}
+            {formOpen && (
+              <div className={styles.stopExpenseForm}>
+                <ExpenseForm
+                  destinations={trip.destinations}
+                  members={activeMembers(members)}
+                  initialExpense={null}
+                  prefill={{
+                    description: label,
+                    destinationId: range.destinationId,
+                    currencyCode: destination?.currencyCode,
+                    date: dateISO,
+                    category: expenseCategoryFor(place),
+                    placeSelectionId: assignment.place.id,
+                  }}
+                  onSave={(expense) => {
+                    trip.saveExpense(expense);
+                    setExpenseStopId(null);
+                    show('Gasto salvo');
+                  }}
+                  onCancel={() => setExpenseStopId(null)}
+                />
+              </div>
+            )}
+          </>
+        ) : undefined,
+      actions: (
+        <>
+          {photoButton}
+          <Button
+            variant="secondary"
+            className={styles.stopAction}
+            aria-expanded={formOpen}
+            onClick={() => setExpenseStopId(formOpen ? null : assignment.place.id)}
+            aria-label={`Lançar gasto em ${label}`}
+          >
+            <Icon icon={Wallet} /> Gasto
+          </Button>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="link"
+                iconOnly
+                aria-label={`Mais ações de ${label}`}
+                className="ml-auto text-muted-foreground hover:bg-muted hover:text-foreground hover:no-underline"
+              >
+                <Icon icon={Ellipsis} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto min-w-52">
+              {startISO && range.globalDayIndexes.length > 1 && (
+                <>
+                  <DropdownMenuLabel className="px-3 text-(length:--text-sm) text-muted-foreground">
+                    Mudar de dia
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={String(assignment.localDayIndex)}
+                    onValueChange={(v) => moveStop(assignment.place, Number(v))}
+                  >
+                    {range.globalDayIndexes.map((globalDay, i) => (
+                      <DropdownMenuRadioItem key={i} value={String(i)} className={MENU_ITEM}>
+                        {formatISOToShortDay(globalDayToISO(startISO, globalDay))} (dia {i + 1})
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem className={MENU_ITEM} onSelect={() => trip.toggleItinerarySkipped(assignment.place.id)}>
+                <Icon icon={SkipForward} /> Pulei
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      ),
+    };
   }
 
   // visualizador aberto a partir das miniaturas: navega só entre as fotos daquela parada
@@ -299,6 +513,7 @@ export function Itinerary() {
         range.globalDayIndexes.length,
         trip.selectedPlaces,
         trip.itineraryOverrides,
+        proximityOptionsFor(trip, range.destinationId),
       ),
     ]),
   );
@@ -466,13 +681,17 @@ export function Itinerary() {
           aria-labelledby={`${MAIN_TABS_NAME}-tab-lugares`}
           className={styles.panel}
         >
-          <DestinationTabs
-            name={DESTINATION_TABS_NAME}
-            label="Destino"
-            destinations={trip.destinations}
-            value={activeDestinationId}
-            onChange={handleActiveDestinationChange}
-          />
+          {/* abas de cidade + busca presas no topo juntas (ajustes-87, regra do ajustes-85) */}
+          <div className={styles.stickyBar}>
+            <DestinationTabs
+              name={DESTINATION_TABS_NAME}
+              label="Destino"
+              destinations={trip.destinations}
+              value={activeDestinationId}
+              onChange={handleActiveDestinationChange}
+            />
+            {activeDestination && <PlaceSearchBar destination={activeDestination} onToast={show} />}
+          </div>
 
           {activeDestination && (
             <div
@@ -503,17 +722,80 @@ export function Itinerary() {
           aria-labelledby={`${MAIN_TABS_NAME}-tab-roteiro`}
           className={styles.viewPanel}
         >
-          <Tabs
-            name={ROTEIRO_VIEW_TABS_NAME}
-            label="Visualização do roteiro"
-            iconOnly
-            items={[
-              { value: 'lista', label: 'Lista', icon: List },
-              { value: 'mapa', label: 'Mapa', icon: MapIcon },
-            ]}
-            value={roteiroView}
-            onChange={(v) => setRoteiroView(v as 'lista' | 'mapa')}
-          />
+
+          {/*
+            Faixa presa no topo (ajustes-88, regra do ajustes-85): cidade (no Mapa) + pílulas de data,
+            com o Lista/Mapa em ícone na ponta direita da linha das pílulas. As abas Sugestões ·
+            Roteiro · Dicas rolam com a página, pra não comer metade da tela.
+          */}
+          <div className={styles.stickyBar}>
+            {roteiroView === 'mapa' && (
+              <DestinationTabs
+                name={DESTINATION_TABS_NAME}
+                label="Destino do mapa"
+                destinations={trip.destinations}
+                value={activeDestinationId}
+                onChange={handleActiveDestinationChange}
+              />
+            )}
+            <div className={styles.pillsRow}>
+              <div className={styles.pillsSlot}>
+                {tripStartISO && roteiroView === 'mapa' && activeRange && activeRange.globalDayIndexes.length > 0 && (
+                  <Tabs
+                    name={MAP_DAY_TABS_NAME}
+                    label="Dia do mapa"
+                    variant="pill-date"
+                    items={[
+                      { value: 'all', label: 'Todos os dias' },
+                      ...activeRange.globalDayIndexes.map((globalDay, i) => {
+                        const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
+                        return {
+                          value: String(i),
+                          label: formatISOToDisplay(globalDayToISO(tripStartISO, globalDay)),
+                          pillTop: monthAbbrev,
+                          pillBottom: day,
+                        };
+                      }),
+                    ]}
+                    value={mapDayFilter === 'all' ? 'all' : String(mapDayFilter)}
+                    onChange={(v) => setMapDayFilter(v === 'all' ? 'all' : Number(v))}
+                  />
+                )}
+                {tripStartISO && roteiroView === 'lista' && totalDays > 1 && (
+                  <Tabs
+                    name="itinerary-list-day"
+                    label="Dia do roteiro"
+                    variant="pill-date"
+                    items={[
+                      { value: 'all', label: 'Todos os dias' },
+                      ...Array.from({ length: totalDays }, (_, globalDay) => {
+                        const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
+                        return {
+                          value: String(globalDay),
+                          label: formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay)),
+                          pillTop: monthAbbrev,
+                          pillBottom: day,
+                        };
+                      }),
+                    ]}
+                    value={listDayFilter === 'all' ? 'all' : String(listDayFilter)}
+                    onChange={(v) => setListDayFilter(v === 'all' ? 'all' : Number(v))}
+                  />
+                )}
+              </div>
+              <Tabs
+                name={ROTEIRO_VIEW_TABS_NAME}
+                label="Visualização do roteiro"
+                iconOnly
+                items={[
+                  { value: 'lista', label: 'Lista', icon: List },
+                  { value: 'mapa', label: 'Mapa', icon: MapIcon },
+                ]}
+                value={roteiroView}
+                onChange={(v) => setRoteiroView(v as 'lista' | 'mapa')}
+              />
+            </div>
+          </div>
 
           {!tripStartISO || !tripEndISO || dayRanges.length === 0 ? (
             <EmptyTripState message="Nenhum destino com datas completas ainda. Preencha as datas em Destinos pra ver o roteiro dia a dia." />
@@ -526,43 +808,6 @@ export function Itinerary() {
                   aria-labelledby={`${ROTEIRO_VIEW_TABS_NAME}-tab-mapa`}
                   className={styles.viewPanel}
                 >
-                  <DestinationTabs
-                    name={DESTINATION_TABS_NAME}
-                    label="Destino do mapa"
-                    destinations={trip.destinations}
-                    value={activeDestinationId}
-                    onChange={handleActiveDestinationChange}
-                  />
-
-                  {activeRange && activeRange.globalDayIndexes.length > 0 && (
-                    <Tabs
-                      name={MAP_DAY_TABS_NAME}
-                      label="Dia do mapa"
-                      variant="pill-date"
-                      items={[
-                        { value: 'all', label: 'Todos os dias' },
-                        ...activeRange.globalDayIndexes.map((globalDay, i) => {
-                          const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
-                          return {
-                            value: String(i),
-                            label: formatISOToDisplay(globalDayToISO(tripStartISO, globalDay)),
-                            pillTop: monthAbbrev,
-                            pillBottom: day,
-                          };
-                        }),
-                      ]}
-                      value={mapDayFilter === 'all' ? 'all' : String(mapDayFilter)}
-                      onChange={(v) => setMapDayFilter(v === 'all' ? 'all' : Number(v))}
-                    />
-                  )}
-
-                  {isRoteiroComplete(trip) && (
-                    <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-(length:--text-sm) text-muted-foreground">
-                      <OfflineBadge label="Roteiro disponível offline." />
-                      <span>O mapa precisa de internet; a lista funciona sem.</span>
-                    </p>
-                  )}
-
                   {activeDestination && (
                     <RouteMap
                       cityLabel={activeDestination.city}
@@ -581,36 +826,12 @@ export function Itinerary() {
                   aria-labelledby={`${ROTEIRO_VIEW_TABS_NAME}-tab-lista`}
                   className={styles.viewPanel}
                 >
-                  {totalDays > 1 && (
-                    <Tabs
-                      name="itinerary-list-day"
-                      label="Dia do roteiro"
-                      variant="pill-date"
-                      items={[
-                        { value: 'all', label: 'Todos os dias' },
-                        ...Array.from({ length: totalDays }, (_, globalDay) => {
-                          const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
-                          return {
-                            value: String(globalDay),
-                            label: formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay)),
-                            pillTop: monthAbbrev,
-                            pillBottom: day,
-                          };
-                        }),
-                      ]}
-                      value={listDayFilter === 'all' ? 'all' : String(listDayFilter)}
-                      onChange={(v) => setListDayFilter(v === 'all' ? 'all' : Number(v))}
-                    />
-                  )}
-
                   {trip.selectedPlaces.length > 0 && (
                     <p className="m-0 flex items-start gap-2 text-(length:--text-sm) text-muted-foreground">
                       <Icon icon={Route} className="mt-0.5" />
                       Organizamos os dias juntando os lugares que ficam perto. Você pode mover o que quiser.
                     </p>
                   )}
-                  {/* roteiro salvo abre sem internet (ajustes-82); vazio não mostra */}
-                  {isRoteiroComplete(trip) && <OfflineBadge label="Roteiro disponível offline" />}
 
                   <ul className={styles.dayList}>
                     {Array.from({ length: totalDays }, (_, i) => i)
@@ -721,7 +942,7 @@ export function Itinerary() {
                                         dayISO: dateISO,
                                         placeSelectionId: assignment.place.id,
                                         eventId: null,
-                                      });
+                                      }, true);
                                       return (
                                         <TimelineStop
                                           key={assignment.place.id}
@@ -735,43 +956,19 @@ export function Itinerary() {
                                       }
                                           description={place?.description}
                                           photoSearchTitle={place ? (place.wikiTitle ?? place.name) : undefined}
+                                          photoUrl={placePhotoUrl(place) ?? undefined}
                                           fallbackIcon={placeIllustrationIcon(place?.categories)}
                                           skipped={assignment.skipped}
                                           isLast={index === dayItems.length - 1}
                                           photos={stopParts.thumbs}
-                                          actions={
-                                            <>
-                                              {stopParts.button}
-                                              {!assignment.skipped && range.globalDayIndexes.length > 1 && (
-                                                <label className={styles.moveLabel}>
-                                                  <Icon icon={ArrowLeftRight} />
-                                                  <NativeSelect
-                                                    selectClassName="h-11 rounded-md border-input bg-background pr-8 pl-2 text-(length:--text-sm) text-foreground focus-visible:ring-0"
-                                                    value={assignment.localDayIndex}
-                                                    onChange={(e) => moveStop(assignment.place, Number(e.target.value))}
-                                                    aria-label={`Mover ${placeLabel(assignment.place)} pra outro dia`}
-                                                  >
-                                                    {range.globalDayIndexes.map((globalDay, i) => (
-                                                      <NativeSelectOption key={i} value={i}>
-                                                        {formatISOToDisplay(
-                                                          globalDayToISO(tripStartISO, globalDay),
-                                                        ).slice(0, 5)}{' '}
-                                                        (dia {i + 1})
-                                                      </NativeSelectOption>
-                                                    ))}
-                                                  </NativeSelect>
-                                                </label>
-                                              )}
-                                              <button
-                                                type="button"
-                                                className={`${styles.skipButton} ${assignment.skipped ? styles.skipButtonUndo : ''}`}
-                                                onClick={() => trip.toggleItinerarySkipped(assignment.place.id)}
-                                              >
-                                                <Icon icon={assignment.skipped ? RotateCcw : SkipForward} />
-                                                {assignment.skipped ? 'Desfazer' : 'Pulei'}
-                                              </button>
-                                            </>
-                                          }
+                                          isNew={trip.unseenUpdates.roteiro.includes(assignment.place.id)}
+                                          {...stopControls({
+                                            assignment,
+                                            range,
+                                            dateISO,
+                                            place,
+                                            photoButton: stopParts.button,
+                                          })}
                                         />
                                       );
                                     })}

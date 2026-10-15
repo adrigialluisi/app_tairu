@@ -91,27 +91,34 @@ export function CurrencyConverter({ initialFrom, tripCurrencies, onLaunchExpense
         )}
       </div>
 
-      <Card className={`px-4 ${styles.result}`} aria-live="polite">
-        {missing ? (
-          <p className={styles.missing}>
-            <Icon icon={TriangleAlert} /> Sem cotação pra {missing} no protótipo.
-          </p>
-        ) : (
-          <>
-            {result !== null && parsed !== null && (
-              <>
-                <span className={styles.resultFrom}>{formatMoney(parsed, from)} =</span>
-                <span className={styles.resultValue}>{formatMoney(result, to)}</span>
-              </>
-            )}
-            {unit !== null && inverse !== null && (
-              <span className={styles.rate}>
-                1 {from} = {formatRate(unit, to)} · 1 {to} = {formatRate(inverse)} {from}
-              </span>
-            )}
-          </>
-        )}
-      </Card>
+      <div className={styles.resultGroup}>
+        <Card className={`px-4 ${styles.result}`} aria-live="polite">
+          {missing ? (
+            <p className={styles.missing}>
+              <Icon icon={TriangleAlert} /> Sem cotação pra {missing} no protótipo.
+            </p>
+          ) : (
+            <>
+              {result !== null && parsed !== null && (
+                <>
+                  <span className={styles.resultFrom}>{formatMoney(parsed, from)} =</span>
+                  <span className={styles.resultValue}>{formatMoney(result, to)}</span>
+                </>
+              )}
+              {unit !== null && inverse !== null && (
+                <span className={styles.rate}>
+                  1 {from} = {formatRate(unit, to)} · 1 {to} = {formatRate(inverse)} {from}
+                </span>
+              )}
+            </>
+          )}
+        </Card>
+
+        {/* data da cotação logo abaixo do resultado (ajustes-86) — antes ficava no fim, fora da tela */}
+        <p className={styles.footnote}>
+          Cotação de {RATES_AS_OF} ({RATES_SOURCE_LABEL}). Pode variar na hora da compra.
+        </p>
+      </div>
 
       {!missing && from !== to && (
         // Table do shadcn num Card (docs/ajustes-74-...md): a legenda é o título do cartão,
@@ -160,9 +167,6 @@ export function CurrencyConverter({ initialFrom, tripCurrencies, onLaunchExpense
         Lançar como gasto
       </Button>
 
-      <p className={styles.footnote}>
-        Cotação de {RATES_AS_OF} ({RATES_SOURCE_LABEL}). Pode variar na hora da compra.
-      </p>
     </div>
   );
 }

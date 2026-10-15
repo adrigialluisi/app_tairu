@@ -6,6 +6,10 @@ interface CalendarProps {
   startISO: string | null;
   endISO: string | null;
   onSelectRange: (startISO: string | null, endISO: string | null) => void;
+  /** 'single' (DateField, ajustes-86): um dia só — onSelectRange(dia, null) */
+  mode?: 'range' | 'single';
+  /** mês em que o calendário abre quando ainda não há data (ex.: o mês da viagem) */
+  defaultMonthISO?: string | null;
 }
 
 function toDate(iso: string): Date {
@@ -28,7 +32,7 @@ function isoOf(date: Date): string {
  * também vira início; senão, vira o fim. Datas que se tocam entre destinos
  * continuam permitidas — quem valida sobreposição é a tela de Destinos.
  */
-export function Calendar({ startISO, endISO, onSelectRange }: CalendarProps) {
+export function Calendar({ startISO, endISO, onSelectRange, mode = 'range', defaultMonthISO = null }: CalendarProps) {
   const from = startISO ? toDate(startISO) : undefined;
   const to = endISO ? toDate(endISO) : undefined;
 
@@ -38,22 +42,40 @@ export function Calendar({ startISO, endISO, onSelectRange }: CalendarProps) {
     else onSelectRange(startISO, iso);
   }
 
+  const shared = {
+    locale: ptBR,
+    weekStartsOn: 0 as const,
+    showOutsideDays: false,
+    defaultMonth: from ?? (defaultMonthISO ? toDate(defaultMonthISO) : undefined),
+    formatters: {
+      formatCaption: (month: Date) =>
+        `${month.toLocaleDateString('pt-BR', { month: 'long' })} de ${month.getFullYear()}`,
+      formatWeekdayName: (weekday: Date) => weekday.toLocaleDateString('pt-BR', { weekday: 'narrow' }),
+    },
+    className: '[--cell-size:--spacing(11)]',
+  };
+
+  if (mode === 'single') {
+    return (
+      <UiCalendar
+        {...shared}
+        mode="single"
+        // required: tocar de novo no dia escolhido não desmarca (apagar é no campo)
+        required
+        selected={from}
+        onSelect={(date) => onSelectRange(isoOf(date), null)}
+        aria-label="Selecionar data"
+      />
+    );
+  }
+
   return (
     <UiCalendar
+      {...shared}
       mode="range"
-      locale={ptBR}
-      weekStartsOn={0}
-      showOutsideDays={false}
-      defaultMonth={from}
       selected={from ? { from, to } : undefined}
       onSelect={(_range, triggerDate) => handleDay(triggerDate)}
-      formatters={{
-        formatCaption: (month) =>
-          `${month.toLocaleDateString('pt-BR', { month: 'long' })} de ${month.getFullYear()}`,
-        formatWeekdayName: (weekday) => weekday.toLocaleDateString('pt-BR', { weekday: 'narrow' }),
-      }}
       aria-label="Selecionar datas da viagem"
-      className="[--cell-size:--spacing(11)]"
     />
   );
 }

@@ -1,8 +1,13 @@
-import { Bell, FileText, Luggage, TriangleAlert, User } from 'lucide-react';
+import { Bell, Compass, FileText, Luggage, TriangleAlert, User, Wallet } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
 import { PlatformSwitcher } from '../components/shell/PlatformSwitcher';
+import { GroupUpdateBanner } from '../components/shell/GroupUpdateBanner';
+import { MemberAvatars } from '../components/shell/MemberAvatars';
+import { getMembers } from '../utils/costs';
+import { joinPt } from '../utils/retrospective';
 import { useTrip } from '../context/TripContext';
 import { useDocuments, type PersonalDocument } from '../context/DocumentsContext';
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
@@ -11,7 +16,6 @@ import { getTripEndISO } from '../utils/itinerary';
 import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
 import { Icon } from '../components/shell/Icon';
 import { Card } from '@/components/ui/card';
-import { OfflineBadge } from '../components/shell/OfflineBadge';
 import { EXAMPLE_PAST_TRIPS, type ExamplePastTrip } from '../data/examplePastTrips';
 import styles from './Home.module.css';
 
@@ -38,8 +42,6 @@ function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onC
           {formatDestinationsLabel(trip.destinations)} · {formatDatesLabel(trip.destinations)}
         </span>
         <span className={styles.heroMeta}>{formatCompanionsLabel(trip.companions.length)}</span>
-        {/* o card só aparece com algo salvo (nome ou destino) — e o que está salvo abre sem internet (ajustes-82) */}
-        <OfflineBadge label="Viagem disponível offline" className="mt-1" />
       </div>
     </button>
     </Card>
@@ -88,7 +90,7 @@ function PastTripCard({ trip, onOpen }: { trip: ExamplePastTrip; onOpen?: () => 
 }
 
 const MAX_ALERTS = 3;
-const ALERT_ORDER: ExpiryStatus['kind'][] = ['expired', 'before-trip-end', 'soon'];
+const ALERT_ORDER: ExpiryStatus['kind'][] = ['expired', 'before-trip-end', 'near-trip-end', 'soon'];
 
 /**
  * Representação da notificação push no protótipo (ver
@@ -143,6 +145,67 @@ function DocumentAlerts({ documents, tripEndISO }: { documents: PersonalDocument
   );
 }
 
+const GROUP_UPDATES_ID = 'novidades-na-viagem';
+
+/**
+ * "Novidades na viagem" (ajustes-89), acima de Avisos: o que chegou no "Simular: 2 dias depois".
+ * Cada linha leva à seção e some quando a pessoa passa por ela (unseenUpdates); sem nenhuma, o
+ * bloco some.
+ */
+function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
+  const navigate = useNavigate();
+  const { roteiro, custos, convidados } = trip.unseenUpdates;
+  if (roteiro.length + custos.length + convidados.length === 0) return null;
+
+  const members = getMembers(trip);
+  const joined = members.filter((m) => convidados.includes(m.id));
+  // cidade com mais lugares novos: é onde as Sugestões abrem
+  const byDestination = new Map<string, number>();
+  for (const s of trip.selectedPlaces) {
+    if (roteiro.includes(s.id)) byDestination.set(s.destinationId, (byDestination.get(s.destinationId) ?? 0) + 1);
+  }
+  const topDestination = [...byDestination.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  const row = (key: string, icon: ReactNode, text: ReactNode, onClick: () => void) => (
+    <button key={key} type="button" className={`${styles.alertRow} ${styles.alertRowSoon}`} onClick={onClick}>
+      <span className={styles.alertIcon} aria-hidden="true">{icon}</span>
+      <span className={styles.alertText}>
+        <span className={styles.alertTitle}>{text}</span>
+      </span>
+      <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
+    </button>
+  );
+
+  return (
+    <section id={GROUP_UPDATES_ID} className={styles.alerts} aria-labelledby="home-updates-title">
+      <h2 id="home-updates-title" className={styles.sectionTitle}>
+        Novidades na viagem
+      </h2>
+      {joined.length > 0 &&
+        row(
+          'convidados',
+          <MemberAvatars members={joined} />,
+          `${joinPt(joined.map((m) => m.label))} ${joined.length === 1 ? 'entrou' : 'entraram'} na viagem`,
+          () => navigate('/convidar'),
+        )}
+      {roteiro.length > 0 &&
+        row(
+          'roteiro',
+          <Icon icon={Compass} />,
+          `${roteiro.length} ${roteiro.length === 1 ? 'lugar sugerido' : 'lugares sugeridos'}`,
+          () => navigate('/roteiro', { state: { tab: 'lugares', destinationId: topDestination } }),
+        )}
+      {custos.length > 0 &&
+        row(
+          'custos',
+          <Icon icon={Wallet} />,
+          `${custos.length} ${custos.length === 1 ? 'gasto lançado' : 'gastos lançados'}`,
+          () => navigate('/custos'),
+        )}
+    </section>
+  );
+}
+
 export function Home() {
   const trip = useTrip();
   const docs = useDocuments();
@@ -177,6 +240,15 @@ export function Home() {
         <h1 className={styles.greetingTitle}>Olá! 👋</h1>
         <p className={styles.greetingSubtitle}>Pra onde vamos dessa vez?</p>
       </div>
+
+      <GroupUpdateBanner
+        notice={trip.groupUpdateNotice}
+        onOpen={() =>
+          document.getElementById(GROUP_UPDATES_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      />
+
+      <GroupUpdates trip={trip} />
 
       <DocumentAlerts documents={docs.documents} tripEndISO={tripEndISO} />
 

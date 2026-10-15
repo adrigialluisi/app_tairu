@@ -1,4 +1,4 @@
-/* Faixa do perfil + atalhos + adicionar por conta própria: um grupo só (16px entre si); 32px até as seções vem do .panel */
+/* Faixa do perfil + atalhos: um grupo só (16px entre si); 32px até as seções vem do .panel */
 .top {
   display: flex;
   flex-direction: column;
@@ -83,71 +83,6 @@
 /* contador: Badge variant="soft" (shadcn) — aqui só a largura mínima */
 .shortcutCount {
   min-width: 20px;
-}
-
-/* Adicionar por conta própria */
-.customBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.customForm {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.customList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.customRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0 var(--space-1) 0 var(--space-4);
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-}
-
-.customLabel {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  font-weight: var(--font-weight-medium);
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.removeButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target);
-  height: var(--touch-target);
-  flex: 0 0 auto;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.removeButton:hover,
-.removeButton:active {
-  background: var(--bg-top);
-  color: var(--text);
 }
 
 /* Seções: 32px entre uma e outra (cabeçalho → carrossel é --space-4, dentro do SuggestionSection) */

@@ -96,14 +96,27 @@
   color: var(--muted);
 }
 
+/*
+  Legenda dos dias por cima do mapa (ajustes-88): canto superior esquerdo, cartão branco a 92%
+  (o mapa quase não aparece por trás: --text fica perto dos 17.49:1 do branco), visível sem rolar.
+*/
 .legend {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1000;
   margin: 0;
-  padding: 0;
+  padding: var(--space-2) var(--space-3);
   list-style: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-4);
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 60%;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-float);
   font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--text);
 }
 .legendItem {

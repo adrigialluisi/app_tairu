@@ -13,7 +13,9 @@
     "distanceLabel": "~2 km do Obelisco",
     "description": "Palácio de 1932 em estilo francês, na avenida mais elegante da Recoleta.",
     "photo": "hotels/ba-alvear-palace.jpg",
-    "photoSourceUrl": "https://alvearpalace.com/en/"
+    "photoSourceUrl": "https://alvearpalace.com/en/",
+    "lat": -34.58775,
+    "lng": -58.38874
   },
   {
     "id": "ba-palacio-duhau",
@@ -29,7 +31,9 @@
     "distanceLabel": "~2 km do Obelisco",
     "description": "Palacete aristocrático com jardim e galeria de arte, da rede Park Hyatt.",
     "photo": "hotels/ba-palacio-duhau.jpg",
-    "photoSourceUrl": "https://assets.hyatt.com/content/dam/hyatt/hyattdam/images/2019/12/03/1403/Palacio-Duhau-Park-Hyatt-Buenos-Aires-P801-Garden-Facade-Day-2019.jpg/Palacio-Duhau-Park-Hyatt-Buenos-Aires-P801-Garden-Facade-Day-2019.4x3.jpg"
+    "photoSourceUrl": "https://assets.hyatt.com/content/dam/hyatt/hyattdam/images/2019/12/03/1403/Palacio-Duhau-Park-Hyatt-Buenos-Aires-P801-Garden-Facade-Day-2019.jpg/Palacio-Duhau-Park-Hyatt-Buenos-Aires-P801-Garden-Facade-Day-2019.4x3.jpg",
+    "lat": -34.58934,
+    "lng": -58.38637
   },
   {
     "id": "ba-magnolia-boutique",
@@ -77,7 +81,9 @@
     "distanceLabel": "~700 m do Obelisco",
     "description": "Hostel animado em prédio histórico da Av. de Mayo, com atividades e festas.",
     "photo": "hotels/ba-milhouse-avenue.jpg",
-    "photoSourceUrl": "https://milhousehostel.com/en/"
+    "photoSourceUrl": "https://milhousehostel.com/en/",
+    "lat": -34.60912,
+    "lng": -58.38407
   },
   {
     "id": "scl-the-singular",
@@ -93,7 +99,9 @@
     "distanceLabel": "~800 m da Plaza de Armas",
     "description": "Hotel de luxo com piscina e bar no terraço, no bairro boêmio de Lastarria.",
     "photo": "hotels/scl-the-singular.jpg",
-    "photoSourceUrl": "https://www.thesingular.com/santiago"
+    "photoSourceUrl": "https://www.thesingular.com/santiago",
+    "lat": -33.43728,
+    "lng": -70.64069
   },
   {
     "id": "scl-cumbres-lastarria",
@@ -109,7 +117,9 @@
     "distanceLabel": "~900 m da Plaza de Armas",
     "description": "Hotel boutique com piscina na cobertura, a passos do Cerro Santa Lucía.",
     "photo": "hotels/scl-cumbres-lastarria.jpg",
-    "photoSourceUrl": "https://www.cumbreslastarria.com/en"
+    "photoSourceUrl": "https://www.cumbreslastarria.com/en",
+    "lat": -33.43784,
+    "lng": -70.64082
   },
   {
     "id": "scl-magnolia",
@@ -125,7 +135,9 @@
     "distanceLabel": "~600 m da Plaza de Armas",
     "description": "Hotel de design num casarão preservado do centro, com terraço e restaurante.",
     "photo": "hotels/scl-magnolia.jpg",
-    "photoSourceUrl": "https://hotelmagnolia.cl/"
+    "photoSourceUrl": "https://hotelmagnolia.cl/",
+    "lat": -33.43892,
+    "lng": -70.64453
   },
   {
     "id": "scl-la-chimba",
@@ -141,7 +153,9 @@
     "distanceLabel": "~1,5 km da Plaza de Armas",
     "description": "Hostel de mochileiro em casarão colorido no bairro boêmio de Bellavista.",
     "photo": "hotels/scl-la-chimba.jpg",
-    "photoSourceUrl": "https://lachimbahostel.com/"
+    "photoSourceUrl": "https://lachimbahostel.com/",
+    "lat": -33.43117,
+    "lng": -70.63728
   },
   {
     "id": "scl-sheraton-miramar",
@@ -157,7 +171,9 @@
     "distanceLabel": "Em Viña del Mar, ~120 km de Santiago",
     "description": "De frente pro Pacífico em Viña del Mar, com piscina e vista do mar.",
     "photo": "hotels/scl-sheraton-miramar.jpg",
-    "photoSourceUrl": "https://www.marriott.com/en-us/hotels/knasi-sheraton-miramar-hotel-and-convention-center/overview/"
+    "photoSourceUrl": "https://www.marriott.com/en-us/hotels/knasi-sheraton-miramar-hotel-and-convention-center/overview/",
+    "lat": -33.02111,
+    "lng": -71.56807
   },
   {
     "id": "atc-tierra-atacama",
@@ -205,7 +221,9 @@
     "distanceLabel": "~1,5 km do centro do povoado",
     "description": "Hotel com piscina e spa nos arredores do povoado, com excursões opcionais.",
     "photo": "hotels/atc-cumbres-san-pedro.jpg",
-    "photoSourceUrl": "https://www.cumbressanpedro.com/en"
+    "photoSourceUrl": "https://www.cumbressanpedro.com/en",
+    "lat": -22.92189,
+    "lng": -68.20923
   },
   {
     "id": "atc-casa-solcor",
@@ -237,6 +255,8 @@
     "distanceLabel": "No centro do povoado",
     "description": "Hostel simples e econômico, a poucos passos da praça e das agências de passeio.",
     "photo": "hotels/atc-hostal-sonchek.jpg",
-    "photoSourceUrl": "https://www.hostalsonchek.cl/en/el-hostal/"
+    "photoSourceUrl": "https://www.hostalsonchek.cl/en/el-hostal/",
+    "lat": -22.91071,
+    "lng": -68.20205
   }
 ]

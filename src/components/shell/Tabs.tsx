@@ -25,7 +25,20 @@ interface TabsProps {
   iconOnly?: boolean;
   /** 'segmented' (padrão, visual atual) ou 'pill-date' (pills de duas linhas, rolagem horizontal) */
   variant?: 'segmented' | 'pill-date';
+  /**
+   * fica preso no topo da área rolável ao rolar (ajustes-85, "Navegação interna fixa" no CLAUDE.md).
+   * O pai precisa envolver todo o conteúdo que as abas trocam — o sticky só vale dentro dele.
+   */
+  sticky?: boolean;
 }
+
+/*
+  Faixa do sticky: fundo do miolo (--page) de ponta a ponta (-mx-4/px-4 cobre a margem lateral de
+  16px do ScreenShell) pra nada aparecer por trás; -my-2/py-2 dá 8px de respiro sob a AppBar quando
+  presa, sem mudar o espaçamento da tela parada. `-top-6`: o sticky conta a partir do padding do
+  miolo (24px); sem isso a faixa prendia 24px abaixo da AppBar, com conteúdo passando no vão.
+*/
+const stickyBar = 'sticky -top-6 z-10 -mx-4 -my-2 bg-(--page) px-4 py-2';
 
 /*
   Miolo do shadcn (ui/tabs.tsx = Radix Tabs, ver docs/ajustes-69-...md): o
@@ -78,11 +91,11 @@ const triggerByLook: Record<Look, string> = {
   ),
 };
 
-export function Tabs({ name, items, value, onChange, label, iconOnly = false, variant = 'segmented' }: TabsProps) {
+export function Tabs({ name, items, value, onChange, label, iconOnly = false, variant = 'segmented', sticky = false }: TabsProps) {
   const { platform } = usePlatform();
   const look: Look = variant === 'pill-date' ? 'pillDate' : iconOnly ? 'icon' : platform;
 
-  return (
+  const tabs = (
     // `contents`: o Root do Radix só dá o contexto, sem caixa própria — o
     // tablist continua sendo o elemento que ocupa o lugar na tela, como antes
     <UiTabs value={value} onValueChange={onChange} className="contents">
@@ -132,4 +145,6 @@ export function Tabs({ name, items, value, onChange, label, iconOnly = false, va
       </TabsList>
     </UiTabs>
   );
+
+  return sticky ? <div className={stickyBar}>{tabs}</div> : tabs;
 }

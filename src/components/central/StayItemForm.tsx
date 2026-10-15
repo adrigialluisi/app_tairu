@@ -10,7 +10,7 @@ import { HotelInfo } from './HotelInfo';
 import { readStayFile } from '../../data/mockVouchers';
 import { useAutofill } from '../../hooks/useAutofill';
 import { stayTypeIcon, stayTypeLabel } from '../../utils/staySummary';
-import { maskTime } from '../../utils/dateMask';
+import { TimeField } from '../inputs/TimeField';
 import { getHotel, type HotelEntry } from '../../data';
 import type { StayItem, StayType, TripDestination } from '../../context/TripContext';
 import styles from './TransportItemForm.module.css';
@@ -21,6 +21,8 @@ interface StayItemFormProps {
   /** null = criando um novo item; preenchido = editando um item existente */
   initialItem: StayItem | null;
   onSave: (item: StayItem) => void;
+  /** fecha sem salvar (ajustes-86, substitui a decisão do ajuste 56): item novo não é criado; edição volta ao cartão */
+  onCancel: () => void;
   /** só passado quando initialItem existe (editando) */
   onRemove?: () => void;
 }
@@ -32,7 +34,7 @@ const TYPE_OPTIONS: ChipOption<StayType>[] = [
   { value: 'pousada', label: stayTypeLabel('pousada'), icon: stayTypeIcon('pousada') },
 ];
 
-export function StayItemForm({ destination, initialItem, onSave, onRemove }: StayItemFormProps) {
+export function StayItemForm({ destination, initialItem, onSave, onCancel, onRemove }: StayItemFormProps) {
   const baseId = useId();
 
   const [type, setType] = useState<StayType>(initialItem?.type ?? 'hotel');
@@ -176,25 +178,21 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
       />
 
       <div className={formStyles.timeRow}>
-        <TextField
+        <TimeField
           id={`${baseId}-checkin-time`}
           highlight={af.hl('checkin-time')}
           label="Horário do check-in"
           placeholder="Ex.: 15:00"
-          inputMode="numeric"
           value={checkInTime}
-          onChange={(v) => setCheckInTime(maskTime(v))}
-          autoComplete="off"
+          onChange={setCheckInTime}
         />
-        <TextField
+        <TimeField
           id={`${baseId}-checkout-time`}
           highlight={af.hl('checkout-time')}
           label="Horário do check-out"
           placeholder="Ex.: 11:00"
-          inputMode="numeric"
           value={checkOutTime}
-          onChange={(v) => setCheckOutTime(maskTime(v))}
-          autoComplete="off"
+          onChange={setCheckOutTime}
         />
       </div>
 
@@ -239,6 +237,9 @@ export function StayItemForm({ destination, initialItem, onSave, onRemove }: Sta
       <div className={styles.actions}>
         <Button fullWidth onClick={handleSave}>
           Salvar hospedagem
+        </Button>
+        <Button variant="secondary" fullWidth onClick={onCancel}>
+          Cancelar
         </Button>
         {onRemove && (
           <div className={styles.secondaryActions}>

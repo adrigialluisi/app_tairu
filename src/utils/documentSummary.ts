@@ -77,13 +77,27 @@ export type ExpiryStatus =
   | { kind: 'ok' }
   | { kind: 'expired' }
   | { kind: 'before-trip-end' }
+  /** vence até 6 meses depois da volta (ajustes-92) — aparece sempre, sem depender do "Me avisar" */
+  | { kind: 'near-trip-end'; monthsAfter: number }
   | { kind: 'soon'; months: 6 | 3 | 1 };
+
+/** até quanto tempo depois da volta o vencimento ainda vira aviso fixo na Início */
+const AFTER_TRIP_MONTHS = 6;
+
+/** meses completos entre duas datas (10/03/2027 depois de 27/11/2026 → 3) */
+function fullMonthsBetween(from: Date, to: Date): number {
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months--;
+  return Math.max(0, months);
+}
 
 /**
  * Só compara datas — não afirma regra de nenhum país.
  * tripEndISO: último dateEnd dos destinos da viagem atual, se existir.
- * 'expired' e 'before-trip-end' valem sempre; o limite do 'soon' vem do
+ * 'expired', 'before-trip-end' e 'near-trip-end' valem sempre; o limite do 'soon' vem do
  * lembrete escolhido pela pessoa (`remindBefore`), e com 'off' nunca dispara.
+ * 'near-trip-end' (ajustes-92): vence até 6 meses depois da volta de uma viagem cadastrada — no
+ * teste de 13/out, com "Me avisar 3 meses antes" o passaporte (10/03/2027) não avisava nada.
  */
 export function expiryStatus(doc: PersonalDocument, tripEndISO: string | null, today = new Date()): ExpiryStatus {
   const expiry = parseDisplayDate(doc.expiryDate);
@@ -91,7 +105,11 @@ export function expiryStatus(doc: PersonalDocument, tripEndISO: string | null, t
   if (expiry < today) return { kind: 'expired' };
   if (tripEndISO) {
     const [y, m, d] = tripEndISO.split('-').map(Number);
-    if (expiry < new Date(y, m - 1, d, 12)) return { kind: 'before-trip-end' };
+    const tripEnd = new Date(y, m - 1, d, 12);
+    if (expiry < tripEnd) return { kind: 'before-trip-end' };
+    const limit = new Date(tripEnd);
+    limit.setMonth(limit.getMonth() + AFTER_TRIP_MONTHS);
+    if (expiry <= limit) return { kind: 'near-trip-end', monthsAfter: fullMonthsBetween(tripEnd, expiry) };
   }
   if (doc.remindBefore !== 'off') {
     const months = REMINDER_MONTHS[doc.remindBefore];
@@ -108,6 +126,8 @@ export function expiryStatusLabel(status: ExpiryStatus): string | null {
       return 'Vencido';
     case 'before-trip-end':
       return 'Vence antes do fim da viagem';
+    case 'near-trip-end':
+      return 'Vence até 6 meses depois da viagem';
     case 'soon':
       return status.months === 1 ? 'Vence em menos de 1 mês' : `Vence em menos de ${status.months} meses`;
     default:
@@ -115,14 +135,23 @@ export function expiryStatusLabel(status: ExpiryStatus): string | null {
   }
 }
 
-/** expired | before-trip-end | soon → precisa de atenção (alimenta a Início) */
+/** expired | before-trip-end | near-trip-end | soon → precisa de atenção (alimenta a Início) */
 export function needsAttention(doc: PersonalDocument, tripEndISO: string | null): boolean {
   const kind = expiryStatus(doc, tripEndISO).kind;
-  return kind === 'expired' || kind === 'before-trip-end' || kind === 'soon';
+  return kind === 'expired' || kind === 'before-trip-end' || kind === 'near-trip-end' || kind === 'soon';
 }
 
 /** "Passaporte vence antes do fim da viagem" — título do documento + texto do selo em minúsculas */
 export function attentionText(doc: PersonalDocument, status: ExpiryStatus): string {
+  if (status.kind === 'near-trip-end') {
+    // só compara datas: não afirma regra de entrada de país nenhum (decisão antiga do projeto)
+    const who = doc.type === 'passaporte' ? 'Seu passaporte' : documentTitle(doc);
+    const after =
+      status.monthsAfter === 0
+        ? 'menos de 1 mês depois da volta da viagem'
+        : `${status.monthsAfter} ${status.monthsAfter === 1 ? 'mês' : 'meses'} depois da volta da viagem`;
+    return `${who} vence em ${doc.expiryDate}, ${after}. Confira as regras de entrada dos países.`;
+  }
   const label = expiryStatusLabel(status);
   return label ? `${documentTitle(doc)} ${label.charAt(0).toLowerCase()}${label.slice(1)}` : documentTitle(doc);
 }

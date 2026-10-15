@@ -20,7 +20,8 @@ function formatDestinationDates(destination: TripDestination): string | null {
 export function StayDestinationGroup({ destination }: StayDestinationGroupProps) {
   const trip = useTrip();
   const items = trip.stayItems.filter((s) => s.destinationId === destination.id);
-  const [editingId, setEditingId] = useState<string | 'new' | null>(() => (items.length === 0 ? 'new' : null));
+  // destino sem item não abre formulário vazio (ajustes-85): o formulário só abre ao tocar em "Adicionar"
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const dates = formatDestinationDates(destination);
 
   return (
@@ -42,6 +43,7 @@ export function StayDestinationGroup({ destination }: StayDestinationGroupProps)
               trip.saveStayItem(updated);
               setEditingId(null);
             }}
+            onCancel={() => setEditingId(null)}
             onRemove={() => {
               trip.removeStayItem(item.id);
               setEditingId(null);
@@ -60,8 +62,11 @@ export function StayDestinationGroup({ destination }: StayDestinationGroupProps)
             trip.saveStayItem(item);
             setEditingId(null);
           }}
+          onCancel={() => setEditingId(null)}
         />
       )}
+
+      {editingId === null && items.length === 0 && <p className={styles.empty}>Nenhuma hospedagem ainda</p>}
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>

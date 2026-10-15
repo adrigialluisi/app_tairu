@@ -1,6 +1,13 @@
 import type { OtherItem, OtherItemType, StayItem, TransportItem, TripDestination } from '../context/TripContext';
 import type { PersonalDocType, PersonalDocument } from '../context/DocumentsContext';
 import { formatISOToDisplay } from '../utils/dateMask';
+import { airportValue, getAirport } from './index';
+
+/** aeroporto do voucher pelo código (ajustes-86): o campo recebe o aeroporto da base, não texto solto */
+function airport(iata: string): string {
+  const a = getAirport(iata);
+  return a ? airportValue(a) : iata;
+}
 
 /*
   Leitura SIMULADA de voucher/documento (docs/ajustes-84-tudo-que-sobe-preenche-sozinho.md):
@@ -25,7 +32,7 @@ export interface ReadResult<T> {
  */
 type DistributiveOmit<T, K extends keyof any> = T extends unknown ? Omit<T, K> : never;
 
-type MockVoucherFields = DistributiveOmit<
+export type MockVoucherFields = DistributiveOmit<
   TransportItem,
   'id' | 'destinationId' | 'costAmount' | 'costCurrencyCode' | 'voucherFileName'
 >;
@@ -35,36 +42,43 @@ export const MOCK_TRANSPORT_VOUCHERS: Record<string, MockVoucherFields> = {
     type: 'voo',
     company: 'LATAM Airlines',
     flightNumber: 'LA 4550',
-    origin: 'Buenos Aires (EZE)',
-    destination: 'Santiago (SCL)',
-    departureAt: '22/11/2026 14:00',
-    arrivalAt: '22/11/2026 16:20',
+    origin: airport('EZE'),
+    destination: airport('SCL'),
+    departureAt: '19/11/2026 14:00',
+    arrivalAt: '19/11/2026 16:20',
+    // localizador, classe e bagagem: os mesmos impressos no PDF de exemplo (public/mock-vouchers/)
+    locator: 'EEPMS7',
+    travelClass: 'Econômica',
+    baggage: '1 despachada + 1 de mão',
   },
   'voucher-carro-santiago-vinadelmar.pdf': {
     type: 'carro-locado',
     company: 'Hertz',
     vehicleCategory: 'Compacto',
     pickupLocation: 'Aeroporto de Santiago (SCL)',
-    pickupAt: '23/11/2026 09:00',
+    pickupAt: '21/11/2026 09:00',
     dropoffLocation: 'Aeroporto de Santiago (SCL)',
-    dropoffAt: '23/11/2026 20:00',
+    dropoffAt: '21/11/2026 20:00',
   },
   'voucher-voo-santiago-calama.pdf': {
     type: 'voo',
     company: 'LATAM Airlines',
     flightNumber: 'LA 250',
-    origin: 'Santiago (SCL)',
-    destination: 'Calama (CJC)',
-    departureAt: '24/11/2026 08:00',
-    arrivalAt: '24/11/2026 09:45',
+    origin: airport('SCL'),
+    destination: airport('CJC'),
+    departureAt: '23/11/2026 08:00',
+    arrivalAt: '23/11/2026 09:45',
+    locator: 'ZBWG7P',
+    travelClass: 'Econômica',
+    baggage: '1 despachada + 1 de mão',
   },
   'voucher-transfer-calama-sanpedro.pdf': {
     type: 'onibus',
     company: 'Transvip',
     origin: 'Calama (CJC)',
     destination: 'San Pedro de Atacama',
-    departureAt: '24/11/2026 10:15',
-    arrivalAt: '24/11/2026 11:45',
+    departureAt: '23/11/2026 10:15',
+    arrivalAt: '23/11/2026 11:45',
   },
   'voucher-trem-buenosaires-tigre.pdf': {
     type: 'trem',
@@ -72,12 +86,47 @@ export const MOCK_TRANSPORT_VOUCHERS: Record<string, MockVoucherFields> = {
     trainNumber: 'Ramal Maipú–Delta',
     origin: 'Estación Maipú (Olivos)',
     destination: 'Estación Delta (Tigre)',
-    departureAt: '21/11/2026 10:00',
-    arrivalAt: '21/11/2026 10:30',
+    departureAt: '16/11/2026 10:00',
+    arrivalAt: '16/11/2026 10:30',
     travelClass: 'Turista',
     seat: 'Vagão 2 · assento livre',
     bookingCode: 'TDC-48217',
   },
+  // voo de volta (ajustes-92): 2 trechos no mesmo voucher — aqui o 1º; o 2º em MOCK_TRANSPORT_EXTRA_LEGS
+  'voucher-voo-volta-calama-saopaulo.pdf': {
+    type: 'voo',
+    company: 'LATAM Airlines',
+    flightNumber: 'LA 341',
+    origin: airport('CJC'),
+    destination: airport('SCL'),
+    departureAt: '27/11/2026 12:30',
+    arrivalAt: '27/11/2026 14:25',
+    locator: 'QXRT4M',
+    travelClass: 'Econômica',
+    baggage: '1 despachada + 1 de mão',
+  },
+};
+
+/**
+ * Trechos a mais de um voucher com conexão (ajustes-92). O formulário de voo guarda um voo só, então
+ * o voucher preenche o 1º trecho e os outros entram como voos separados quando a pessoa salva —
+ * sem inventar um tipo de transporte novo.
+ */
+export const MOCK_TRANSPORT_EXTRA_LEGS: Record<string, MockVoucherFields[]> = {
+  'voucher-voo-volta-calama-saopaulo.pdf': [
+    {
+      type: 'voo',
+      company: 'LATAM Airlines',
+      flightNumber: 'LA 8070',
+      origin: airport('SCL'),
+      destination: airport('GRU'),
+      departureAt: '27/11/2026 16:30',
+      arrivalAt: '27/11/2026 21:40',
+      locator: 'QXRT4M',
+      travelClass: 'Econômica',
+      baggage: '1 despachada + 1 de mão',
+    },
+  ],
 };
 
 /** voucher de exemplo cuja ORIGEM é a cidade do destino (pra foto qualquer enviada naquele destino) */
@@ -94,9 +143,9 @@ function isoToDisplay(iso: string | null | undefined): string {
 export function readTransportFile(
   file: Pick<File, 'name'>,
   destination: TripDestination | undefined,
-): ReadResult<MockVoucherFields> {
+): ReadResult<MockVoucherFields> & { extraLegs?: MockVoucherFields[] } {
   const known = MOCK_TRANSPORT_VOUCHERS[file.name.toLowerCase()];
-  if (known) return { fields: known, source: 'reconhecido' };
+  if (known) return { fields: known, source: 'reconhecido', extraLegs: MOCK_TRANSPORT_EXTRA_LEGS[file.name.toLowerCase()] };
   const byCity = destination && TRANSPORT_EXAMPLE_BY_CITY[destination.cityId];
   if (byCity) return { fields: MOCK_TRANSPORT_VOUCHERS[byCity], source: 'exemplo' };
   const day = isoToDisplay(destination?.dateStart);
@@ -109,6 +158,10 @@ export function readTransportFile(
       destination: destination?.city ?? 'Destino (exemplo)',
       departureAt: day ? `${day} 10:00` : '',
       arrivalAt: day ? `${day} 12:00` : '',
+      // localizador fica vazio: um código de exemplo pareceria de verdade
+      locator: '',
+      travelClass: 'Econômica',
+      baggage: '1 de mão',
     },
     source: 'exemplo',
   };
@@ -126,9 +179,9 @@ export const MOCK_STAY_VOUCHERS: Record<string, MockStayVoucherFields> = {
     name: 'Magnolia Hotel Boutique',
     address: 'Julián Álvarez 1746, Palermo Soho',
     locality: 'Buenos Aires',
-    checkInDate: '2026-11-20',
+    checkInDate: '2026-11-14',
     checkInTime: '15:00',
-    checkOutDate: '2026-11-22',
+    checkOutDate: '2026-11-19',
     checkOutTime: '11:00',
     confirmationCode: 'MAG-58213',
     roomType: 'Duplo Standard',
@@ -139,9 +192,9 @@ export const MOCK_STAY_VOUCHERS: Record<string, MockStayVoucherFields> = {
     name: 'Hotel Cumbres Lastarria',
     address: 'José Victorino Lastarria 299, Barrio Lastarria',
     locality: 'Santiago',
-    checkInDate: '2026-11-22',
+    checkInDate: '2026-11-19',
     checkInTime: '17:00',
-    checkOutDate: '2026-11-24',
+    checkOutDate: '2026-11-23',
     checkOutTime: '06:00',
     confirmationCode: 'CLT-40977',
     roomType: 'Superior Queen',
@@ -152,9 +205,9 @@ export const MOCK_STAY_VOUCHERS: Record<string, MockStayVoucherFields> = {
     name: 'Casa Solcor',
     address: 'Antonio León 74, Ayllú de Solcor',
     locality: 'San Pedro de Atacama',
-    checkInDate: '2026-11-24',
+    checkInDate: '2026-11-23',
     checkInTime: '14:00',
-    checkOutDate: '2026-11-25',
+    checkOutDate: '2026-11-27',
     checkOutTime: '11:00',
     confirmationCode: 'SOL-11846',
     roomType: 'Duplo',
@@ -207,8 +260,8 @@ const MOCK_OTHER_FILES: Record<string, { type: OtherItemType; fields: OtherReadF
       title: 'Mundo — cobertura médica USD 60.000',
       provider: 'Seguro Viagem (exemplo)',
       referenceCode: 'SV-2026-884120',
-      startDate: '2026-11-20',
-      endDate: '2026-11-25',
+      startDate: '2026-11-14',
+      endDate: '2026-11-27',
       emergencyPhone: '+55 11 0000-0000',
       scope: 'viagem',
     },

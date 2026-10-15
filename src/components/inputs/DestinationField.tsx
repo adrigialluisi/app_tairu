@@ -75,8 +75,21 @@ export function DestinationField({
       >
         {suggestions.map((city) => (
           <CommandItem key={city.id} value={city.id} onSelect={() => selectCity(city)} className={comboboxItemClass}>
-            <span>{city.city}</span>
-            <span className="text-(length:--text-sm) text-muted-foreground">{city.country}</span>
+            {city.viaAlias && city.aliasNote ? (
+              // casou pelo apelido ("Atacama"): diz por que essa cidade apareceu (ajustes-86)
+              <span className="flex min-w-0 flex-col">
+                <span>
+                  {city.city}
+                  <span className="text-muted-foreground">, {city.country}</span>
+                </span>
+                <span className="text-(length:--text-sm) text-muted-foreground">{city.aliasNote}</span>
+              </span>
+            ) : (
+              <>
+                <span>{city.city}</span>
+                <span className="text-(length:--text-sm) text-muted-foreground">{city.country}</span>
+              </>
+            )}
           </CommandItem>
         ))}
       </SearchCombobox>

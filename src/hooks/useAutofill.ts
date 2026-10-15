@@ -37,7 +37,8 @@ export function useAutofill() {
       setTimeout(() => {
         const keys = apply();
         setReading(false);
-        setFilled(true);
+        // nada preenchido (nota que não dá pra ler, ajustes-90): sem a faixa verde
+        setFilled(keys.length > 0);
         setHighlighted(new Set(keys));
         timers.current.push(setTimeout(() => setHighlighted(EMPTY), HIGHLIGHT_MS));
       }, READ_MS),

@@ -6,6 +6,7 @@ import { formatISOToDisplay } from './dateMask';
 import { formatMoney } from './money';
 import {
   computeDestinationAssignments,
+  proximityOptionsFor,
   daysBetween,
   getTripEndISO,
   getTripStartISO,
@@ -54,7 +55,13 @@ function plural(n: number, singular: string, pluralForm: string): string {
  */
 function visitedPlaceLabels(trip: TripForRetro, destinationId: string, dayCount: number): string[] {
   const withPhoto = new Set(trip.photos.map((p) => p.placeSelectionId).filter(Boolean));
-  const visited = computeDestinationAssignments(destinationId, dayCount, trip.selectedPlaces, trip.itineraryOverrides)
+  const visited = computeDestinationAssignments(
+    destinationId,
+    dayCount,
+    trip.selectedPlaces,
+    trip.itineraryOverrides,
+    proximityOptionsFor(trip, destinationId),
+  )
     .filter((a) => !a.skipped)
     .sort((a, b) => a.localDayIndex - b.localDayIndex)
     .map((a) => ({

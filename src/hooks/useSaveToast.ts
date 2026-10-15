@@ -9,14 +9,6 @@ export interface ToastAction {
   onClick: () => void;
 }
 
-/**
- * Mensagem de salvar/adicionar com o lembrete de que fica offline (docs/ajustes-82-...md, seção 2):
- * "Gasto salvo · disponível offline". Só em ação de salvar ou adicionar — remover não usa.
- */
-export function withOffline(text: string): string {
-  return `${text} · disponível offline`;
-}
-
 /** Controla o toast "Salvo" reaproveitável (ver docs/ajustes-22-trilha-progresso-e-salvo.md). */
 export function useSaveToast() {
   const [message, setMessage] = useState('');

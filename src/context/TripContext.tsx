@@ -1,13 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { findMockCompanion } from '../data/mockCompanions';
+import type { Settlement } from '../utils/settlement';
 import {
   MOCK_EXPENSE_PREFIX,
   applyMockContributions,
   mockExpenseKey,
   mockPlaceKey,
-  placesWantedBy,
 } from '../utils/mockContributions';
-import { computeUnpinnedLocalDay, splitDaysByDestination } from '../utils/itinerary';
+import { computeUnpinnedLocalDay, proximityOptionsFor, splitDaysByDestination } from '../utils/itinerary';
 
 export interface TripDestination {
   /** id único desta seleção (permite o mesmo destino em teoria, cada chip é independente) */
@@ -26,8 +26,8 @@ export interface TripCompanion {
   email: string;
   /**
    * 'entrou' só acontece com os dois convidados do cenário fixo
-   * (src/data/mockCompanions.ts, SIMULAÇÃO — ajustes-67); qualquer outro
-   * e-mail fica em 'convite-enviado'.
+   * (src/data/mockCompanions.ts, SIMULAÇÃO), e só quando o moderador aciona "Simular: 2 dias
+   * depois" (ajustes-89); até lá, e pra qualquer outro e-mail, fica em 'convite-enviado'.
    */
   status: 'convite-enviado' | 'entrou';
   /** só preenchido quando é um convidado simulado do cenário */
@@ -75,10 +75,17 @@ export interface FlightTransportItem extends TransportItemBase {
   type: 'voo';
   company: string;
   flightNumber: string;
+  /** "São Paulo – Guarulhos (GRU)" quando escolhido no AirportField (ajustes-86); texto livre também vale */
   origin: string;
   destination: string;
   departureAt: string;
   arrivalAt: string;
+  /** código da reserva (localizador) — o dado mais procurado no check-in (ajustes-86), opcional */
+  locator: string;
+  /** "Econômica", "Executiva"… (opcional) */
+  travelClass: string;
+  /** "1 despachada + 1 de mão" (opcional) */
+  baggage: string;
 }
 
 export interface BusTransportItem extends TransportItemBase {
@@ -210,6 +217,8 @@ export interface Expense {
   /** ISO yyyy-mm-dd ou null */
   date: string | null;
   attachments: Attachment[];
+  /** lançado pela parada do Roteiro (ajustes-88): a parada mostra o valor e leva até aqui */
+  placeSelectionId?: string | null;
 }
 
 /** Só quem pagou/divide pode mudar nos custos que vêm da Central; valor e moeda continuam sendo editados lá. */
@@ -302,11 +311,14 @@ interface TripState {
   otherItems: OtherItem[];
   /** eventos locais escolhidos (src/data/events.json) — data fixa, fora do selectedPlaces e da distribuição de dias */
   selectedEventIds: string[];
-  /** Custos (ajustes-61): gastos lançados à mão, quem pagou/divide os custos da Central e transferências acertadas */
+  /** Custos (ajustes-61): gastos lançados à mão, quem pagou/divide os custos da Central e os acertos (ajustes-90) */
   expenses: Expense[];
   centralCostOverrides: CentralCostOverride[];
-  /** `${from}->${to}:${amountBRL.toFixed(2)}` — se o valor mudar, a marcação deixa de valer */
-  settledTransferKeys: string[];
+  /**
+   * Acertos do rateio como pagamentos registrados (ajustes-90, substitui `settledTransferKeys`, que
+   * guardava o valor da transferência e "renascia" a dívida inteira quando entrava um gasto novo)
+   */
+  settlements: Settlement[];
   /** Memórias (ajustes-64) */
   photos: TripPhoto[];
   /** Retrospectiva (ajustes-65): null = ainda não gerada */
@@ -320,9 +332,32 @@ interface TripState {
   formerCompanions: TripCompanion[];
   /** chaves de contribuições simuladas que a pessoa removeu — nunca recriar (ajustes-67) */
   dismissedMockKeys: string[];
-  /** aviso "Marina Duarte entrou na viagem…" (seq muda a cada entrada, pra tela mostrar o toast) */
-  companionJoinNotice: { seq: number; message: string } | null;
+  /** "Simular: 2 dias depois" já foi usado (ajustes-89) — só volta com "Recomeçar teste" */
+  groupUpdateSimulated: boolean;
+  /** o que chegou na simulação e a pessoa ainda não viu, por seção do menu (ids dos itens) */
+  unseenUpdates: UnseenUpdates;
+  /** banner "Marina e Rodrigo entraram…" na Início (seq muda a cada simulação, pra tela mostrar uma vez) */
+  groupUpdateNotice: { seq: number; message: string } | null;
 }
+
+/** ajustes-89: ids do que os convidados trouxeram e ainda não foi visto (lugares, gastos, quem entrou) */
+export interface UnseenUpdates {
+  roteiro: string[];
+  custos: string[];
+  convidados: string[];
+}
+
+export type UpdateSection = keyof UnseenUpdates;
+
+const NO_UPDATES: UnseenUpdates = { roteiro: [], custos: [], convidados: [] };
+
+/** "Marina e Rodrigo" / "A, B e C" (mesma regra do joinPt de utils/retrospective, sem importar a tela) */
+function joinPt(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`;
+}
+
+const countPt = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
 
 export interface TripContextValue extends TripState {
   setName: (name: string) => void;
@@ -340,7 +375,13 @@ export interface TripContextValue extends TripState {
   toggleQuizInterest: (interest: QuizInterest) => void;
   toggleQuizCompanionType: (value: QuizCompanionType) => void;
   togglePlace: (destinationId: string, place: { placeId: string; categories: string[] }) => void;
-  addCustomPlace: (destinationId: string, label: string) => void;
+  /** devolve o id da seleção nova (a tela rola até o cartão em "Adicionados", ajustes-87) */
+  addCustomPlace: (destinationId: string, label: string) => string;
+  /**
+   * "Eu também" (ajustes-87): você entra (ou sai) de um lugar que um convidado escolheu, sem mexer
+   * na escolha dele — o lugar continua no roteiro do grupo.
+   */
+  toggleMyInterest: (selectionId: string) => void;
   removeSelectedPlace: (id: string) => void;
   moveItineraryItem: (placeSelectionId: string, newDayIndex: number) => void;
   toggleItinerarySkipped: (placeSelectionId: string) => void;
@@ -356,7 +397,10 @@ export interface TripContextValue extends TripState {
   saveExpense: (expense: Expense) => void;
   removeExpense: (id: string) => void;
   saveCentralCostOverride: (override: CentralCostOverride) => void;
-  toggleSettledTransfer: (key: string) => void;
+  /** "Registrar pagamento" no Rateio — o valor pode ser parcial */
+  addSettlement: (settlement: Settlement) => void;
+  /** "Desfazer" no histórico de acertos */
+  removeSettlement: (id: string) => void;
   addPhotos: (photos: TripPhoto[]) => void;
   updatePhoto: (photo: TripPhoto) => void;
   removePhoto: (id: string) => void;
@@ -365,6 +409,14 @@ export interface TripContextValue extends TripState {
   moveRetroCard: (id: string, direction: -1 | 1) => void;
   setRetroShowCosts: (value: boolean) => void;
   setRetroDismissed: (value: boolean) => void;
+  /**
+   * Moderador (ajustes-89): "dois dias depois" — os convidados do cenário que estão em "Convite
+   * enviado" entram e trazem as contribuições. `ok: false` quando nenhum deles foi convidado ou a
+   * simulação já foi usada; `message` é o texto do banner (ou o motivo).
+   */
+  simulateGroupUpdate: () => { ok: boolean; message: string };
+  /** a pessoa saiu da seção: o que era novidade dela deixa de ser (número do menu e selo "Novo") */
+  markSectionSeen: (section: UpdateSection) => void;
   resetTrip: () => void;
 }
 
@@ -394,39 +446,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [centralCostOverrides, setCentralCostOverrides] = useState<CentralCostOverride[]>([]);
-  const [settledTransferKeys, setSettledTransferKeys] = useState<string[]>([]);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [photos, setPhotos] = useState<TripPhoto[]>([]);
   const [retrospective, setRetrospective] = useState<Retrospective | null>(null);
   const [retroDismissed, setRetroDismissed] = useState(false);
   const [formerCompanions, setFormerCompanions] = useState<TripCompanion[]>([]);
   const [dismissedMockKeys, setDismissedMockKeys] = useState<string[]>([]);
-  const [companionJoinNotice, setCompanionJoinNotice] = useState<{ seq: number; message: string } | null>(null);
-  // SIMULAÇÃO (ajustes-67): timers de "entrada" dos convidados do cenário e quem já foi anunciado
-  const joinTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const announcedJoins = useRef(new Set<string>());
-
-  function clearJoinTimer(id: string) {
-    const timer = joinTimers.current.get(id);
-    if (timer) clearTimeout(timer);
-    joinTimers.current.delete(id);
-  }
-
-  /** SIMULAÇÃO: só os convidados do cenário fixo "entram" (2,5 s depois); o resto fica em "Convite enviado" */
-  function scheduleMockJoin(id: string, email: string) {
-    const profile = findMockCompanion(email);
-    if (!profile) return;
-    const timer = setTimeout(() => {
-      joinTimers.current.delete(id);
-      setCompanions((prev) =>
-        prev.map((c) =>
-          c.id === id && c.status === 'convite-enviado'
-            ? { ...c, status: 'entrou', name: profile.name, initials: profile.initials }
-            : c,
-        ),
-      );
-    }, 2500);
-    joinTimers.current.set(id, timer);
-  }
+  const [groupUpdateSimulated, setGroupUpdateSimulated] = useState(false);
+  const [unseenUpdates, setUnseenUpdates] = useState<UnseenUpdates>(NO_UPDATES);
+  const [groupUpdateNotice, setGroupUpdateNotice] = useState<{ seq: number; message: string } | null>(null);
 
   function dismissMockKeys(keys: string[]) {
     if (keys.length === 0) return;
@@ -440,27 +468,51 @@ export function TripProvider({ children }: { children: ReactNode }) {
     return members.map((m) => mockPlaceKey(m, sel.placeId as string));
   }
 
-  // Aplica as contribuições simuladas na entrada e sempre que destinos/convidados mudam (idempotente).
-  useEffect(() => {
-    const result = applyMockContributions({ destinations, companions, selectedPlaces, expenses, dismissedMockKeys });
-    if (result.changed) {
-      setSelectedPlaces(result.selectedPlaces);
-      setExpenses(result.expenses);
-    }
-    for (const c of companions) {
-      if (c.status !== 'entrou' || announcedJoins.current.has(c.id)) continue;
-      announcedJoins.current.add(c.id);
-      const n = placesWantedBy(result.selectedPlaces, c.id);
-      setCompanionJoinNotice((prev) => ({
-        seq: (prev?.seq ?? 0) + 1,
-        message:
-          n > 0
-            ? `${c.name ?? c.email} entrou na viagem e sugeriu ${n} ${n === 1 ? 'lugar' : 'lugares'}`
-            : `${c.name ?? c.email} entrou na viagem`,
-      }));
-    }
-    // só destinos e convidados disparam (spec); lugares/gastos/descartes são lidos do render atual
-  }, [destinations, companions]);
+  /*
+    SIMULAÇÃO "dois dias depois" (ajustes-89, substitui a entrada automática de 2,5 s do ajustes-67):
+    só os convidados do cenário que estão em "Convite enviado" entram; as contribuições deles entram
+    uma vez (applyMockContributions) e viram novidade nas seções (unseenUpdates).
+  */
+  function simulateGroupUpdate(): { ok: boolean; message: string } {
+    if (groupUpdateSimulated) return { ok: false, message: 'Já simulado. Use "Recomeçar teste" pra simular de novo.' };
+    const joining = companions.filter((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
+    if (joining.length === 0) return { ok: false, message: 'Convide a Marina e o Rodrigo primeiro' };
+    const joined: TripCompanion[] = joining.map((c) => {
+      const profile = findMockCompanion(c.email)!;
+      return { ...c, status: 'entrou', name: profile.name, initials: profile.initials };
+    });
+    const result = applyMockContributions({
+      destinations,
+      joined,
+      selectedPlaces,
+      expenses,
+      transportItems,
+      stayItems,
+      dismissedMockKeys,
+    });
+    setCompanions((prev) => prev.map((c) => joined.find((j) => j.id === c.id) ?? c));
+    setSelectedPlaces(result.selectedPlaces);
+    setExpenses(result.expenses);
+    setGroupUpdateSimulated(true);
+    setUnseenUpdates({
+      roteiro: result.newPlaceSelectionIds,
+      custos: result.newExpenseIds,
+      convidados: joined.map((c) => c.id),
+    });
+    const names = joinPt(joined.map((c) => (c.name ?? c.email).split(' ')[0]));
+    const parts = [
+      result.newPlaceSelectionIds.length > 0 ? countPt(result.newPlaceSelectionIds.length, 'lugar', 'lugares') : '',
+      result.newExpenseIds.length > 0 ? countPt(result.newExpenseIds.length, 'gasto', 'gastos') : '',
+    ].filter(Boolean);
+    const verb = joined.length === 1 ? 'entrou' : 'entraram';
+    const message =
+      parts.length > 0
+        ? `${names} ${verb} na viagem e ${joined.length === 1 ? 'adicionou' : 'adicionaram'} ${joinPt(parts)}`
+        : `${names} ${verb} na viagem`;
+    // seq pelo relógio: depois de "Recomeçar teste" a próxima simulação também mostra o banner
+    setGroupUpdateNotice({ seq: Date.now(), message });
+    return { ok: true, message };
+  }
 
   /*
     Lugar ou evento saiu do roteiro (desmarcado em Sugestões, removido da lista,
@@ -485,12 +537,6 @@ export function TripProvider({ children }: { children: ReactNode }) {
     );
   }, [selectedPlaces, selectedEventIds]);
 
-  // limpa timers pendentes se o provider sair
-  useEffect(() => {
-    const timers = joinTimers.current;
-    return () => timers.forEach((t) => clearTimeout(t));
-  }, []);
-
   const value = useMemo<TripContextValue>(
     () => ({
       name,
@@ -507,13 +553,18 @@ export function TripProvider({ children }: { children: ReactNode }) {
       selectedEventIds,
       expenses,
       centralCostOverrides,
-      settledTransferKeys,
+      settlements,
       photos,
       retrospective,
       retroDismissed,
       formerCompanions,
       dismissedMockKeys,
-      companionJoinNotice,
+      groupUpdateSimulated,
+      unseenUpdates,
+      groupUpdateNotice,
+      simulateGroupUpdate,
+      markSectionSeen: (section) =>
+        setUnseenUpdates((prev) => (prev[section].length === 0 ? prev : { ...prev, [section]: [] })),
       setName,
       addDestination: (destination) =>
         setDestinations((prev) => [
@@ -532,27 +583,20 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setDestinations((prev) => prev.map((d) => (d.id === id ? { ...d, dateStart: start, dateEnd: end } : d))),
       addCompanion: (email) => {
         const id = `${email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        // ajustes-89: todo convite fica em "Convite enviado" — os do cenário só entram na simulação
         setCompanions((prev) => [...prev, { id, email, status: 'convite-enviado' }]);
-        scheduleMockJoin(id, email);
       },
-      updateCompanionEmail: (id, email) => {
-        clearJoinTimer(id);
-        setCompanions((prev) => prev.map((c) => (c.id === id && c.status === 'convite-enviado' ? { ...c, email } : c)));
-        // e-mail corrigido pra um convidado do cenário: ele "entra" como num convite normal
-        scheduleMockJoin(id, email);
-      },
+      updateCompanionEmail: (id, email) =>
+        setCompanions((prev) => prev.map((c) => (c.id === id && c.status === 'convite-enviado' ? { ...c, email } : c))),
       removeCompanion: (id) => {
-        clearJoinTimer(id);
         const companion = companions.find((c) => c.id === id);
         setCompanions((prev) => prev.filter((c) => c.id !== id));
         if (companion?.status === 'entrou') {
           // ajustes-83: remover da viagem NÃO apaga o que a pessoa trouxe — os lugares e gastos continuam,
-          // e ela vira ex-membro (mantém o nome nos rótulos e no rateio). Fica em announcedJoins, então
-          // não repete o aviso de entrada; se for convidada de novo, ganha outro id e outro aviso.
+          // e ela vira ex-membro (mantém o nome nos rótulos e no rateio).
           setFormerCompanions((prev) => [...prev, companion]);
           return;
         }
-        announcedJoins.current.delete(id);
         // convite pendente (cancelado): não trouxe nada ainda, mas a limpeza continua por segurança —
         // tira lugares que só ele queria, o "também quer", gastos dele
         const removedPlaceIds = selectedPlaces
@@ -580,7 +624,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setCentralCostOverrides((prev) =>
           prev.map((o) => ({ ...o, paidBy: o.paidBy === id ? 'voce' : o.paidBy, splitWith: withoutMember(o.splitWith) })),
         );
-        setSettledTransferKeys((prev) => prev.filter((k) => !k.split(':')[0].split('->').includes(id)));
+        setSettlements((prev) => prev.filter((st) => st.from !== id && st.to !== id));
       },
       setQuizAnswer: (key, value) => setQuiz((prev) => ({ ...prev, [key]: value })),
       toggleQuizDiscovery: (discovery) =>
@@ -627,11 +671,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
           ];
         });
       },
-      addCustomPlace: (destinationId, label) =>
+      addCustomPlace: (destinationId, label) => {
+        const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         setSelectedPlaces((prev) => [
           ...prev,
           {
-            id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id,
             destinationId,
             placeId: null,
             customLabel: label,
@@ -639,7 +684,18 @@ export function TripProvider({ children }: { children: ReactNode }) {
             addedBy: 'voce',
             alsoWantedBy: [],
           },
-        ]),
+        ]);
+        return id;
+      },
+      toggleMyInterest: (selectionId) =>
+        setSelectedPlaces((prev) =>
+          prev.map((s) => {
+            if (s.id !== selectionId || s.addedBy === 'voce') return s;
+            return s.alsoWantedBy.includes('voce')
+              ? { ...s, alsoWantedBy: s.alsoWantedBy.filter((m) => m !== 'voce') }
+              : { ...s, alsoWantedBy: ['voce', ...s.alsoWantedBy] };
+          }),
+        ),
       removeSelectedPlace: (id) => {
         dismissMockKeys(mockKeysForSelection(selectedPlaces.find((s) => s.id === id)));
         setSelectedPlaces((prev) => prev.filter((s) => s.id !== id));
@@ -661,7 +717,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
             );
           }
           // Primeira vez mexendo nesse item (nunca foi movido manualmente):
-          // "congela" o dia atual calculado por round-robin, pra marcar como
+          // "congela" o dia atual calculado por proximidade, pra marcar como
           // pulado sem o item pular de posição visualmente.
           const place = selectedPlaces.find((s) => s.id === placeSelectionId);
           if (!place) {
@@ -670,7 +726,14 @@ export function TripProvider({ children }: { children: ReactNode }) {
           const ranges = splitDaysByDestination(destinations);
           const range = ranges.find((r) => r.destinationId === place.destinationId);
           const dayCount = range?.globalDayIndexes.length ?? 1;
-          const currentDay = computeUnpinnedLocalDay(place.destinationId, dayCount, selectedPlaces, prev, placeSelectionId);
+          const currentDay = computeUnpinnedLocalDay(
+            place.destinationId,
+            dayCount,
+            selectedPlaces,
+            prev,
+            placeSelectionId,
+            proximityOptionsFor({ destinations, transportItems, stayItems }, place.destinationId),
+          );
           return [...prev, { placeSelectionId, dayIndex: currentDay, skipped: true }];
         }),
       setDestinosSaved,
@@ -718,8 +781,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       },
       saveCentralCostOverride: (override) =>
         setCentralCostOverrides((prev) => [...prev.filter((o) => o.sourceId !== override.sourceId), override]),
-      toggleSettledTransfer: (key) =>
-        setSettledTransferKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key])),
+      addSettlement: (settlement) => setSettlements((prev) => [...prev, settlement]),
+      removeSettlement: (id) => setSettlements((prev) => prev.filter((st) => st.id !== id)),
       addPhotos: (added) => setPhotos((prev) => [...prev, ...added]),
       updatePhoto: (photo) => setPhotos((prev) => prev.map((p) => (p.id === photo.id ? photo : p))),
       removePhoto: (id) => {
@@ -753,11 +816,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
       setRetroShowCosts: (value) => setRetrospective((prev) => (prev ? { ...prev, showCosts: value } : prev)),
       setRetroDismissed,
       resetTrip: () => {
-        joinTimers.current.forEach((t) => clearTimeout(t));
-        joinTimers.current.clear();
-        announcedJoins.current.clear();
         setDismissedMockKeys([]);
-        setCompanionJoinNotice(null);
+        setGroupUpdateSimulated(false);
+        setUnseenUpdates(NO_UPDATES);
+        setGroupUpdateNotice(null);
         setName('');
         setDestinations([]);
         setCompanions([]);
@@ -775,7 +837,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           return [];
         });
         setCentralCostOverrides([]);
-        setSettledTransferKeys([]);
+        setSettlements([]);
         setPhotos((prev) => {
           prev.forEach((p) => URL.revokeObjectURL(p.url));
           return [];
@@ -803,13 +865,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
       selectedEventIds,
       expenses,
       centralCostOverrides,
-      settledTransferKeys,
+      settlements,
       photos,
       retrospective,
       retroDismissed,
       formerCompanions,
       dismissedMockKeys,
-      companionJoinNotice,
+      groupUpdateSimulated,
+      unseenUpdates,
+      groupUpdateNotice,
     ],
   );
 

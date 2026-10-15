@@ -40,6 +40,11 @@ interface DocumentsContextValue {
   documents: PersonalDocument[];
   saveDocument: (doc: PersonalDocument) => void;
   removeDocument: (id: string) => void;
+  /**
+   * "Recomeçar teste" do moderador (ajustes-89): o próximo participante não pode ver a foto do
+   * documento do anterior. Diferente de "Nova viagem", que nunca apaga documento.
+   */
+  clearDocuments: () => void;
 }
 
 const DocumentsContext = createContext<DocumentsContextValue | undefined>(undefined);
@@ -59,6 +64,11 @@ export function DocumentsProvider({ children }: { children: ReactNode }) {
         setDocuments((prev) => {
           prev.find((d) => d.id === id)?.attachments.forEach((a) => URL.revokeObjectURL(a.url));
           return prev.filter((d) => d.id !== id);
+        }),
+      clearDocuments: () =>
+        setDocuments((prev) => {
+          prev.forEach((d) => d.attachments.forEach((a) => URL.revokeObjectURL(a.url)));
+          return [];
         }),
     }),
     [documents],

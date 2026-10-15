@@ -2,6 +2,7 @@ import { getEventById, getPlaceById } from '../data';
 import type { TripContextValue, TripDestination, TripPhoto } from '../context/TripContext';
 import {
   computeDestinationAssignments,
+  proximityOptionsFor,
   daysBetween,
   getTripEndISO,
   getTripStartISO,
@@ -81,7 +82,10 @@ export function groupPhotosByDay(photos: TripPhoto[]): { dayISO: string | null; 
   "Outro" e o nome pro caso de o vínculo cair.
 */
 
-type TripForPhotos = Pick<TripContextValue, 'destinations' | 'selectedPlaces' | 'itineraryOverrides' | 'selectedEventIds'>;
+type TripForPhotos = Pick<
+  TripContextValue,
+  'destinations' | 'selectedPlaces' | 'itineraryOverrides' | 'selectedEventIds' | 'transportItems' | 'stayItems'
+>;
 
 /** um lugar ou evento a que a foto pode se ligar */
 export interface PhotoTarget {
@@ -124,6 +128,7 @@ export function dayStops(dayISO: string, trip: TripForPhotos): PhotoTarget[] {
         range.globalDayIndexes.length,
         trip.selectedPlaces,
         trip.itineraryOverrides,
+        proximityOptionsFor(trip, range.destinationId),
       ).filter((a) => a.localDayIndex === localDay);
       for (const a of [...dayItems.filter((d) => !d.skipped), ...dayItems.filter((d) => d.skipped)]) {
         const label = selectionLabel(a.place);

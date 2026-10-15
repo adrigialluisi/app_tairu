@@ -191,68 +191,14 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
   return entries;
 }
 
-export interface MemberBalance {
-  memberId: MemberId;
-  paidBRL: number;
-  shareBRL: number;
-  /** positivo = vai receber; negativo = deve */
-  balanceBRL: number;
-}
-
-/** Entradas sem amountBRL (moeda sem cotação) ficam de fora do rateio — a tela conta à parte. */
-export function computeBalances(entries: CostEntry[], members: Member[]): MemberBalance[] {
-  const byId = new Map(members.map((m) => [m.id, { memberId: m.id, paidBRL: 0, shareBRL: 0, balanceBRL: 0 }]));
-  for (const e of entries) {
-    if (e.amountBRL === null || e.splitWith.length === 0) continue;
-    const payer = byId.get(e.paidBy);
-    if (payer) payer.paidBRL += e.amountBRL;
-    const share = e.amountBRL / e.splitWith.length;
-    for (const id of e.splitWith) {
-      const m = byId.get(id);
-      if (m) m.shareBRL += share;
-    }
-  }
-  return [...byId.values()].map((b) => ({ ...b, balanceBRL: b.paidBRL - b.shareBRL }));
-}
-
-export interface Transfer {
-  /** `${from}->${to}` */
-  key: string;
-  from: MemberId;
-  to: MemberId;
-  amountBRL: number;
-}
-
-/** Greedy: maior devedor paga ao maior credor até zerar; ignora < R$ 0,01. */
-export function computeTransfers(balances: MemberBalance[]): Transfer[] {
-  const debtors = balances
-    .filter((b) => b.balanceBRL < -0.005)
-    .map((b) => ({ id: b.memberId, left: -b.balanceBRL }))
-    .sort((a, b) => b.left - a.left);
-  const creditors = balances
-    .filter((b) => b.balanceBRL > 0.005)
-    .map((b) => ({ id: b.memberId, left: b.balanceBRL }))
-    .sort((a, b) => b.left - a.left);
-
-  const transfers: Transfer[] = [];
-  let i = 0;
-  let j = 0;
-  while (i < debtors.length && j < creditors.length) {
-    const amount = Math.min(debtors[i].left, creditors[j].left);
-    if (amount >= 0.01) {
-      const from = debtors[i].id;
-      const to = creditors[j].id;
-      transfers.push({ key: `${from}->${to}`, from, to, amountBRL: Math.round(amount * 100) / 100 });
-    }
-    debtors[i].left -= amount;
-    creditors[j].left -= amount;
-    if (debtors[i].left < 0.005) i++;
-    if (creditors[j].left < 0.005) j++;
-  }
-  return transfers;
-}
-
-/** Chave guardada em settledTransferKeys — inclui o valor, então a marcação some se o valor mudar. */
-export function settledKey(t: Transfer): string {
-  return `${t.key}:${t.amountBRL.toFixed(2)}`;
-}
+/*
+  Saldos e transferências moraram aqui até o ajustes-90; agora ficam em settlement.ts (módulo puro,
+  testado com o node --test), com os acertos registrados entrando no cálculo.
+*/
+export {
+  computeBalances,
+  computeTransfers,
+  type MemberBalance,
+  type Settlement,
+  type Transfer,
+} from './settlement';

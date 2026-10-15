@@ -39,6 +39,15 @@
   gap: var(--space-6);
 }
 
+/*
+  Filho do miolo nunca encolhe (ajustes-85): numa coluna flex de altura fixa, um cartão com
+  overflow: hidden (o Card do shadcn) encolhia até cortar o conteúdo — o resumo de Custos
+  ficava com 34px de altura e 262px de conteúdo. A rolagem é do miolo, não dos filhos.
+*/
+.content > * {
+  flex-shrink: 0;
+}
+
 .footer {
   padding: var(--space-4);
   padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));

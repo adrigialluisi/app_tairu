@@ -134,17 +134,20 @@ function request(title: string, onResult: (url: string | null) => void): () => v
 }
 
 /**
- * Busca ao vivo a foto real do lugar na Wikipedia (mesma categoria de
+ * Foto do lugar: a local (`localUrl`, de `placePhotoUrl` — ajustes-87, salva em public/places)
+ * vem primeiro e nem passa pela rede; sem ela, busca ao vivo a foto real do lugar na Wikipedia (mesma categoria de
  * exceção de internet já documentada pro mapa — ver
  * docs/ajustes-10-mapa-no-roteiro.md — agora estendida pras fotos, ver
  * docs/ajustes-24-fotos-reais-dos-lugares.md). Devolve null enquanto
  * carrega ou quando não encontra imagem em nenhum dos dois idiomas — quem
  * chama decide o que mostrar nesse caso (nunca uma imagem inventada).
  */
-export function usePlaceThumbnail(title: string): string | null {
-  const [url, setUrl] = useState<string | null>(cache.get(title) ?? null);
+export function usePlaceThumbnail(title: string, localUrl?: string | null): string | null {
+  const searchTitle = localUrl ? '' : title;
+  const [url, setUrl] = useState<string | null>(cache.get(searchTitle) ?? null);
 
   useEffect(() => {
+    const title = searchTitle;
     // sem título (ex.: card sem cidade, parada de texto livre): nada a buscar
     if (!title) {
       setUrl(null);
@@ -156,7 +159,7 @@ export function usePlaceThumbnail(title: string): string | null {
     }
     setUrl(null);
     return request(title, setUrl);
-  }, [title]);
+  }, [searchTitle]);
 
-  return url;
+  return localUrl ?? url;
 }

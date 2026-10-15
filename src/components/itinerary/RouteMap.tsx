@@ -2,7 +2,7 @@ import { LocateFixed, Minus, Plus, Wifi } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { usePlaceThumbnail } from '../../hooks/usePlaceThumbnail';
 import { Button } from '../shell/Button';
 import { Icon } from '../shell/Icon';
@@ -16,6 +16,8 @@ export interface RouteMapPin {
   lng: number;
   /** número do dia do roteiro (1-based), sempre presente mesmo se pulado */
   dayNumber: number;
+  /** data do dia na legenda ("Sex 20/11", as mesmas das pílulas) — sem ela, "Dia N" */
+  dayLabel?: string;
   skipped: boolean;
   /** cor do dia (0 = 1º dia do destino → --map-day-1); sem ela, usa dayNumber - 1 */
   colorIndex?: number;
@@ -25,6 +27,8 @@ export interface RouteMapPin {
   kind?: 'place' | 'event';
   /** título pra foto pequena do popup (Wikipedia, a mesma da parada) */
   photoTitle?: string;
+  /** foto local do lugar (ajustes-87): quando tem, nem busca pelo título */
+  photoUrl?: string | null;
   /** linha de detalhe do popup, no lugar de "Dia 2 · Parada 3" (ex.: "Dia 2 · Evento às 21:30") */
   detail?: string;
 }
@@ -78,10 +82,71 @@ function createPinIcon(pin: RouteMapPin, selected: boolean): L.DivIcon {
   });
 }
 
+/** caixa do pino na tela (28×40): pinos cujas caixas se cruzam ficam um sobre o outro */
+const PIN_W = 28;
+const PIN_H = 40;
+/** distância entre pinos abertos lado a lado */
+const PIN_GAP_PX = PIN_W + 4;
+
+/**
+ * Pinos sobrepostos abertos lado a lado (ajustes-88): lugares muito perto (Caminito e La
+ * Bombonera, a 200 m) viravam um pino só na tela. A cada zoom, junta os pinos cujas caixas se
+ * cruzam e põe o grupo numa fileira centrada no meio deles — só o desenho muda, a coordenada do
+ * lugar continua a mesma. Repete até nenhuma fileira cair em cima de outro pino. A linha da rota
+ * segue as posições desenhadas.
+ */
+function spreadPositions(map: L.Map | null, pins: RouteMapPin[], zoom: number): Map<string, L.LatLng> {
+  const out = new Map<string, L.LatLng>(pins.map((p) => [p.id, L.latLng(p.lat, p.lng)]));
+  if (!map || pins.length < 2) return out;
+  const original = pins.map((p) => map.project([p.lat, p.lng], zoom));
+  let shown = original.map((pt) => pt.clone());
+  const overlaps = (a: L.Point, b: L.Point) => Math.abs(a.x - b.x) < PIN_W && Math.abs(a.y - b.y) < PIN_H;
+  // grupos crescem a cada rodada (união), então o laço termina
+  const groupOf = pins.map((_, i) => i);
+  const root = (i: number): number => (groupOf[i] === i ? i : (groupOf[i] = root(groupOf[i])));
+  for (let round = 0; round < 6; round++) {
+    let merged = false;
+    for (let i = 0; i < pins.length; i++) {
+      for (let j = i + 1; j < pins.length; j++) {
+        if (root(i) !== root(j) && overlaps(shown[i], shown[j])) {
+          groupOf[root(j)] = root(i);
+          merged = true;
+        }
+      }
+    }
+    if (!merged) break;
+    const groups = new Map<number, number[]>();
+    pins.forEach((_, i) => groups.set(root(i), [...(groups.get(root(i)) ?? []), i]));
+    shown = original.map((pt) => pt.clone());
+    for (const members of groups.values()) {
+      if (members.length < 2) continue;
+      // da esquerda pra direita na ordem do lugar no mapa
+      const sorted = [...members].sort((a, b) => original[a].x - original[b].x || a - b);
+      const cx = sorted.reduce((acc, i) => acc + original[i].x, 0) / sorted.length;
+      const cy = sorted.reduce((acc, i) => acc + original[i].y, 0) / sorted.length;
+      sorted.forEach((i, k) => {
+        shown[i] = L.point(cx + (k - (sorted.length - 1) / 2) * PIN_GAP_PX, cy);
+      });
+    }
+  }
+  pins.forEach((p, i) => {
+    if (!shown[i].equals(original[i])) out.set(p.id, map.unproject(shown[i], zoom));
+  });
+  return out;
+}
+
+/** avisa o zoom atual (o leque dos pinos depende dele) */
+function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
+  const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
+  useEffect(() => onZoom(map.getZoom()), [map, onZoom]);
+  return null;
+}
+
 function fitToPins(map: L.Map, pins: RouteMapPin[]) {
   if (pins.length === 0) return;
   const bounds = L.latLngBounds(pins.map((p) => [p.lat, p.lng] as [number, number]));
-  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+  // folga maior em cima (legenda dos dias, ajustes-88) e à direita (zoom e centralizar)
+  map.fitBounds(bounds, { paddingTopLeft: [40, 88], paddingBottomRight: [64, 40], maxZoom: 16 });
 }
 
 /** Reenquadra quando o conjunto de pinos muda (troca de dia/destino), não a cada render. */
@@ -148,7 +213,7 @@ function TileLayerWithTimeout({ onStatusChange }: { onStatusChange: (ok: boolean
 
 /** Popup no estilo do cartão do Google: foto pequena (quando tem), nome, bairro e "Dia 2 · Parada 3". */
 function PinCard({ pin }: { pin: RouteMapPin }) {
-  const photoUrl = usePlaceThumbnail(pin.photoTitle ?? '');
+  const photoUrl = usePlaceThumbnail(pin.photoTitle ?? '', pin.photoUrl);
   const detail =
     pin.detail ?? (pin.skipped ? `Dia ${pin.dayNumber} · Pulado` : `Dia ${pin.dayNumber}${pin.order ? ` · Parada ${pin.order}` : ''}`);
   return (
@@ -167,6 +232,15 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
   const [tilesOk, setTilesOk] = useState<boolean | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const shown = useMemo(
+    () => (zoom === null ? spreadPositions(null, pins, 0) : spreadPositions(map, pins, zoom)),
+    [map, pins, zoom],
+  );
+  const at = (p: RouteMapPin): [number, number] => {
+    const ll = shown.get(p.id);
+    return ll ? [ll.lat, ll.lng] : [p.lat, p.lng];
+  };
 
   // uma linha por dia, ligando as paradas (não puladas, sem eventos) na ordem da rota
   const dayRoutes = useMemo(() => {
@@ -221,16 +295,17 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
           <TileLayerWithTimeout onStatusChange={setTilesOk} />
           <FitBounds pins={pins} />
           <EscapeClosesPopup />
+          <ZoomWatcher onZoom={setZoom} />
           {showRoute && (
             <Polyline
-              positions={pins.filter((p) => !p.skipped).map((p) => [p.lat, p.lng] as [number, number])}
+              positions={pins.filter((p) => !p.skipped).map(at)}
               pathOptions={{ color: '#7E2331', weight: 3, opacity: 0.7, dashArray: '6 6' }}
             />
           )}
           {dayRoutes.map((r) => (
             <Polyline
               key={`route-${r.dayNumber}`}
-              positions={r.list.map((p) => [p.lat, p.lng] as [number, number])}
+              positions={r.list.map(at)}
               // a cor vem do token pela classe (o atributo stroke do Leaflet não aceita var())
               pathOptions={{ weight: 4, opacity: 0.85, className: `route-day-${colorSlot(r.list[0])}` }}
             />
@@ -238,7 +313,7 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
           {pins.map((pin) => (
             <Marker
               key={pin.id}
-              position={[pin.lat, pin.lng]}
+              position={at(pin)}
               icon={createPinIcon(pin, pin.id === selectedId)}
               zIndexOffset={pin.id === selectedId ? 1000 : 0}
               eventHandlers={{
@@ -252,6 +327,18 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
             </Marker>
           ))}
         </MapContainer>
+
+        {/* legenda por cima do mapa, no canto superior esquerdo, com as datas das pílulas (ajustes-88) */}
+        {legend.length > 1 && (
+          <ul className={styles.legend} aria-label="Cores dos dias no mapa">
+            {legend.map((p) => (
+              <li key={p.dayNumber} className={styles.legendItem}>
+                <span className={styles.legendSwatch} style={{ background: `var(--map-day-${colorSlot(p)})` }} aria-hidden="true" />
+                {p.dayLabel ?? `Dia ${p.dayNumber}`}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* controles no canto inferior direito, como no Google Maps (o zoom padrão do Leaflet fica desligado) */}
         {map && (
@@ -276,17 +363,6 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
           </div>
         )}
       </div>
-
-      {legend.length > 1 && (
-        <ul className={styles.legend} aria-label="Cores dos dias no mapa">
-          {legend.map((p) => (
-            <li key={p.dayNumber} className={styles.legendItem}>
-              <span className={styles.legendSwatch} style={{ background: `var(--map-day-${colorSlot(p)})` }} aria-hidden="true" />
-              Dia {p.dayNumber}
-            </li>
-          ))}
-        </ul>
-      )}
 
       {missingCount > 0 && (
         <p className={styles.missingNote}>

@@ -31,6 +31,7 @@ export function Central() {
       <Tabs
         name={TABS_NAME}
         label="Seções da Central"
+        sticky
         items={[
           { value: 'transporte', label: 'Transporte' },
           { value: 'estadia', label: 'Hospedagem' },

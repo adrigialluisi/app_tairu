@@ -1,16 +1,17 @@
-import { CalendarDays, ChevronDown, Pencil, Plus, Users } from 'lucide-react';
-import { useId, useState, type KeyboardEvent } from 'react';
+import { CalendarDays, PencilLine, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../shell/Button';
 import { EmptyState } from '../shell/EmptyState';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TextField } from '../inputs/TextField';
+import { AddedPlaceCard } from './AddedPlaceCard';
 import { CategoryTags, type CategoryTag } from './CategoryTags';
 import { EventCard } from './EventCard';
+import { GuestChoicesList, type GuestChoice } from './GuestChoicesList';
+import { PhotoCredits } from './PhotoCredits';
 import { PlaceCard } from './PlaceCard';
 import { SuggestionCarousel, SuggestionSection } from './SuggestionSection';
+import { addedCardId, focusCard, placeCardId } from '../../utils/focusCard';
 import {
   INTEREST_LABELS,
   getEventsForDestination,
@@ -21,9 +22,9 @@ import {
 } from '../../data';
 import { useTrip, type QuizInterest, type TripDestination } from '../../context/TripContext';
 import { EQUILIBRADO_ICON, SECTION_ICONS } from '../../utils/categoryVisuals';
-import { withOffline } from '../../hooks/useSaveToast';
 import { formatISOToDisplay, formatISOToWeekdayShortDate } from '../../utils/dateMask';
-import { YOU, getMembers, memberLabel } from '../../utils/costs';
+import { YOU, getMembers } from '../../utils/costs';
+import { joinPt } from '../../utils/retrospective';
 import { wantersOf } from '../../utils/members';
 import { Icon } from '../shell/Icon';
 import styles from './SuggestionsPanel.module.css';
@@ -58,9 +59,6 @@ interface SuggestionsPanelProps {
 export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps) {
   const trip = useTrip();
   const navigate = useNavigate();
-  const customId = useId();
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customText, setCustomText] = useState('');
 
   const { discovery, interests } = trip.quiz;
   const profileEmpty = discovery.length === 0 && interests.length === 0;
@@ -69,9 +67,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   const ranked = rankPlacesByProfile(cityPlaces, interests, discovery);
   const cityEvents = getEventsForDestination(destination.cityId, destination.dateStart, destination.dateEnd, destination.city);
 
-  const selectedPlaceIds = new Set(
-    trip.selectedPlaces.filter((s) => s.destinationId === destination.id && s.placeId).map((s) => s.placeId as string),
-  );
   const customPlaces = trip.selectedPlaces.filter((s) => s.destinationId === destination.id && !s.placeId);
 
   // Convidados (ajustes-67): quem quer cada lugar desta cidade e o que eles adicionaram
@@ -85,10 +80,13 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     const sel = selectionByPlaceId.get(placeId);
     return sel ? wantersOf(sel, members) : [];
   };
-  const groupPlaces = cityPlaces.filter((p) => {
-    const sel = selectionByPlaceId.get(p.id);
-    return sel !== undefined && sel.addedBy !== YOU;
-  });
+  /** você escolheu (adicionou ou tocou "Eu também") — o ✓ bordô do cartão */
+  const isMine = (placeId: string) => {
+    const sel = selectionByPlaceId.get(placeId);
+    return !!sel && (sel.addedBy === YOU || sel.alsoWantedBy.includes(YOU));
+  };
+  // escolhidos por algum convidado (ajustes-87: lista compacta "Escolhas dos convidados")
+  const groupPlaces = cityPlaces.filter((p) => wantersFor(p.id).some((m) => m.id !== YOU));
 
   // --- quais seções de lugar entram (perfil vazio → todas, nunca tela vazia) ---
   const wantTuristico = profileEmpty || discovery.includes('turistico') || discovery.includes('equilibrado');
@@ -96,15 +94,18 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   const interestSections = profileEmpty ? INTEREST_ORDER : INTEREST_ORDER.filter((i) => interests.includes(i));
 
   /*
-    Cada lugar aparece em UMA seção só (docs/ajustes-73-...md, item 4) — antes a
+    Cada lugar aparece em UMA seção de cartões só (docs/ajustes-73-...md, item 4) — antes a
     Feira de San Telmo estava em Pontos turísticos, Cultura e Compras ao mesmo
     tempo, e marcar numa acendia o ✓ nas outras, parecendo que o app marcava
-    sozinho. Prioridade: "Escolhas do grupo" (lá em cima) > primeira seção de
-    interesse do perfil que bate com uma categoria do lugar (na ordem da tela) >
-    Pontos turísticos / Fora do circuito pela `popularity`, se a seção estiver
-    ativa. Com o perfil vazio a ordem inverte (decisão da Adriana, ajuste 73b):
-    Pontos turísticos / Fora do circuito primeiro, depois os interesses. O que
-    não cabe em nenhuma seção ativa não aparece.
+    sozinho. Prioridade: primeira seção de interesse do perfil que bate com uma
+    categoria do lugar (na ordem da tela) > Pontos turísticos / Fora do circuito
+    pela `popularity`, se a seção estiver ativa. Com o perfil vazio a ordem inverte
+    (decisão da Adriana, ajuste 73b): Pontos turísticos / Fora do circuito primeiro,
+    depois os interesses. O que não cabe em nenhuma seção ativa não aparece.
+    Exceção (ajustes-87): o escolhido por convidado fica na categoria dele E na lista
+    compacta "Escolhas dos convidados" (só atalho, sem botão de marcar); e, se não
+    couber em nenhuma seção ativa, entra na seção da sua `popularity` mesmo assim —
+    a linha da lista sempre tem um cartão pra onde levar.
   */
   const groupPlaceIds = new Set(groupPlaces.map((p) => p.id));
   const placesBySection = new Map<PlaceSectionKey, PlaceEntry[]>();
@@ -121,14 +122,14 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     for (const [key, want] of [['turistico', wantTuristico], ['fora-do-circuito', wantFora]] as const) {
       if (!want) continue;
       const picks = ranked
-        .filter((p) => !groupPlaceIds.has(p.id) && p.popularity === key)
+        .filter((p) => p.popularity === key)
         .slice(0, POPULARITY_RESERVE);
       for (const p of picks) reserved.add(p.id);
       placesBySection.set(key, picks);
     }
   }
   for (const place of ranked) {
-    if (groupPlaceIds.has(place.id) || reserved.has(place.id)) continue;
+    if (reserved.has(place.id)) continue;
     const interest = interestSections.find((i) => place.categories.includes(i));
     const byPopularity: PlaceSectionKey | undefined =
       place.popularity === 'turistico' && wantTuristico
@@ -136,12 +137,14 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
         : place.popularity === 'fora-do-circuito' && wantFora
           ? 'fora-do-circuito'
           : undefined;
-    const key = profileEmpty ? (byPopularity ?? interest) : (interest ?? byPopularity);
+    const key =
+      (profileEmpty ? (byPopularity ?? interest) : (interest ?? byPopularity)) ??
+      (groupPlaceIds.has(place.id) ? place.popularity : undefined);
     if (key) placesBySection.set(key, [...(placesBySection.get(key) ?? []), place]);
   }
 
   const placeSections: PlaceSection[] = [];
-  if (wantTuristico) {
+  if (wantTuristico || placesBySection.has('turistico')) {
     placeSections.push({
       key: 'turistico',
       title: 'Pontos turísticos',
@@ -149,7 +152,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
       places: placesBySection.get('turistico') ?? [],
     });
   }
-  if (wantFora) {
+  if (wantFora || placesBySection.has('fora-do-circuito')) {
     placeSections.push({
       key: 'fora-do-circuito',
       title: 'Fora do circuito',
@@ -190,7 +193,10 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
 
   const shortcuts = [
     ...(groupPlaces.length > 0
-      ? [{ key: 'grupo', icon: Users, label: 'Escolhas do grupo', count: groupPlaces.length }]
+      ? [{ key: 'grupo', icon: Users, label: 'Convidados', count: groupPlaces.length }]
+      : []),
+    ...(customPlaces.length > 0
+      ? [{ key: 'adicionados', icon: PencilLine, label: 'Adicionados', count: customPlaces.length }]
       : []),
     {
       key: 'eventos',
@@ -210,34 +216,56 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  /*
+    ✓ / + do cartão. Lugar que um convidado também quer: tirar o ✓ só tira VOCÊ — ele volta a
+    "Selecionado pelo grupo" e continua no roteiro (é plano do grupo). Sem convidado, sai do roteiro.
+  */
   function handleTogglePlace(place: PlaceEntry) {
     const sel = selectionByPlaceId.get(place.id);
-    trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
-    if (!sel) onToast(withOffline('Lugar adicionado'));
-    else if (sel.addedBy !== YOU) {
-      onToast(`Removido do roteiro. ${memberLabel(members, sel.addedBy).split(' ')[0]} tinha sugerido esse lugar.`);
+    const guests = wantersFor(place.id).filter((m) => m.id !== YOU);
+    if (sel && guests.length > 0) {
+      trip.toggleMyInterest(sel.id);
+      onToast(`Continua no roteiro: ${joinPt(guests.map((m) => m.shortName))} ${guests.length === 1 ? 'quer' : 'querem'} ir.`);
+      return;
     }
+    trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
+    if (!sel) onToast('Lugar adicionado');
   }
+
+  /** "Eu também" num lugar que só convidados escolheram */
+  function handleJoinPlace(place: PlaceEntry) {
+    const sel = selectionByPlaceId.get(place.id);
+    if (!sel) return;
+    trip.toggleMyInterest(sel.id);
+    onToast('Lugar adicionado');
+  }
+
+  const placeCard = (place: PlaceEntry) => (
+    <PlaceCard
+      id={placeCardId(destination.id, place.id)}
+      place={place}
+      selected={isMine(place.id)}
+      wanters={wantersFor(place.id)}
+      onToggle={() => handleTogglePlace(place)}
+      onJoin={() => handleJoinPlace(place)}
+      isNew={(() => {
+        const sel = selectionByPlaceId.get(place.id);
+        return !!sel && trip.unseenUpdates.roteiro.includes(sel.id);
+      })()}
+    />
+  );
+
+  const guestChoices: GuestChoice[] = groupPlaces.map((place) => ({
+    place,
+    wanters: wantersFor(place.id),
+    mine: isMine(place.id),
+    cardId: placeCardId(destination.id, place.id),
+  }));
 
   function handleToggleEvent(event: EventEntry) {
     const wasSelected = trip.selectedEventIds.includes(event.id);
     trip.toggleEvent(event.id);
-    if (!wasSelected) onToast(withOffline(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`));
-  }
-
-  function handleAddCustom() {
-    const trimmed = customText.trim();
-    if (trimmed.length === 0) return;
-    trip.addCustomPlace(destination.id, trimmed);
-    setCustomText('');
-    onToast(withOffline('Lugar adicionado'));
-  }
-
-  function handleCustomKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddCustom();
-    }
+    if (!wasSelected) onToast(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`);
   }
 
   return (
@@ -283,57 +311,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
           </ScrollArea>
         </nav>
 
-        {/* 3. Adicionar por conta própria — compacto, expande ao tocar */}
-        {/* Collapsible do shadcn (docs/ajustes-74-...md): o Radix liga aria-expanded/aria-controls */}
-        <Collapsible open={customOpen} onOpenChange={setCustomOpen} className={styles.customBlock}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="group flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-4 py-2 text-left text-(length:--text-sm) font-semibold text-foreground"
-            >
-              <Icon icon={Plus} />
-              <span className="flex-1">Não achou? Adicione um lugar por conta própria</span>
-              <Icon
-                icon={ChevronDown}
-                className="text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
-              />
-            </button>
-          </CollapsibleTrigger>
-
-          <CollapsibleContent className={styles.customForm}>
-            <TextField
-              id={`${customId}-input`}
-              label="Nome do lugar"
-              placeholder="Ex.: Um restaurante ou lugar que você já conhece"
-              value={customText}
-              onChange={setCustomText}
-              onKeyDown={handleCustomKeyDown}
-              autoComplete="off"
-            />
-            <Button variant="secondary" fullWidth disabled={customText.trim().length === 0} onClick={handleAddCustom}>
-              Adicionar
-            </Button>
-          </CollapsibleContent>
-
-          {customPlaces.length > 0 && (
-            <ul className={styles.customList}>
-              {customPlaces.map((s) => (
-                <li key={s.id} className={styles.customRow}>
-                  <Icon icon={Pencil} />
-                  <span className={styles.customLabel}>{s.customLabel}</span>
-                  <button
-                    type="button"
-                    className={styles.removeButton}
-                    onClick={() => trip.removeSelectedPlace(s.id)}
-                    aria-label={`Remover ${s.customLabel}`}
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Collapsible>
       </div>
 
       {/* 4. Seções */}
@@ -342,19 +319,26 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
           <SuggestionSection
             id={sectionId('grupo')}
             icon={Users}
-            title="Escolhas do grupo"
+            title="Escolhas dos convidados"
             countLabel={countLabel(groupPlaces.length, 'lugar', 'lugares')}
             description={`O que quem você convidou quer fazer em ${destination.city}.`}
           >
-            <SuggestionCarousel label={`Escolhas do grupo em ${destination.city}`}>
-              {groupPlaces.map((place) => (
-                <li key={place.id}>
-                  <PlaceCard
-                    place={place}
-                    selected={selectedPlaceIds.has(place.id)}
-                    wanters={wantersFor(place.id)}
-                    onToggle={() => handleTogglePlace(place)}
-                  />
+            <GuestChoicesList choices={guestChoices} onOpen={focusCard} />
+          </SuggestionSection>
+        )}
+
+        {customPlaces.length > 0 && (
+          <SuggestionSection
+            id={sectionId('adicionados')}
+            icon={PencilLine}
+            title="Adicionados"
+            countLabel={countLabel(customPlaces.length, 'lugar', 'lugares')}
+            description="Lugares que você adicionou por conta própria."
+          >
+            <SuggestionCarousel label={`Lugares adicionados em ${destination.city}`}>
+              {customPlaces.map((s) => (
+                <li key={s.id}>
+                  <AddedPlaceCard selection={s} id={addedCardId(s.id)} onRemove={() => trip.removeSelectedPlace(s.id)} />
                 </li>
               ))}
             </SuggestionCarousel>
@@ -410,7 +394,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
         {cityPlaces.length === 0 ? (
           <p className={styles.noData}>
             Sugestões de lugares ainda não disponíveis pra {destination.city}. Você pode adicionar lugares por conta
-            própria acima.
+            própria na busca acima.
           </p>
         ) : (
           visibleSections.map((section) => (
@@ -424,16 +408,10 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
             >
               <SuggestionCarousel label={`${section.title} em ${destination.city}`}>
                 {section.places.map((place) => (
-                  <li key={place.id}>
-                    <PlaceCard
-                      place={place}
-                      selected={selectedPlaceIds.has(place.id)}
-                      wanters={wantersFor(place.id)}
-                      onToggle={() => handleTogglePlace(place)}
-                    />
-                  </li>
+                  <li key={place.id}>{placeCard(place)}</li>
                 ))}
               </SuggestionCarousel>
+              <PhotoCredits places={section.places} />
             </SuggestionSection>
           ))
         )}

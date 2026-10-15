@@ -10,9 +10,8 @@ import {
   expiryStatusLabel,
   maskDocNumber,
 } from '../../utils/documentSummary';
-import type { PersonalDocument } from '../../context/DocumentsContext';
+import type { PersonalDocument, ReminderLead } from '../../context/DocumentsContext';
 import { Icon } from '../shell/Icon';
-import { OfflineBadge } from '../shell/OfflineBadge';
 import { DocumentThumbs } from './DocumentFiles';
 import { Card } from '@/components/ui/card';
 import styles from '../central/TransportItemCard.module.css';
@@ -25,6 +24,13 @@ interface DocumentCardProps {
   tripEndISO: string | null;
   onEdit: () => void;
 }
+
+const REMINDER_LABEL: Record<ReminderLead, string> = {
+  '6m': 'Aviso 6 meses antes',
+  '3m': 'Aviso 3 meses antes',
+  '1m': 'Aviso 1 mês antes',
+  off: 'Sem aviso de vencimento',
+};
 
 export function DocumentCard({ doc, tripEndISO, onEdit }: DocumentCardProps) {
   const [numberVisible, setNumberVisible] = useState(false);
@@ -115,7 +121,8 @@ export function DocumentCard({ doc, tripEndISO, onEdit }: DocumentCardProps) {
             </a>
           </p>
         )}
-        {doc.expiryDate && doc.remindBefore === 'off' && <p className={styles.detail}>Sem aviso de vencimento</p>}
+        {/* o "Me avisar" escolhido aparece no cartão (ajustes-85) */}
+        {doc.expiryDate && <p className={styles.detail}>{REMINDER_LABEL[doc.remindBefore]}</p>}
       </div>
 
       {/* imagem vira miniatura que abre em tela cheia; PDF continua com ícone (ajustes-84) */}
@@ -124,9 +131,6 @@ export function DocumentCard({ doc, tripEndISO, onEdit }: DocumentCardProps) {
       ) : (
         <p className={styles.detail}>Nenhum arquivo anexado</p>
       )}
-
-      {/* todo documento salvo abre sem internet (ajustes-82) */}
-      <OfflineBadge />
     </Card>
   );
 }

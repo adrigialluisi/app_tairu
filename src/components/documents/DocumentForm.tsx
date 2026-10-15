@@ -8,14 +8,14 @@ import { ReadStatus } from '../central/VoucherUpload';
 import { DocumentFilePicker, DocumentThumbs } from './DocumentFiles';
 import { readDocumentFile } from '../../data/mockVouchers';
 import { useAutofill } from '../../hooks/useAutofill';
-import { maskSingleDate } from '../../utils/dateMask';
+import { DateField } from '../inputs/DateField';
+import { displayToISO, formatISOToDisplay } from '../../utils/dateMask';
 import {
   DOC_TYPES,
   docTypeIcon,
   docTypeShort,
   expiryStatus,
   expiryStatusLabel,
-  parseDisplayDate,
 } from '../../utils/documentSummary';
 import type { PersonalDocType, PersonalDocument, ReminderLead } from '../../context/DocumentsContext';
 import type { Attachment } from '../../context/TripContext';
@@ -278,8 +278,8 @@ export function DocumentForm({
   const photoRequired = type !== null && type !== 'seguro-anual' && type !== 'outro';
   const missingPhoto = photoRequired && attachments.length === 0;
 
-  const expiryError = expiryDate.length === 10 && !parseDisplayDate(expiryDate) ? 'Data inválida.' : null;
-  const issueError = issueDate.length === 10 && !parseDisplayDate(issueDate) ? 'Data inválida.' : null;
+  /** Documentos guardam "dd/mm/aaaa"; o DateField trabalha em ISO (ajustes-86). Sem tripRange: documento não é da viagem */
+  const toDisplay = (iso: string | null) => (iso ? formatISOToDisplay(iso) : '');
 
   const previewStatus = expiryStatus({ expiryDate, remindBefore } as PersonalDocument, tripEndISO);
   const previewLabel = expiryStatusLabel(previewStatus);
@@ -406,28 +406,20 @@ export function DocumentForm({
 
           {cfg.dateMode === 'vaccine' && (
             <div className={ownStyles.holderField}>
-              <div className={formStyles.timeRow}>
-                <TextField
+              <div className={ownStyles.dateStack}>
+                <DateField
                   id={`${baseId}-issue-date`}
                   highlight={af.hl('issue-date')}
                   label="Data da vacina"
-                  placeholder="dd/mm/aaaa"
-                  inputMode="numeric"
-                  value={issueDate}
-                  onChange={(v) => setIssueDate(maskSingleDate(v))}
-                  error={issueError}
-                  autoComplete="off"
+                  valueISO={displayToISO(issueDate)}
+                  onChange={(iso) => setIssueDate(toDisplay(iso))}
                 />
-                <TextField
+                <DateField
                   id={`${baseId}-expiry-date`}
                   highlight={af.hl('expiry-date')}
                   label="Válida até (opcional)"
-                  placeholder="dd/mm/aaaa"
-                  inputMode="numeric"
-                  value={expiryDate}
-                  onChange={(v) => setExpiryDate(maskSingleDate(v))}
-                  error={expiryError}
-                  autoComplete="off"
+                  valueISO={displayToISO(expiryDate)}
+                  onChange={(iso) => setExpiryDate(toDisplay(iso))}
                 />
               </div>
               <p className={ownStyles.holderHint}>Preencha a validade só se o certificado tiver uma.</p>
@@ -435,42 +427,30 @@ export function DocumentForm({
           )}
 
           {cfg.dateMode === 'issue-only' && (
-            <TextField
+            <DateField
               id={`${baseId}-issue-date`}
               highlight={af.hl('issue-date')}
               label="Emissão"
-              placeholder="dd/mm/aaaa"
-              inputMode="numeric"
-              value={issueDate}
-              onChange={(v) => setIssueDate(maskSingleDate(v))}
-              error={issueError}
-              autoComplete="off"
+              valueISO={displayToISO(issueDate)}
+              onChange={(iso) => setIssueDate(toDisplay(iso))}
             />
           )}
 
           {cfg.dateMode === 'both' && (
-            <div className={formStyles.timeRow}>
-              <TextField
+            <div className={ownStyles.dateStack}>
+              <DateField
                 id={`${baseId}-issue-date`}
                 highlight={af.hl('issue-date')}
                 label={cfg.issueLabel ?? 'Emissão'}
-                placeholder="dd/mm/aaaa"
-                inputMode="numeric"
-                value={issueDate}
-                onChange={(v) => setIssueDate(maskSingleDate(v))}
-                error={issueError}
-                autoComplete="off"
+                valueISO={displayToISO(issueDate)}
+                onChange={(iso) => setIssueDate(toDisplay(iso))}
               />
-              <TextField
+              <DateField
                 id={`${baseId}-expiry-date`}
                 highlight={af.hl('expiry-date')}
                 label={cfg.expiryLabel ?? 'Validade'}
-                placeholder="dd/mm/aaaa"
-                inputMode="numeric"
-                value={expiryDate}
-                onChange={(v) => setExpiryDate(maskSingleDate(v))}
-                error={expiryError}
-                autoComplete="off"
+                valueISO={displayToISO(expiryDate)}
+                onChange={(iso) => setExpiryDate(toDisplay(iso))}
               />
             </div>
           )}

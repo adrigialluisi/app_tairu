@@ -1,17 +1,21 @@
-import { ArrowDown, ArrowUp, Check, HandCoins, Users } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, HandCoins, History, Users } from 'lucide-react';
+import { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { TextField } from '../inputs/TextField';
+import { DateField } from '../inputs/DateField';
 import { Button } from '../shell/Button';
 import { useTrip } from '../../context/TripContext';
 import {
   computeBalances,
   computeTransfers,
   memberLabel,
-  settledKey,
   YOU,
   type CostEntry,
   type Member,
+  type Transfer,
 } from '../../utils/costs';
-import { RATES_AS_OF, formatMoney } from '../../utils/money';
+import { RATES_AS_OF, formatMoney, parseAmount } from '../../utils/money';
+import { formatISOToDisplay } from '../../utils/dateMask';
 import { Icon } from '../shell/Icon';
 import { Card } from '@/components/ui/card';
 import styles from './SettlementPanel.module.css';
@@ -19,12 +23,88 @@ import styles from './SettlementPanel.module.css';
 interface SettlementPanelProps {
   entries: CostEntry[];
   members: Member[];
+  /** toast da tela ("Pagamento registrado") */
+  onSaved?: (message: string) => void;
 }
 
-/** Aba Rateio: saldo de cada membro e as transferências pra acertar as contas (em reais). */
-export function SettlementPanel({ entries, members }: SettlementPanelProps) {
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** "249,67" — valor do formulário de pagamento já com o total da transferência */
+const toInput = (value: number) => value.toFixed(2).replace('.', ',');
+
+/**
+ * "Registrar pagamento" (ajustes-90): valor já com o total, editável pra pagamento parcial, e a
+ * data de hoje. Não deixa passar do que falta (viraria dívida no sentido contrário).
+ */
+function PaymentForm({
+  transfer,
+  members,
+  onConfirm,
+  onCancel,
+}: {
+  transfer: Transfer;
+  members: Member[];
+  onConfirm: (amountBRL: number, dateISO: string) => void;
+  onCancel: () => void;
+}) {
+  const baseId = useId();
+  const [amount, setAmount] = useState(toInput(transfer.amountBRL));
+  const [dateISO, setDateISO] = useState<string | null>(todayISO());
+  const [dateInvalid, setDateInvalid] = useState(false);
+  const parsed = parseAmount(amount);
+  const tooMuch = parsed !== null && parsed > transfer.amountBRL + 0.005;
+  const error =
+    amount.trim() !== '' && parsed === null
+      ? 'Valor inválido. Ex.: 100 ou 249,67'
+      : tooMuch
+        ? `Passa do que falta (${formatMoney(transfer.amountBRL, 'BRL')}).`
+        : null;
+  const canConfirm = parsed !== null && parsed > 0 && !tooMuch && dateISO !== null && !dateInvalid;
+
+  return (
+    <div className={styles.paymentForm}>
+      <TextField
+        id={`${baseId}-amount`}
+        label={`Quanto ${memberLabel(members, transfer.from)} pagou (R$)`}
+        inputMode="decimal"
+        value={amount}
+        onChange={setAmount}
+        error={error}
+        autoComplete="off"
+      />
+      <DateField
+        id={`${baseId}-date`}
+        label="Data do pagamento"
+        required
+        valueISO={dateISO}
+        onChange={setDateISO}
+        onInvalidChange={setDateInvalid}
+      />
+      <div className={styles.paymentActions}>
+        <Button fullWidth disabled={!canConfirm} onClick={() => canConfirm && onConfirm(Math.round(parsed! * 100) / 100, dateISO!)}>
+          Confirmar pagamento
+        </Button>
+        <Button variant="secondary" fullWidth onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Aba Rateio: saldo de cada membro e as transferências pra acertar as contas (em reais). Desde o
+ * ajustes-90 os acertos são pagamentos registrados (`trip.settlements`) que entram no saldo: as
+ * transferências mostram só o que FALTA, um gasto novo gera só a diferença e o histórico lista
+ * quem pagou o quê, com "Desfazer".
+ */
+export function SettlementPanel({ entries, members, onSaved }: SettlementPanelProps) {
   const trip = useTrip();
   const navigate = useNavigate();
+  const [payingKey, setPayingKey] = useState<string | null>(null);
 
   if (members.length < 2) {
     return (
@@ -41,9 +121,12 @@ export function SettlementPanel({ entries, members }: SettlementPanelProps) {
     );
   }
 
-  // recalculado a cada render: qualquer mudança em gasto, Central ou convidados reflete aqui
-  const balances = computeBalances(entries, members);
+  // recalculado a cada render: qualquer mudança em gasto, Central, convidados ou acertos reflete aqui
+  const balances = computeBalances(entries, members, trip.settlements);
   const transfers = computeTransfers(balances);
+  // "Pagou" e "Parte" do cartão são só dos gastos; o acerto aparece no saldo e no histórico
+  const spent = new Map(computeBalances(entries, members).map((b) => [b.memberId, b]));
+  const history = [...trip.settlements].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className={styles.wrap}>
@@ -59,7 +142,7 @@ export function SettlementPanel({ entries, members }: SettlementPanelProps) {
               <Card asChild className="px-4">
               <li key={b.memberId} className={styles.memberCard}>
                 <span className={`${styles.memberName} ${isYou ? styles.memberNameYou : ''}`}>{name}</span>
-                <span className={styles.memberMeta}>Pagou {formatMoney(b.paidBRL, 'BRL')}</span>
+                <span className={styles.memberMeta}>Pagou {formatMoney(spent.get(b.memberId)?.paidBRL ?? 0, 'BRL')}</span>
                 <span className={styles.memberMeta}>
                   {isYou ? 'Sua parte' : `Parte de ${name}`}: {formatMoney(b.shareBRL, 'BRL')}
                 </span>
@@ -89,42 +172,72 @@ export function SettlementPanel({ entries, members }: SettlementPanelProps) {
         </h3>
         {transfers.length === 0 ? (
           <p className={styles.allSet}>
-            <Icon icon={Check} /> Tudo certo, ninguém deve nada.
+            <Icon icon={Check} /> Tudo acertado por enquanto.
           </p>
         ) : (
           <ul className={styles.list}>
-            {transfers.map((t) => {
-              const key = settledKey(t);
-              const settled = trip.settledTransferKeys.includes(key);
-              return (
-                <Card asChild className="px-4">
-                <li key={t.key} className={styles.transfer}>
-                  <p className={`${styles.transferText} ${settled ? styles.transferSettled : ''}`}>
+            {transfers.map((t) => (
+              <Card asChild className="px-4" key={t.key}>
+                <li className={styles.transfer}>
+                  <p className={styles.transferText}>
                     <Icon icon={HandCoins} />{' '}
                     {memberLabel(members, t.from)} paga {formatMoney(t.amountBRL, 'BRL')} pra{' '}
                     {memberLabel(members, t.to)}
                   </p>
-                  {settled ? (
-                    <div className={styles.settledRow}>
-                      <span className={styles.settledLabel}>
-                        <Icon icon={Check} /> Acertado
-                      </span>
-                      <Button variant="secondary" onClick={() => trip.toggleSettledTransfer(key)}>
-                        Desfazer
-                      </Button>
-                    </div>
+                  {payingKey === t.key ? (
+                    <PaymentForm
+                      transfer={t}
+                      members={members}
+                      onCancel={() => setPayingKey(null)}
+                      onConfirm={(amountBRL, date) => {
+                        trip.addSettlement({
+                          id: `acerto-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                          from: t.from,
+                          to: t.to,
+                          amountBRL,
+                          date,
+                        });
+                        setPayingKey(null);
+                        onSaved?.('Pagamento registrado');
+                      }}
+                    />
                   ) : (
-                    <Button variant="secondary" fullWidth onClick={() => trip.toggleSettledTransfer(key)}>
-                      Marcar como acertado
+                    <Button variant="secondary" fullWidth onClick={() => setPayingKey(t.key)}>
+                      Registrar pagamento
                     </Button>
                   )}
                 </li>
-                </Card>
-              );
-            })}
+              </Card>
+            ))}
           </ul>
         )}
       </section>
+
+      {history.length > 0 && (
+        <section className={styles.block} aria-labelledby="rateio-historico">
+          <h3 id="rateio-historico" className={styles.blockTitle}>
+            Histórico de acertos
+          </h3>
+          <ul className={styles.historyList}>
+            {history.map((st) => (
+              <li key={st.id} className={styles.historyRow}>
+                <Icon icon={History} className={styles.historyIcon} />
+                <span className={styles.historyText}>
+                  {memberLabel(members, st.from)} pagou {formatMoney(st.amountBRL, 'BRL')} pra{' '}
+                  {memberLabel(members, st.to)} · {formatISOToDisplay(st.date).slice(0, 5)}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => trip.removeSettlement(st.id)}
+                  aria-label={`Desfazer: ${memberLabel(members, st.from)} pagou ${formatMoney(st.amountBRL, 'BRL')} pra ${memberLabel(members, st.to)}`}
+                >
+                  Desfazer
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <p className={styles.note}>Rateio em reais, pela cotação de {RATES_AS_OF}.</p>
     </div>

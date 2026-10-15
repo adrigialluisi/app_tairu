@@ -1,5 +1,5 @@
 import { Check, Clock, MoreVertical } from 'lucide-react';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
@@ -28,16 +28,14 @@ import { TextField } from '../components/inputs/TextField';
 import { MemberAvatars } from '../components/shell/MemberAvatars';
 import { getMembers, YOU } from '../utils/costs';
 import { placesWantedBy } from '../utils/mockContributions';
+import { useMarkSectionSeen } from '../hooks/useMarkSectionSeen';
 import { useTrip, type TripCompanion } from '../context/TripContext';
-import { useSaveToast, withOffline } from '../hooks/useSaveToast';
+import { useSaveToast } from '../hooks/useSaveToast';
 import { Icon } from '../components/shell/Icon';
 import styles from './InviteCompanions.module.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_ERROR = 'Digite um e-mail válido, no formato nome@exemplo.com.';
-
-/** último aviso de entrada já mostrado — evita repetir o toast ao voltar pra tela */
-let lastShownJoinSeq = 0;
 
 /* classes dos componentes do shadcn adicionados no ajustes-83, pra seguirem o padrão do Tairu:
    alvo de 44px, texto 15px, foco pelo anel global (ring do shadcn desligado) */
@@ -73,15 +71,8 @@ export function InviteCompanions() {
   const pending = trip.companions.filter((c) => c.status === 'convite-enviado');
   const peopleCount = 1 + joined.length;
 
-  // SIMULAÇÃO (ajustes-67): "Marina Duarte entrou na viagem e sugeriu N lugares"
-  const notice = trip.companionJoinNotice;
-  useEffect(() => {
-    if (notice && notice.seq > lastShownJoinSeq) {
-      lastShownJoinSeq = notice.seq;
-      show(notice.message);
-    }
-    // só um aviso novo dispara o toast (`show` é recriado a cada render)
-  }, [notice]);
+  // ajustes-89: o que chegou na simulação é novidade até a pessoa sair daqui
+  useMarkSectionSeen('convidados');
 
   function handleChange(value: string) {
     setEmail(value);
@@ -98,7 +89,7 @@ export function InviteCompanions() {
     trip.addCompanion(trimmed);
     setEmail('');
     setError(null);
-    show(withOffline('Convite adicionado'));
+    show('Convite adicionado');
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -123,7 +114,7 @@ export function InviteCompanions() {
     }
     if (trimmed !== c.email) {
       trip.updateCompanionEmail(c.id, trimmed);
-      show(withOffline('E-mail do convite corrigido'));
+      show('E-mail do convite corrigido');
     }
     setEditingId(null);
   }

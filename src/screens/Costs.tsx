@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
 import { BottomNav } from '../components/shell/BottomNav';
@@ -10,14 +10,15 @@ import { Tabs } from '../components/shell/Tabs';
 import { CentralCostForm } from '../components/costs/CentralCostForm';
 import { CostSummary } from '../components/costs/CostSummary';
 import { CurrencyConverter } from '../components/costs/CurrencyConverter';
-import { ExpenseCard } from '../components/costs/ExpenseCard';
-import { ExpenseForm } from '../components/costs/ExpenseForm';
+import { ExpenseCard, expenseCardId } from '../components/costs/ExpenseCard';
+import { ExpenseForm, type ExpensePrefill } from '../components/costs/ExpenseForm';
 import { SettlementPanel } from '../components/costs/SettlementPanel';
 import { useTrip } from '../context/TripContext';
-import { useSaveToast, withOffline } from '../hooks/useSaveToast';
-import { OfflineBadge } from '../components/shell/OfflineBadge';
+import { useSaveToast } from '../hooks/useSaveToast';
 import { activeMembers, buildCostEntries, getMembers, type CostEntry } from '../utils/costs';
 import { formatISOToDisplay } from '../utils/dateMask';
+import { focusCard } from '../utils/focusCard';
+import { useMarkSectionSeen } from '../hooks/useMarkSectionSeen';
 import { Icon } from '../components/shell/Icon';
 import groupStyles from '../components/central/TransportDestinationGroup.module.css';
 import styles from './Costs.module.css';
@@ -30,6 +31,8 @@ type CostsTab = 'lancamentos' | 'rateio' | 'conversor';
 interface CostsLocationState {
   tab?: 'conversor';
   currencyCode?: string;
+  /** veio da linha de gasto de uma parada do Roteiro (ajustes-88): rola até o lançamento e pisca */
+  expenseId?: string;
 }
 
 /** data mais cedo primeiro; sem data no fim, na ordem em que foram lançados */
@@ -53,7 +56,15 @@ export function Costs() {
   const { message, visible, show } = useSaveToast();
   const [tab, setTab] = useState<CostsTab>(navState.tab ?? 'lancamentos');
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
-  const [prefill, setPrefill] = useState<{ amount: string; currencyCode: string } | undefined>(undefined);
+  const [prefill, setPrefill] = useState<ExpensePrefill | undefined>(undefined);
+  // ajustes-89: gastos dos convidados são novidade até a pessoa sair de Custos
+  useMarkSectionSeen('custos');
+
+  useEffect(() => {
+    if (navState.expenseId) focusCard(expenseCardId(navState.expenseId));
+    // só na chegada à tela
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const converterFrom = navState.currencyCode ?? trip.destinations[0]?.currencyCode ?? 'BRL';
   const tripCurrencies = [...new Set([...trip.destinations.map((d) => d.currencyCode), 'BRL'])];
@@ -88,12 +99,21 @@ export function Costs() {
   function handleSaved() {
     setEditingId(null);
     setPrefill(undefined);
-    show(withOffline('Gasto salvo'));
+    show('Gasto salvo');
   }
 
   function renderEntry(entry: CostEntry) {
     if (editingId !== entry.id) {
-      return <ExpenseCard key={entry.id} entry={entry} members={members} onEdit={() => setEditingId(entry.id)} />;
+      return (
+        <ExpenseCard
+          key={entry.id}
+          entry={entry}
+          members={members}
+          onEdit={() => setEditingId(entry.id)}
+          isNew={trip.unseenUpdates.custos.includes(entry.id)}
+          attachments={trip.expenses.find((e) => e.id === entry.id)?.attachments}
+        />
+      );
     }
     if (entry.origin === 'central') {
       return (
@@ -119,6 +139,7 @@ export function Costs() {
           trip.saveExpense(updated);
           handleSaved();
         }}
+        onCancel={() => setEditingId(null)}
         onRemove={() => {
           trip.removeExpense(entry.id);
           setEditingId(null);
@@ -139,6 +160,7 @@ export function Costs() {
         <Tabs
           name={TABS_NAME}
           label="Seções de custos"
+          sticky
           items={[
             { value: 'lancamentos', label: 'Lançamentos' },
             { value: 'rateio', label: 'Rateio' },
@@ -166,6 +188,10 @@ export function Costs() {
                   trip.saveExpense(expense);
                   handleSaved();
                 }}
+                onCancel={() => {
+                  setPrefill(undefined);
+                  setEditingId(null);
+                }}
               />
             ) : (
               <Button
@@ -179,8 +205,6 @@ export function Costs() {
                 <Icon icon={Plus} /> Lançar gasto
               </Button>
             )}
-
-            {groups.length > 0 && <OfflineBadge label="Lançamentos disponíveis offline" />}
 
             {groups.map((g) => (
               <div key={g.key} className={groupStyles.group}>
@@ -201,7 +225,7 @@ export function Costs() {
             aria-labelledby={`${TABS_NAME}-tab-rateio`}
             className={styles.panel}
           >
-            <SettlementPanel entries={entries} members={members} />
+            <SettlementPanel entries={entries} members={members} onSaved={show} />
           </div>
         )}
 

@@ -21,9 +21,7 @@ function sortOtherItems(items: OtherItem[], destinations: TripDestination[]): Ot
 
 export function OtherSection() {
   const trip = useTrip();
-  const [editingId, setEditingId] = useState<string | 'new' | null>(() =>
-    trip.otherItems.length === 0 ? 'new' : null,
-  );
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
 
   if (trip.destinations.length === 0) {
     return <EmptyTripState message="Essa viagem ainda não tem destinos cadastrados. Volte e cadastre a viagem primeiro." />;
@@ -47,6 +45,7 @@ export function OtherSection() {
               trip.saveOtherItem(updated);
               setEditingId(null);
             }}
+            onCancel={() => setEditingId(null)}
             onRemove={() => {
               trip.removeOtherItem(item.id);
               setEditingId(null);
@@ -70,8 +69,11 @@ export function OtherSection() {
             trip.saveOtherItem(item);
             setEditingId(null);
           }}
+          onCancel={() => setEditingId(null)}
         />
       )}
+
+      {editingId === null && items.length === 0 && <p className={styles.empty}>Nenhum registro ainda</p>}
 
       {editingId === null && (
         <Button variant="secondary" onClick={() => setEditingId('new')}>

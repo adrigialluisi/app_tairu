@@ -10,7 +10,9 @@ import { VoucherUpload } from './VoucherUpload';
 import { readOtherFile } from '../../data/mockVouchers';
 import { useAutofill } from '../../hooks/useAutofill';
 import { OTHER_TYPES, otherTypeIcon, otherTypeLabel } from '../../utils/otherSummary';
-import { maskTime } from '../../utils/dateMask';
+import { DateField } from '../inputs/DateField';
+import { TimeField } from '../inputs/TimeField';
+import { getTripEndISO, getTripStartISO } from '../../utils/itinerary';
 import type { Attachment, OtherItem, OtherItemType, TripDestination } from '../../context/TripContext';
 import styles from './TransportItemForm.module.css';
 import formStyles from './StayItemForm.module.css';
@@ -20,6 +22,8 @@ interface OtherItemFormProps {
   /** null = criando um novo item; preenchido = editando um item existente */
   initialItem: OtherItem | null;
   onSave: (item: OtherItem) => void;
+  /** fecha sem salvar (ajustes-86, substitui a decisão do ajuste 56): item novo não é criado; edição volta ao cartão */
+  onCancel: () => void;
   /** só passado quando initialItem existe (editando) */
   onRemove?: () => void;
 }
@@ -35,6 +39,8 @@ interface FieldConfig {
   titleLabel: string;
   titlePlaceholder?: string;
   dateLabel: string;
+  /** 'range' = vigência (início e fim, DateRangeField); 'single' = um dia (DateField, ajustes-86) */
+  dateMode: 'range' | 'single';
   showTime: boolean;
   timeLabel?: string;
   timePlaceholder?: string;
@@ -51,6 +57,7 @@ const FIELD_CONFIG: Record<OtherItemType, FieldConfig> = {
     titleLabel: 'Plano (opcional)',
     titlePlaceholder: 'Ex.: Mundo, cobertura USD 60 mil',
     dateLabel: 'Vigência',
+    dateMode: 'range',
     showTime: false,
     showLocation: false,
     referenceLabel: 'Nº da apólice',
@@ -61,9 +68,10 @@ const FIELD_CONFIG: Record<OtherItemType, FieldConfig> = {
     titleLabel: 'Nome do passeio',
     titlePlaceholder: 'Ex.: Valle de la Luna',
     dateLabel: 'Data',
+    dateMode: 'single',
     showTime: true,
     timeLabel: 'Horário de saída',
-    timePlaceholder: 'Ex.: 08:00',
+    timePlaceholder: '08:00',
     showLocation: true,
     locationLabel: 'Ponto de encontro',
     referenceLabel: 'Código da reserva (opcional)',
@@ -75,9 +83,10 @@ const FIELD_CONFIG: Record<OtherItemType, FieldConfig> = {
     titleLabel: 'Evento ou atração',
     titlePlaceholder: 'Ex.: Show, museu, jogo',
     dateLabel: 'Data',
+    dateMode: 'single',
     showTime: true,
     timeLabel: 'Horário',
-    timePlaceholder: 'Ex.: 19:00',
+    timePlaceholder: '19:00',
     showLocation: true,
     locationLabel: 'Local',
     referenceLabel: 'Código do ingresso (opcional)',
@@ -85,7 +94,7 @@ const FIELD_CONFIG: Record<OtherItemType, FieldConfig> = {
   },
 };
 
-export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: OtherItemFormProps) {
+export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onRemove }: OtherItemFormProps) {
   const baseId = useId();
   const navigate = useNavigate();
 
@@ -105,6 +114,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
   const [attachments, setAttachments] = useState<Attachment[]>(initialItem?.attachments ?? []);
   const [datesKey, setDatesKey] = useState(0);
   const af = useAutofill();
+  const tripRange = { startISO: getTripStartISO(destinations), endISO: getTripEndISO(destinations) };
 
   /**
    * Leitura simulada (ajustes-84): o arquivo entra na lista de anexos e preenche os
@@ -147,6 +157,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
         setStartDate(fields.startDate);
         setEndDate(fields.endDate ?? null);
         setDatesKey((k) => k + 1);
+        keys.push('date');
       }
       if (fields.scope === 'viagem') setDestinationId(null);
       else if (fields.scope) {
@@ -273,29 +284,43 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
             autoComplete="off"
           />
 
-          <DateRangeField
-            key={`${type ?? 'none'}-${datesKey}`}
-            label={cfg.dateLabel}
-            required={false}
-            startISO={startDate}
-            endISO={endDate}
-            onChange={(start, end) => {
-              setStartDate(start);
-              setEndDate(end);
-            }}
-          />
-
-          {cfg.showTime && (
-            <TextField
-              id={`${baseId}-time`}
-              highlight={af.hl('time')}
-              label={cfg.timeLabel as string}
-              placeholder={cfg.timePlaceholder}
-              inputMode="numeric"
-              value={time}
-              onChange={(v) => setTime(maskTime(v))}
-              autoComplete="off"
+          {cfg.dateMode === 'range' ? (
+            <DateRangeField
+              key={`${type ?? 'none'}-${datesKey}`}
+              label={cfg.dateLabel}
+              required={false}
+              startISO={startDate}
+              endISO={endDate}
+              onChange={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
             />
+          ) : (
+            // passeio e ingresso: um dia só, com hora ao lado (ajustes-86)
+            <div className={styles.dateTimeRow}>
+              <DateField
+                id={`${baseId}-date`}
+                highlight={af.hl('date')}
+                label={cfg.dateLabel}
+                valueISO={startDate}
+                onChange={(iso) => {
+                  setStartDate(iso);
+                  setEndDate(null);
+                }}
+                tripRange={tripRange}
+              />
+              {cfg.showTime && (
+                <TimeField
+                  id={`${baseId}-time`}
+                  highlight={af.hl('time')}
+                  label={cfg.timeLabel as string}
+                  placeholder={cfg.timePlaceholder}
+                  value={time}
+                  onChange={setTime}
+                />
+              )}
+            </div>
           )}
 
           {cfg.showLocation && (
@@ -370,6 +395,9 @@ export function OtherItemForm({ destinations, initialItem, onSave, onRemove }: O
       <div className={styles.actions}>
         <Button fullWidth disabled={!type} onClick={handleSave}>
           Salvar registro
+        </Button>
+        <Button variant="secondary" fullWidth onClick={onCancel}>
+          Cancelar
         </Button>
         {onRemove && (
           <div className={styles.secondaryActions}>

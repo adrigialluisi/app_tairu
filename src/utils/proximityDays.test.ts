@@ -1,0 +1,116 @@
+/*
+  Teste automatizado da divisão dos dias (ajustes-88, item 1; cenário novo no ajustes-92).
+  Roda com o test runner nativo do Node (`npm test`), sem dependência nova.
+  Cenário de 14 a 27/11/2026: Buenos Aires de 14 a 19/11. No app, o dia de fronteira fica com quem
+  chega (splitDaysByDestination), então Buenos Aires tem 5 dias, 14 a 18/11, e o 19 (voo pra
+  Santiago) é de Santiago; o dia de deslocamento de Buenos Aires é o 14, da chegada de São Paulo.
+  Os mesmos 7 lugares do teste de 13/out e os 4 critérios de aceite do ajuste 88.
+*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { computeProximityDays, type ProximityItem } from './proximityDays.ts';
+
+interface RawPlace {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  categories: string[];
+}
+
+const places: RawPlace[] = JSON.parse(readFileSync(new URL('../data/places.json', import.meta.url), 'utf8'));
+
+const SCENARIO = [
+  'ba-la-boca-caminito',
+  'ba-la-brigada',
+  'ba-casa-rosada',
+  'ba-cafe-tortoni',
+  'ba-recoleta-cemiterio',
+  'ba-malba',
+  'ba-la-bombonera',
+];
+
+function itemsOf(ids: string[]): ProximityItem[] {
+  return ids.map((id) => {
+    const p = places.find((x) => x.id === id);
+    assert.ok(p, `lugar ${id} existe no places.json`);
+    return { id: p.id, lat: p.lat, lng: p.lng, meal: p.categories.includes('gastronomia') };
+  });
+}
+
+const nameOf = (id: string) => places.find((p) => p.id === id)!.name;
+
+/** os 4 critérios de aceite do item 1 + todo lugar com dia */
+function acceptance(days: Map<string, { day: number; order: number }>) {
+  const dayOf = (id: string) => days.get(id)?.day;
+  for (const id of SCENARIO) assert.notEqual(dayOf(id), undefined, `${id} sem dia`);
+  assert.equal(dayOf('ba-cafe-tortoni'), dayOf('ba-casa-rosada'), 'Café Tortoni no mesmo dia da Casa Rosada');
+  assert.equal(dayOf('ba-la-brigada'), dayOf('ba-la-boca-caminito'), 'La Brigada no mesmo dia do Caminito');
+  assert.equal(dayOf('ba-la-brigada'), dayOf('ba-la-bombonera'), 'La Brigada no mesmo dia de La Bombonera');
+  assert.equal(dayOf('ba-malba'), dayOf('ba-recoleta-cemiterio'), 'MALBA no mesmo dia do Cemitério da Recoleta');
+  assert.notEqual(dayOf('ba-cafe-tortoni'), dayOf('ba-la-brigada'), 'Café Tortoni e La Brigada em dias diferentes');
+}
+
+function print(days: Map<string, { day: number; order: number }>, labels: string[]) {
+  labels.forEach((label, d) => {
+    const list = SCENARIO.filter((id) => days.get(id)?.day === d)
+      .sort((a, b) => days.get(a)!.order - days.get(b)!.order)
+      .map(nameOf);
+    console.log(`${label}: ${list.length ? list.join(' → ') : '(nenhum lugar)'}`);
+  });
+}
+
+const BA_LABELS = ['Sáb 14/11 (chegada)', 'Dom 15/11', 'Seg 16/11', 'Ter 17/11', 'Qua 18/11'];
+
+// --- cenário do app (ajustes-92): Buenos Aires com 5 dias, o 1º de deslocamento ---
+const appDays = computeProximityDays(itemsOf(SCENARIO), 5, { lightDays: [0] });
+
+test('app (5 dias, 14/11 de chegada): Café Tortoni no mesmo dia da Casa Rosada', () => {
+  assert.equal(appDays.get('ba-cafe-tortoni')?.day, appDays.get('ba-casa-rosada')?.day);
+});
+
+test('app (5 dias): La Brigada no mesmo dia do Caminito e de La Bombonera', () => {
+  assert.equal(appDays.get('ba-la-brigada')?.day, appDays.get('ba-la-boca-caminito')?.day);
+  assert.equal(appDays.get('ba-la-brigada')?.day, appDays.get('ba-la-bombonera')?.day);
+});
+
+test('app (5 dias): MALBA no mesmo dia do Cemitério da Recoleta', () => {
+  assert.equal(appDays.get('ba-malba')?.day, appDays.get('ba-recoleta-cemiterio')?.day);
+});
+
+test('app (5 dias): Café Tortoni e La Brigada em dias diferentes', () => {
+  assert.notEqual(appDays.get('ba-cafe-tortoni')?.day, appDays.get('ba-la-brigada')?.day);
+});
+
+test('app (5 dias): todo lugar tem dia e o dia da chegada fica com no máximo metade da média', () => {
+  for (const id of SCENARIO) assert.notEqual(appDays.get(id), undefined, id);
+  const cap = Math.floor(SCENARIO.length / 5 / 2);
+  assert.ok(SCENARIO.filter((id) => appDays.get(id)?.day === 0).length <= cap);
+});
+
+test('determinístico: mesma entrada, mesmo resultado', () => {
+  const again = computeProximityDays(itemsOf(SCENARIO), 5, { lightDays: [0] });
+  assert.deepEqual([...again.entries()].sort(), [...appDays.entries()].sort());
+});
+
+// --- leitura literal do documento: 5 dias, o último (19/11) de deslocamento ---
+const docDays = computeProximityDays(itemsOf(SCENARIO), 5, { lightDays: [4] });
+
+test('documento (5 dias, 19/11 de deslocamento): os 4 critérios valem', () => acceptance(docDays));
+
+// --- ajuste 88: o mesmo grupo de lugares em 2 e 3 dias ---
+test('2 dias (cenário do ajuste 88): os 4 critérios valem', () => acceptance(computeProximityDays(itemsOf(SCENARIO), 2)));
+
+test('3 dias com o último de deslocamento: os 4 critérios valem', () =>
+  acceptance(computeProximityDays(itemsOf(SCENARIO), 3, { lightDays: [2] })));
+
+test('3 dias sem deslocamento: os 4 critérios valem', () => acceptance(computeProximityDays(itemsOf(SCENARIO), 3)));
+
+// distribuição impressa, pra conferir à mão (`npm test`)
+test('distribuição por dia', () => {
+  console.log('— App (Buenos Aires, 14 a 18/11):');
+  print(appDays, BA_LABELS);
+  console.log('— Documento (5 dias, 19/11 de deslocamento):');
+  print(docDays, ['Dom 15/11', 'Seg 16/11', 'Ter 17/11', 'Qua 18/11', 'Qui 19/11 (voo)']);
+});

@@ -12,8 +12,7 @@ import { TextField } from '../components/inputs/TextField';
 import { DestinationField } from '../components/inputs/DestinationField';
 import { TripProfileQuiz, quizSummaryLines } from '../components/quiz/TripProfileQuiz';
 import { useTrip, type TripDestination } from '../context/TripContext';
-import { useSaveToast, withOffline } from '../hooks/useSaveToast';
-import { OfflineBadge } from '../components/shell/OfflineBadge';
+import { useSaveToast } from '../hooks/useSaveToast';
 import { formatISOToDisplay } from '../utils/dateMask';
 import { getCurrency } from '../data';
 import styles from './CreateTrip.module.css';
@@ -77,7 +76,7 @@ export function CreateTrip() {
     }
     setTriedSave(false);
     trip.setDestinosSaved(true);
-    show(withOffline('Destinos salvos'));
+    show('Destinos salvos');
   }
 
   return (
@@ -122,22 +121,16 @@ export function CreateTrip() {
                 <li key={d.id}>{formatDestinoSummaryLine(d)}</li>
               ))}
             </ul>
-            <OfflineBadge />
           </>
         }
       >
         <DestinationField
           destinations={trip.destinations}
-          onAdd={(destination) => {
-            trip.addDestination(destination);
-            show(withOffline('Destino adicionado'));
-          }}
+          // toast só em "Salvar destinos" (ajustes-85), não ao adicionar destino ou escolher datas
+          onAdd={trip.addDestination}
           onRemove={trip.removeDestination}
           onCurrencyChange={trip.setDestinationCurrency}
-          onDateRangeChange={(id, start, end) => {
-            trip.setDestinationDateRange(id, start, end);
-            if (start && end) show(withOffline('Datas salvas'));
-          }}
+          onDateRangeChange={trip.setDestinationDateRange}
           dateOverlapError={overlapError}
         />
         {missingDatesError && (
@@ -168,7 +161,6 @@ export function CreateTrip() {
                   <li key={i}>{line}</li>
                 ))}
               </ul>
-              <OfflineBadge />
             </>
           }
         >
@@ -177,7 +169,7 @@ export function CreateTrip() {
             fullWidth
             onClick={() => {
               trip.setPerfilSaved(true);
-              show(withOffline('Perfil da viagem salvo'));
+              show('Perfil da viagem salvo');
             }}
           >
             Salvar perfil da viagem

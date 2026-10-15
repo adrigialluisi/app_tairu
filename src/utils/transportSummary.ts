@@ -50,23 +50,28 @@ function routeRows(
   const arrParts = item.arrivalAt.trim().split(' ');
   const date = depParts[0] || arrParts[0] || '';
   const depTime = depParts.slice(1).join(' ');
-  const arrTime = arrParts.slice(1).join(' ');
+  // chegada em outro dia (pernoite — a data de chegada é editável desde o ajustes-86): mostra a data dela
+  const arrDate = arrParts[0] && depParts[0] && arrParts[0] !== depParts[0] ? `${arrParts[0].slice(0, 5)} ` : '';
+  const arrTime = arrParts.slice(1).join(' ') ? `${arrDate}${arrParts.slice(1).join(' ')}` : '';
   const timeRange = [depTime, arrTime].filter(Boolean).join(' – ');
   if (date || timeRange) rows.push([date, timeRange].filter(Boolean).join(' · '));
   return rows;
 }
 
 /**
- * Linhas de detalhe do card — nunca inclui custo. Assume que data de
- * partida e chegada é a mesma (formato "dd/mm/aaaa hh:mm" nos dois campos,
- * como o app já pede) pra juntar as duas horas numa linha só — é uma
- * simplificação aceitável pro cenário de teste (trechos curtos, mesmo
- * dia); se algum dia precisar cobrir voos com pernoite, essa função é o
- * único lugar a ajustar.
+ * Linhas de detalhe do card — nunca inclui custo. Partida e chegada ficam
+ * numa linha só ("22/11/2026 · 14:00 – 16:20"); se a chegada for em outro
+ * dia, a data dela entra antes da hora ("… – 23/11 06:10").
  */
 export function transportItemDetailRows(item: TransportItem): string[] {
   switch (item.type) {
-    case 'voo':
+    case 'voo': {
+      // o localizador tem linha própria, em destaque, no cartão (TransportItemCard)
+      const rows = routeRows(item, 'Saída: ', 'Chegada: ');
+      const classAndBaggage = [item.travelClass, item.baggage && `Bagagem: ${item.baggage}`].filter(Boolean).join(' · ');
+      if (classAndBaggage) rows.push(classAndBaggage);
+      return rows.length ? rows : ['Detalhes a preencher'];
+    }
     case 'onibus': {
       const rows = routeRows(item, 'Saída: ', 'Chegada: ');
       return rows.length ? rows : ['Detalhes a preencher'];

@@ -25,6 +25,9 @@
 
 .editButton {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   background: none;
   border: none;
   color: var(--accent-dark);
@@ -54,4 +57,27 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+/* Localizador do voo (ajustes-86): faixa stone-100 com o código em destaque e "Copiar" */
+.locatorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-top);
+  border-radius: var(--radius);
+  padding-left: var(--space-3);
+}
+
+.locatorText {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+
+.locatorCode {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }

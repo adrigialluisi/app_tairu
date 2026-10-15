@@ -1,46 +1,37 @@
-import { CalendarDays, ExternalLink, Landmark, List, Map as MapIcon, MapPin, Sparkles, Ticket, UtensilsCrossed, Wallet, type LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Camera, Landmark, List, Map as MapIcon, Sparkles, Ticket, UtensilsCrossed, Wallet, type LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { AppBar } from '../components/shell/AppBar';
 import { Button } from '../components/shell/Button';
 import { Icon } from '../components/shell/Icon';
 import { ScreenShell } from '../components/shell/ScreenShell';
 import { Tabs } from '../components/shell/Tabs';
 import { RouteMap, type RouteMapPin } from '../components/itinerary/RouteMap';
-import { StopPhotos } from '../components/itinerary/StopPhotos';
-import { TimelineStop } from '../components/itinerary/TimelineStop';
-import { ExamplePhotoDialog } from '../components/recap/ExamplePhotoDialog';
+import { ExamplePhotoDialog, type AlbumPhoto, type AlbumPhotoItem } from '../components/recap/ExamplePhotoDialog';
 import { TravelerAvatar } from '../components/recap/TravelerAvatar';
-import { CategoryTags } from '../components/suggestions/CategoryTags';
 import {
   EXAMPLE_TRAVELERS,
   getExamplePastTrip,
   photosOfStop,
-  type ExamplePhoto,
   type PastTripStop,
   type PastTripStopKind,
 } from '../data/examplePastTrips';
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
-import { formatISOToDisplay, formatISOToLongWeekday } from '../utils/dateMask';
+import { formatISOToDisplay, formatISOToShortDay } from '../utils/dateMask';
 import { formatMoney, RATES_AS_OF, RATES_SOURCE_LABEL, toBRL } from '../utils/money';
+import { joinPt } from '../utils/retrospective';
 import {
   allStops,
-  cityDays,
   costSummary,
-  countKind,
   dayNumberOf,
-  formatKm,
-  pathKm,
-  photosByLabel,
   shortName,
   STOP_KIND_COST_LABEL,
-  STOP_KIND_LABEL,
   stopsByDay,
-  sumCost,
-  tripDayCount,
 } from '../utils/pastTrip';
+import styles from './PastTrip.module.css';
 
 const KIND_ICON: Record<PastTripStopKind, LucideIcon> = {
   lugar: Landmark,
@@ -48,7 +39,8 @@ const KIND_ICON: Record<PastTripStopKind, LucideIcon> = {
   evento: Ticket,
 };
 
-type ListFilter = 'tudo' | PastTripStopKind;
+/** mais que isso no lugar: 5 fotos + um quadrado "+N" */
+const MAX_TILES = 6;
 
 /** "€ 45,00" + "≈ R$ 264" — o valor pago fica na moeda em que foi pago, o real é só referência. */
 function eur(amount: number): string {
@@ -59,16 +51,35 @@ function brlApprox(amountEUR: number): string {
   return brl === null ? 'sem conversão' : `≈ ${formatMoney(brl, 'BRL')}`;
 }
 
-function priceLabel(stop: PastTripStop): string {
-  if (stop.cost === 0) return 'Grátis';
-  return `${eur(stop.cost)}${stop.costNote ? ` · ${stop.costNote}` : ''}`;
+interface AlbumDay {
+  dayISO: string;
+  number: number;
+  city: string;
+  stops: PastTripStop[];
 }
 
+/** até 2 bairros do dia ("Baixa e Alfama"); sem bairro, a cidade */
+function dayPlaces(day: AlbumDay): string {
+  const counts = new Map<string, number>();
+  for (const s of day.stops) if (s.neighborhood) counts.set(s.neighborhood, (counts.get(s.neighborhood) ?? 0) + 1);
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([n]) => n);
+  return top.length > 0 ? joinPt(top) : day.city;
+}
+
+const dayId = (dayISO: string) => `dia-${dayISO}`;
+
 /**
- * Viagem passada (rota /viagem-passada/:id) — docs/ajustes-76-viagem-passada-e-recordacao.md.
- * Roteiro só de VISUALIZAÇÃO: compilado em lista (por cidade → dia → paradas)
- * e mapa (rota ligando as paradas), sem nenhuma ação de edição. Daqui sai o
- * "Gerar recordação" (história estilo stories).
+ * Viagem passada (rota /viagem-passada/:id) como ÁLBUM POR DIA (docs/ajustes-91-...md, que
+ * substitui a lista com TimelineStop do ajustes-76/77): o que foi feito em cada dia e as fotos,
+ * sem preço, categoria por extenso, descrição nem ações de planejamento.
+ * - Topo: cidades, datas, quem foi e "Gerar recordação".
+ * - Filtro por pessoa (Todos · Você · Camila · Bruno) — só filtra as fotos que aparecem.
+ * - Faixa presa no topo: pílulas "Dia 1 · 10/05" (tocar leva ao dia) + Lista/Mapa em ícone.
+ * - Cada dia: cabeçalho forte que fica preso logo abaixo das pílulas enquanto se rola o dia,
+ *   divisória, e cada lugar numa linha (ícone + nome, "Adicionar foto" à direita) com as fotos
+ *   em grade de 3, quadradas, com o avatar de quem adicionou.
+ * - Tocar na foto abre em tela cheia, passando pelas fotos do mesmo dia.
+ * O gasto da viagem (ajustes-77) continua, num cartão só, no fim.
  */
 export function PastTrip() {
   const { id } = useParams();
@@ -76,18 +87,109 @@ export function PastTrip() {
   const trip = getExamplePastTrip(id);
   const [view, setView] = useState<'lista' | 'mapa'>('lista');
   const [mapCity, setMapCity] = useState('todas');
-  const [filter, setFilter] = useState<ListFilter>('tudo');
-  const [viewer, setViewer] = useState<{ photo: ExamplePhoto; placeName: string } | null>(null);
+  const [person, setPerson] = useState('todos');
+  // fotos adicionadas agora (só no aparelho, como no roteiro em andamento) — por lugar
+  const [added, setAdded] = useState<Record<string, AlbumPhoto[]>>({});
+  const [viewer, setViewer] = useState<{ items: AlbumPhotoItem[]; index: number } | null>(null);
+  const [activeDay, setActiveDay] = useState<string | null>(null);
+  const [barHeight, setBarHeight] = useState(60);
   const heroUrl = usePlaceThumbnail(trip?.cityForPhoto ?? '');
+  const barRef = useRef<HTMLDivElement>(null);
+  const albumRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const targetStop = useRef<PastTripStop | null>(null);
+  const urlsRef = useRef<string[]>([]);
+
+  useEffect(() => () => urlsRef.current.forEach((u) => URL.revokeObjectURL(u)), []);
+
+  // altura da faixa presa: o cabeçalho do dia prende logo abaixo dela
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBarHeight(el.getBoundingClientRect().height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [view]);
+
+  // pílula do dia em que a pessoa está: o último dia cujo começo já passou da faixa
+  useEffect(() => {
+    const scroller = albumRef.current?.closest('main');
+    if (!scroller || view !== 'lista') return;
+    function onScroll() {
+      const limit = (barRef.current?.getBoundingClientRect().bottom ?? 0) + 8;
+      const sections = [...(albumRef.current?.querySelectorAll<HTMLElement>('[data-day]') ?? [])];
+      const current = sections.filter((sec) => sec.getBoundingClientRect().top <= limit).pop();
+      setActiveDay(current?.dataset.day ?? sections[0]?.dataset.day ?? null);
+    }
+    onScroll();
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, [view]);
 
   if (!trip?.cities) return <Navigate to="/inicio" replace />;
 
   const cities = trip.cities;
   const stops = allStops(trip);
-  const km = pathKm(stops);
   const costs = costSummary(stops, trip.travelers);
   const maxKindTotal = Math.max(...costs.byKind.map((k) => k.total), 1);
-  const visible = (list: PastTripStop[]) => (filter === 'tudo' ? list : list.filter((st) => st.kind === filter));
+
+  const days: AlbumDay[] = cities.flatMap((city) =>
+    stopsByDay(city).map(({ dayISO, stops: dayStops }) => ({
+      dayISO,
+      number: dayNumberOf(trip, dayISO),
+      city: city.city,
+      stops: dayStops,
+    })),
+  );
+
+  const photosOf = (stop: PastTripStop): AlbumPhoto[] => {
+    const all: AlbumPhoto[] = [...photosOfStop(stop.id), ...(added[stop.id] ?? [])];
+    return person === 'todos' ? all : all.filter((p) => p.addedBy === person);
+  };
+
+  const dayLabel = (day: AlbumDay) => `Dia ${day.number} · ${formatISOToShortDay(day.dayISO)}`;
+
+  function openPhoto(day: AlbumDay, photoId: string) {
+    const items: AlbumPhotoItem[] = day.stops.flatMap((stop) =>
+      photosOf(stop).map((photo) => ({ photo, placeName: stop.name, dayLabel: dayLabel(day) })),
+    );
+    const index = items.findIndex((it) => it.photo.id === photoId);
+    if (index >= 0) setViewer({ items, index });
+  }
+
+  function goToDay(dayISO: string) {
+    const el = document.getElementById(dayId(dayISO));
+    if (!el) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  function pickPhotos(stop: PastTripStop) {
+    targetStop.current = stop;
+    fileRef.current?.click();
+  }
+
+  function handleFiles(e: ChangeEvent<HTMLInputElement>) {
+    const stop = targetStop.current;
+    const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!stop || files.length === 0) return;
+    const photos: AlbumPhoto[] = files.map((file) => {
+      const url = URL.createObjectURL(file);
+      urlsRef.current.push(url);
+      return {
+        id: `album-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        stopId: stop.id,
+        url,
+        author: '',
+        license: '',
+        sourcePage: '',
+        addedBy: 'voce',
+        local: true,
+      };
+    });
+    setAdded((prev) => ({ ...prev, [stop.id]: [...(prev[stop.id] ?? []), ...photos] }));
+  }
 
   const mapStops = mapCity === 'todas' ? stops : (cities.find((c) => c.id === mapCity)?.stops ?? []);
   const pins: RouteMapPin[] = mapStops.map((s) => ({
@@ -100,51 +202,189 @@ export function PastTrip() {
     skipped: false,
   }));
 
-  const stats = [
-    { value: String(tripDayCount(trip)), label: 'dias' },
-    { value: String(cities.length), label: cities.length === 1 ? 'cidade' : 'cidades' },
-    { value: String(countKind(stops, 'lugar')), label: 'lugares' },
-    { value: formatKm(km).replace(' km', ''), label: 'km*' },
+  const personItems = [
+    { value: 'todos', label: 'Todos' },
+    ...EXAMPLE_TRAVELERS.map((t) => ({ value: t.id, label: t.id === 'voce' ? 'Você' : shortName(t.id) })),
   ];
 
   return (
     <ScreenShell appBar={<AppBar title={trip.name} subtitle="Viagem passada" onBack={() => navigate('/inicio')} />}>
+      <input ref={fileRef} type="file" accept="image/*" multiple className="visually-hidden" tabIndex={-1} onChange={handleFiles} />
       <div className="flex flex-col gap-6">
+        {/* topo: cidades, datas, quem foi e a recordação */}
         <Card className="gap-0 overflow-hidden py-0">
-          <div className="relative h-40 bg-(--placeholder)">
+          <div className="relative h-36 bg-(--placeholder)">
             {heroUrl && <img src={heroUrl} alt="" className="size-full object-cover" />}
             <Badge variant="neutral" className="absolute top-3 left-3">
               Exemplo
             </Badge>
           </div>
-          <div className="flex flex-col gap-1 p-4">
-            <p className="m-0 text-(length:--text-lg) font-semibold text-foreground">{trip.destinationsLabel}</p>
-            <div className="flex items-center gap-2">
-              <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                {formatISOToDisplay(trip.startISO)} – {formatISOToDisplay(trip.endISO)} · {trip.companionsLabel}
-              </p>
-              {/* quem viajou (fictícios, ajustes-79): os mesmos avatares das fotos do roteiro */}
-              <span className="flex -space-x-1" role="img" aria-label={`Viajaram: ${EXAMPLE_TRAVELERS.map((t) => shortName(t.id)).join(', ')}`}>
-                {EXAMPLE_TRAVELERS.map((t) => (
-                  <TravelerAvatar key={t.id} travelerId={t.id} />
-                ))}
-              </span>
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex flex-col gap-1">
+              <p className="m-0 text-(length:--text-lg) font-semibold text-foreground">{trip.destinationsLabel}</p>
+              <div className="flex items-center gap-2">
+                <p className="m-0 text-(length:--text-sm) text-muted-foreground">
+                  {formatISOToDisplay(trip.startISO)} – {formatISOToDisplay(trip.endISO)} · {trip.companionsLabel}
+                </p>
+                {/* quem viajou (fictícios, ajustes-79): os mesmos avatares das fotos */}
+                <span
+                  className="flex -space-x-1"
+                  role="img"
+                  aria-label={`Viajaram: ${EXAMPLE_TRAVELERS.map((t) => shortName(t.id)).join(', ')}`}
+                >
+                  {EXAMPLE_TRAVELERS.map((t) => (
+                    <TravelerAvatar key={t.id} travelerId={t.id} />
+                  ))}
+                </span>
+              </div>
             </div>
+            <Button variant="primary" fullWidth onClick={() => navigate(`/viagem-passada/${trip.id}/recordacao`)}>
+              <Icon icon={Sparkles} /> Gerar recordação
+            </Button>
           </div>
         </Card>
 
-        <section aria-label="Números da viagem" className="flex flex-col gap-1.5">
-          <dl className="m-0 grid grid-cols-4 gap-2">
-            {stats.map((s) => (
-              <div key={s.label} className="flex flex-col-reverse items-center rounded-md border border-border bg-background px-1 py-3">
-                <dt className="text-(length:--text-sm) text-muted-foreground">{s.label}</dt>
-                <dd className="m-0 text-(length:--text-xl) font-semibold text-foreground">{s.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-            * Distância em linha reta entre os lugares, na ordem do roteiro.
-          </p>
+        <Tabs name="past-person" label="Fotos de quem" value={person} onChange={setPerson} items={personItems} />
+
+        {/* álbum: o pai da faixa presa e dos cabeçalhos de dia (o sticky só vale dentro dele) */}
+        <section
+          ref={albumRef}
+          aria-label="Álbum da viagem por dia"
+          className={styles.album}
+          style={{ ['--bar-h' as string]: `${barHeight}px` }}
+        >
+          <div ref={barRef} className={styles.bar}>
+            {view === 'lista' ? (
+              <nav aria-label="Ir para o dia" className={styles.dayPills}>
+                {days.map((d) => (
+                  <button
+                    key={d.dayISO}
+                    type="button"
+                    className={cn(styles.dayPill, activeDay === d.dayISO && styles.dayPillActive)}
+                    aria-current={activeDay === d.dayISO ? 'true' : undefined}
+                    onClick={() => goToDay(d.dayISO)}
+                  >
+                    Dia {d.number} · {formatISOToDisplay(d.dayISO).slice(0, 5)}
+                  </button>
+                ))}
+              </nav>
+            ) : (
+              <span className="flex-1 text-(length:--text-base) font-semibold text-foreground">Mapa da viagem</span>
+            )}
+            <Tabs
+              name="past-view"
+              label="Ver como"
+              iconOnly
+              value={view}
+              onChange={(v) => setView(v as 'lista' | 'mapa')}
+              items={[
+                { value: 'lista', label: 'Álbum', icon: List },
+                { value: 'mapa', label: 'Mapa', icon: MapIcon },
+              ]}
+            />
+          </div>
+
+          {view === 'lista' ? (
+            <div id="past-view-panel-lista" role="tabpanel" aria-labelledby="past-view-tab-lista" className={styles.days}>
+              {days.map((day) => (
+                <section
+                  key={day.dayISO}
+                  id={dayId(day.dayISO)}
+                  data-day={day.dayISO}
+                  className={styles.day}
+                  aria-labelledby={`${dayId(day.dayISO)}-title`}
+                >
+                  <header className={styles.dayHeader}>
+                    <h2 id={`${dayId(day.dayISO)}-title`} className={styles.dayTitle}>
+                      {dayLabel(day)}
+                    </h2>
+                    <p className={styles.dayPlaces}>{dayPlaces(day)}</p>
+                  </header>
+                  <ul className={styles.places}>
+                    {day.stops.map((stop) => {
+                      const photos = photosOf(stop);
+                      const overflow = photos.length > MAX_TILES;
+                      const tiles = overflow ? photos.slice(0, MAX_TILES - 1) : photos;
+                      return (
+                        <li key={stop.id} className={styles.place}>
+                          <div className={styles.placeRow}>
+                            <Icon icon={KIND_ICON[stop.kind]} className={styles.placeIcon} />
+                            <h3 className={styles.placeName}>{stop.name}</h3>
+                            <button
+                              type="button"
+                              className={styles.addPhoto}
+                              onClick={() => pickPhotos(stop)}
+                              aria-label={`Adicionar foto de ${stop.name}`}
+                            >
+                              <Icon icon={Camera} /> Foto
+                            </button>
+                          </div>
+                          {photos.length > 0 && (
+                            <ul className={styles.grid} aria-label={`Fotos de ${stop.name}`}>
+                              {tiles.map((p) => (
+                                <li key={p.id}>
+                                  <button
+                                    type="button"
+                                    className={styles.tile}
+                                    onClick={() => openPhoto(day, p.id)}
+                                    aria-label={`${stop.name}, foto adicionada por ${shortName(p.addedBy)}: ver em tela cheia`}
+                                  >
+                                    <img src={p.url} alt="" loading="lazy" className={styles.tileImg} />
+                                    <span className={styles.tileAvatar}>
+                                      <TravelerAvatar travelerId={p.addedBy} />
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                              {overflow && (
+                                <li>
+                                  <button
+                                    type="button"
+                                    className={styles.tile}
+                                    onClick={() => openPhoto(day, photos[MAX_TILES - 1].id)}
+                                    aria-label={`Ver mais ${photos.length - (MAX_TILES - 1)} fotos de ${stop.name}`}
+                                  >
+                                    <img src={photos[MAX_TILES - 1].url} alt="" loading="lazy" className={styles.tileImg} />
+                                    {/* escuro a 60%: "+N" branco ≥ 5.74:1 mesmo sobre foto clara */}
+                                    <span className={styles.more} aria-hidden="true">
+                                      +{photos.length - (MAX_TILES - 1)}
+                                    </span>
+                                  </button>
+                                </li>
+                              )}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+              <p className="m-0 text-(length:--text-sm) text-muted-foreground">
+                Fotos de exemplo: imagens do Wikimedia Commons, com o crédito de cada uma na foto aberta.
+              </p>
+            </div>
+          ) : (
+            <div id="past-view-panel-mapa" role="tabpanel" aria-labelledby="past-view-tab-mapa" className="flex flex-col gap-3">
+              <Tabs
+                name="past-map-city"
+                label="Cidade no mapa"
+                value={mapCity}
+                onChange={setMapCity}
+                items={[{ value: 'todas', label: 'Viagem toda' }, ...cities.map((c) => ({ value: c.id, label: c.city }))]}
+              />
+              <RouteMap
+                key={mapCity}
+                cityLabel={mapCity === 'todas' ? trip.destinationsLabel : mapCity}
+                pins={pins}
+                missingCount={0}
+                showRoute
+              />
+              <p className="m-0 text-(length:--text-sm) text-muted-foreground">
+                O número no pino é o dia da viagem. A linha segue a ordem em que os lugares foram visitados.
+              </p>
+            </div>
+          )}
         </section>
 
         <Card className="gap-4 p-4" aria-labelledby="past-costs-title">
@@ -181,174 +421,13 @@ export function PastTrip() {
             {RATES_SOURCE_LABEL}). Não inclui passagens nem hospedagem.
           </p>
         </Card>
-
-        <Card className="gap-3 p-4">
-          <p className="m-0 flex items-center gap-2 text-(length:--text-lg) font-semibold text-foreground">
-            <Icon icon={Sparkles} /> Recordação da viagem
-          </p>
-          <p className="m-0 text-(length:--text-base) text-muted-foreground">
-            Uma história com o caminho que vocês fizeram no mapa, cidade por cidade, e as fotos que você escolher.
-          </p>
-          <Button variant="primary" fullWidth onClick={() => navigate(`/viagem-passada/${trip.id}/recordacao`)}>
-            Gerar recordação
-          </Button>
-        </Card>
-
-        <section aria-labelledby="past-roteiro-title" className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex flex-col gap-0.5">
-              <h2 id="past-roteiro-title" className="m-0 text-(length:--text-xl) font-semibold text-foreground">
-                Roteiro feito
-              </h2>
-              <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                Fotos que o grupo adicionou em cada lugar durante a viagem. (Exemplo: imagens do Wikimedia Commons.)
-              </p>
-            </div>
-            <div>
-              <Tabs
-                name="past-view"
-                label="Ver roteiro como"
-                iconOnly
-                value={view}
-                onChange={(v) => setView(v as 'lista' | 'mapa')}
-                items={[
-                  { value: 'lista', label: 'Lista', icon: List },
-                  { value: 'mapa', label: 'Mapa', icon: MapIcon },
-                ]}
-              />
-            </div>
-          </div>
-
-          {view === 'lista' ? (
-            <div id="past-view-panel-lista" role="tabpanel" aria-labelledby="past-view-tab-lista" className="flex flex-col gap-6">
-              <Tabs
-                name="past-filter"
-                label="Mostrar no roteiro"
-                value={filter}
-                onChange={(v) => setFilter(v as ListFilter)}
-                items={[
-                  { value: 'tudo', label: 'Tudo' },
-                  { value: 'lugar', label: 'Lugares' },
-                  { value: 'restaurante', label: 'Comida' },
-                  { value: 'evento', label: 'Eventos' },
-                ]}
-              />
-              {cities.map((city) => {
-                const days = cityDays(city);
-                const cityDaysShown = stopsByDay(city)
-                  .map((d) => ({ ...d, shown: visible(d.stops) }))
-                  .filter((d) => d.shown.length > 0);
-                if (cityDaysShown.length === 0) return null;
-                return (
-                  <section key={city.id} aria-labelledby={`past-city-${city.id}`} className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-0.5">
-                      <h3 id={`past-city-${city.id}`} className="m-0 flex items-center gap-2 text-(length:--text-lg) font-semibold text-foreground">
-                        <Icon icon={MapPin} /> {city.city}
-                      </h3>
-                      <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                        {formatISOToDisplay(days[0]).slice(0, 5)} – {formatISOToDisplay(days[days.length - 1]).slice(0, 5)} ·{' '}
-                        {countKind(city.stops, 'lugar')} lugares · {countKind(city.stops, 'restaurante')} restaurantes
-                        {countKind(city.stops, 'evento') > 0 && ` · ${countKind(city.stops, 'evento')} ${countKind(city.stops, 'evento') === 1 ? 'evento' : 'eventos'}`}{' '}
-                        · {eur(sumCost(city.stops))}
-                      </p>
-                    </div>
-                    {cityDaysShown.map(({ dayISO, stops: dayAll, shown }) => (
-                      <Card key={dayISO} className="gap-4 p-4">
-                        <div className="flex flex-col gap-0.5">
-                          <h4 className="m-0 flex items-center gap-2 text-(length:--text-lg) font-semibold text-foreground">
-                            <Icon icon={CalendarDays} /> Dia {dayNumberOf(trip, dayISO)} · {formatISOToLongWeekday(dayISO)}
-                          </h4>
-                          <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                            Gasto do dia: {eur(sumCost(dayAll))} {brlApprox(sumCost(dayAll))}
-                          </p>
-                        </div>
-                        <ul className="m-0 flex list-none flex-col p-0">
-                          {shown.map((stop, i) => {
-                            const stopPhotos = photosOfStop(stop.id);
-                            return (
-                            <TimelineStop
-                              key={stop.id}
-                              orderLabel={`${stop.time ? `${stop.time} · ` : ''}${STOP_KIND_LABEL[stop.kind]}`}
-                              title={stop.name}
-                              tags={
-                                <>
-                                  <CategoryTags
-                                    tags={[{ key: 'price', icon: Wallet, label: priceLabel(stop) }]}
-                                  />
-                                  {stop.sourceUrl && (
-                                    <a
-                                      href={stop.sourceUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex min-h-11 items-center gap-1 text-(length:--text-sm) font-medium text-(--accent-dark) underline-offset-4 hover:underline"
-                                    >
-                                      <Icon icon={ExternalLink} /> Ver na agenda da época
-                                    </a>
-                                  )}
-                                </>
-                              }
-                              description={stop.neighborhood}
-                              photoSearchTitle={stop.wikiTitle}
-                              photoUrl={stopPhotos[0]?.url}
-                              photos={
-                                stopPhotos.length > 0 && (
-                                  <div className="flex flex-col gap-1.5">
-                                    <StopPhotos
-                                      placeName={stop.name}
-                                      photos={stopPhotos.map((p) => ({
-                                        id: p.id,
-                                        url: p.url,
-                                        label: `${stop.name}, foto adicionada por ${shortName(p.addedBy)}`,
-                                        badge: <TravelerAvatar travelerId={p.addedBy} />,
-                                      }))}
-                                      onOpen={(photoId) => {
-                                        const photo = stopPhotos.find((p) => p.id === photoId);
-                                        if (photo) setViewer({ photo, placeName: stop.name });
-                                      }}
-                                    />
-                                    <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                                      {photosByLabel(stopPhotos.map((p) => p.addedBy))}
-                                    </p>
-                                  </div>
-                                )
-                              }
-                              fallbackIcon={KIND_ICON[stop.kind]}
-                              skipped={false}
-                              isLast={i === shown.length - 1}
-                            />
-                            );
-                          })}
-                        </ul>
-                      </Card>
-                    ))}
-                  </section>
-                );
-              })}
-            </div>
-          ) : (
-            <div id="past-view-panel-mapa" role="tabpanel" aria-labelledby="past-view-tab-mapa" className="flex flex-col gap-3">
-              <Tabs
-                name="past-map-city"
-                label="Cidade no mapa"
-                value={mapCity}
-                onChange={setMapCity}
-                items={[{ value: 'todas', label: 'Viagem toda' }, ...cities.map((c) => ({ value: c.id, label: c.city }))]}
-              />
-              <RouteMap
-                key={mapCity}
-                cityLabel={mapCity === 'todas' ? trip.destinationsLabel : mapCity}
-                pins={pins}
-                missingCount={0}
-                showRoute
-              />
-              <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                O número no pino é o dia da viagem. A linha segue a ordem em que os lugares foram visitados.
-              </p>
-            </div>
-          )}
-        </section>
       </div>
-      <ExamplePhotoDialog photo={viewer?.photo ?? null} placeName={viewer?.placeName ?? ''} onClose={() => setViewer(null)} />
+      <ExamplePhotoDialog
+        items={viewer?.items ?? []}
+        index={viewer?.index ?? null}
+        onIndexChange={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+        onClose={() => setViewer(null)}
+      />
     </ScreenShell>
   );
 }

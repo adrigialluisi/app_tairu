@@ -57,6 +57,8 @@
   --error-soft: #fef3f2; /* fundo do selo de alerta — --error sobre ele 6.05:1 */
   --success: #2f6b4f; /* verde escuro — só usado com ícone, nunca sozinho */
   --success-soft: #ecf6f0; /* fundo do selo de sucesso — --success sobre ele 5.70:1 */
+  /* atenção (ajustes-86): aviso que não bloqueia, ex.: data fora da viagem — 5.89:1 no branco, 5.40:1 no stone-100; sempre com ícone */
+  --warning: #8a5a1f;
 
   /*
     Cor de cada dia no mapa do Roteiro (docs/ajustes-80-...md): pino, linha da
@@ -68,7 +70,7 @@
   --map-day-1: var(--accent); /* bordô */
   --map-day-2: #1d5b7a; /* azul — branco 7.42:1 */
   --map-day-3: var(--success); /* verde — branco 6.29:1 */
-  --map-day-4: #8a5a1f; /* âmbar escuro — branco 5.89:1 */
+  --map-day-4: var(--warning); /* âmbar escuro — branco 5.89:1 */
   --map-skipped: var(--field-border); /* stone-500, pino de lugar pulado — branco 4.8:1 */
 
   /*

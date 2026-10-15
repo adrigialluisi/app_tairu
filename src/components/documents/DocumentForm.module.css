@@ -15,3 +15,10 @@
   font-size: 14px;
   color: var(--muted);
 }
+
+/* Emissão e Validade um embaixo do outro (ajustes-86): lado a lado, com o botão do calendário, a data não cabia */
+.dateStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

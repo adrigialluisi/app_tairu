@@ -14,7 +14,7 @@ import { EXAMPLE_TRAVELERS, getExamplePastTrip, photosOfStop } from '../data/exa
 import { formatISOToDisplay } from '../utils/dateMask';
 import { cityDays, photosOfCity, shortName, suggestedSelection } from '../utils/pastTrip';
 
-/** limite por cidade — 2 slides de 4 fotos, pra história não ficar longa demais */
+/** limite por cidade, pra história não ficar longa demais (viram ~5 cartões de foto, ajustes-91) */
 const MAX_PER_CITY = 8;
 
 /** foto da grade: as de exemplo trazem o rótulo acessível pronto ("Torre de Belém, foto 2, adicionada por Camila") */
@@ -54,6 +54,7 @@ export function PastTripRecap() {
           name: stop.name,
           placeName: stop.name,
           credit: `${p.author} · ${p.license}`,
+          sourceUrl: p.sourcePage,
           addedBy: p.addedBy,
           label: `${stop.name}, foto ${i + 1}, adicionada por ${shortName(p.addedBy)}`,
           fromDevice: false,
@@ -134,10 +135,22 @@ export function PastTripRecap() {
     setSelected((prev) => ({ ...prev, [cityId]: (prev[cityId] ?? []).filter((x) => x !== photo.id) }));
   }
 
-  function play() {
-    const photos: Record<string, RecapPhoto[]> = {};
-    for (const city of cities) photos[city.id] = chosenOf(city.id);
-    setPlayingWith(photos);
+  /** em pé ou deitada: a foto já está no navegador (exemplo local ou do celular), é instantâneo */
+  function measure(photo: RecapPhoto): Promise<RecapPhoto> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ ...photo, portrait: img.naturalHeight > img.naturalWidth });
+      img.onerror = () => resolve(photo);
+      img.src = photo.url;
+    });
+  }
+
+  async function play() {
+    // a orientação decide a montagem (em pé → tela cheia; deitadas → 2 por cartão), ajustes-91
+    const entries = await Promise.all(
+      cities.map(async (city) => [city.id, await Promise.all(chosenOf(city.id).map(measure))] as const),
+    );
+    setPlayingWith(Object.fromEntries(entries));
   }
 
   const filterOptions = [
@@ -228,10 +241,12 @@ export function PastTripRecap() {
                             onClick={() => !blocked && toggle(city.id, p.id)}
                             className={cn(
                               'relative block size-full overflow-hidden rounded-md border-0 bg-(--placeholder) p-0',
-                              blocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                              blocked ? 'cursor-not-allowed' : 'cursor-pointer',
                             )}
                           >
                             <img src={p.url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+                            {/* limite atingido (ajustes-85): foto nítida com véu leve, não mais opacity-50 — é a que a pessoa olha pra decidir trocar */}
+                            {blocked && <span className="pointer-events-none absolute inset-0 bg-black/20" aria-hidden="true" />}
                             {isSelected && (
                               <>
                                 <span

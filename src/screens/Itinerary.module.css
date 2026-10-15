@@ -26,6 +26,24 @@
 }
 
 /*
+  Faixa presa no topo, como a do Tabs sticky (ajustes-85): fundo do miolo de ponta a ponta, -24px
+  porque o sticky conta a partir do padding do miolo. O pai (o painel da aba) envolve todo o conteúdo.
+  Sugestões (ajustes-87): abas de cidade + "Buscar ou adicionar um lugar". Roteiro (ajustes-88):
+  cidade (no Mapa) + pílulas de data com o Lista/Mapa em ícone na mesma linha.
+*/
+.stickyBar {
+  position: sticky;
+  top: calc(-1 * var(--space-6));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4));
+  padding: var(--space-2) var(--space-4);
+  background: var(--page);
+}
+
+/*
   Aba Roteiro (Lista e Mapa): 16px entre a barra Lista/Mapa, as abas de destino,
   as pílulas de data e o conteúdo (docs/ajustes-73-...md, item 3) — antes o
   painel da Lista não tinha gap e o primeiro dia ficava colado nas pílulas.
@@ -87,15 +105,6 @@
   padding: 0;
 }
 
-.moveLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .skipButton {
   display: inline-flex;
   align-items: center;
@@ -111,9 +120,41 @@
   cursor: pointer;
 }
 
-.skipButtonUndo {
-  color: var(--accent-dark);
-  border-color: var(--accent-dark);
+/*
+  Faixa de ações da parada (ajustes-88): Foto e Gasto compactos (44px, secundário) e o ⋯ na
+  ponta direita. Em 375px cabem os três numa linha.
+*/
+.stopAction.stopAction {
+  height: var(--touch-target);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* "ARS 120.000 · ≈ R$ 409" — gasto lançado pela parada; leva ao lançamento em Custos. --text no branco 17.49:1 */
+.stopExpense {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.stopExpense:hover {
+  background: var(--bg-top);
+}
+
+.stopExpenseForm {
+  margin-top: var(--space-3);
 }
 
 .emptyDay {
@@ -288,4 +329,16 @@
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text);
+}
+
+/* pílulas ocupam o que sobra (rolam na horizontal); o Lista/Mapa fica na ponta direita */
+.pillsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pillsSlot {
+  flex: 1;
+  min-width: 0;
 }

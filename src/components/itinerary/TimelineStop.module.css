@@ -2,7 +2,13 @@
   display: flex;
   gap: var(--space-3);
   position: relative;
-  padding-bottom: var(--space-4);
+  padding-bottom: var(--space-6);
+}
+
+/* divisória entre paradas (ajustes-88): sob o conteúdo, com 24px de cada lado */
+.stop:not(.stopLast) > .content {
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .stopLast {
@@ -60,7 +66,15 @@
   color: var(--accent-dark);
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 15px;
   font-weight: 600;
@@ -103,11 +117,10 @@
   margin-top: 2px;
 }
 
-/* Ações (mover dia / Pulei / Remover) numa linha própria abaixo da descrição. */
+/* Faixa única de ações (Foto · Gasto · ⋯) no rodapé da parada, numa linha só (ajustes-88). */
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
-  flex-wrap: wrap;
 }

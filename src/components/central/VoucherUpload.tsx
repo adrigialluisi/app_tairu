@@ -11,7 +11,11 @@ interface ReadStatusProps {
   reading: boolean;
   /** leitura terminou e preencheu os campos */
   filled: boolean;
+  /** texto da faixa verde (a nota de Custos diz "da nota", ajustes-90) */
+  filledMessage?: string;
 }
+
+const DEFAULT_FILLED_MESSAGE = 'Preenchemos os campos com o que lemos do arquivo. Confira antes de salvar.';
 
 /**
  * Feedback da leitura simulada (docs/ajustes-84-...md, seção 1), igual em todo
@@ -19,7 +23,7 @@ interface ReadStatusProps {
  * reduzido) e, depois, a faixa "Preenchemos os campos…". A região é sempre
  * montada com aria-live, pra o leitor de tela anunciar as duas mensagens.
  */
-export function ReadStatus({ reading, filled }: ReadStatusProps) {
+export function ReadStatus({ reading, filled, filledMessage = DEFAULT_FILLED_MESSAGE }: ReadStatusProps) {
   return (
     <div aria-live="polite" className="w-full empty:hidden">
       {reading && (
@@ -34,7 +38,7 @@ export function ReadStatus({ reading, filled }: ReadStatusProps) {
         <Alert className="border-solid border-success/40 bg-success-soft">
           <Check className="text-success" aria-hidden="true" />
           <AlertDescription className="text-(length:--text-sm) text-foreground">
-            Preenchemos os campos com o que lemos do arquivo. Confira antes de salvar.
+            {filledMessage}
           </AlertDescription>
         </Alert>
       )}
@@ -51,6 +55,11 @@ interface VoucherUploadProps {
   onRemove?: () => void;
   hint?: string;
   buttonLabel?: string;
+  filledMessage?: string;
+  /** "Substituir voucher" / "Excluir voucher" → "… nota" (ajustes-90) */
+  fileNoun?: string;
+  /** tipos aceitos (a nota é foto; o voucher também pode ser PDF) */
+  accept?: string;
 }
 
 export function VoucherUpload({
@@ -61,6 +70,9 @@ export function VoucherUpload({
   onRemove,
   hint = 'Tem um voucher? Envie pra preencher os campos automaticamente.',
   buttonLabel = 'Enviar voucher',
+  filledMessage,
+  fileNoun = 'voucher',
+  accept = 'application/pdf,image/*',
 }: VoucherUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,7 +87,7 @@ export function VoucherUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/pdf,image/*"
+        accept={accept}
         className={styles.hiddenFileInput}
         onChange={handleChange}
       />
@@ -100,8 +112,8 @@ export function VoucherUpload({
               type="button"
               className={styles.voucherIconButton}
               onClick={() => fileInputRef.current?.click()}
-              aria-label="Substituir voucher"
-              title="Substituir voucher"
+              aria-label={`Substituir ${fileNoun}`}
+              title={`Substituir ${fileNoun}`}
             >
               <ReplaceIcon />
             </button>
@@ -110,8 +122,8 @@ export function VoucherUpload({
                 type="button"
                 className={`${styles.voucherIconButton} ${styles.voucherIconButtonDanger}`}
                 onClick={onRemove}
-                aria-label="Excluir voucher"
-                title="Excluir voucher"
+                aria-label={`Excluir ${fileNoun}`}
+                title={`Excluir ${fileNoun}`}
               >
                 <TrashIcon />
               </button>
@@ -120,7 +132,7 @@ export function VoucherUpload({
         </div>
       )}
 
-      <ReadStatus reading={reading} filled={filled} />
+      <ReadStatus reading={reading} filled={filled} filledMessage={filledMessage} />
     </div>
   );
 }

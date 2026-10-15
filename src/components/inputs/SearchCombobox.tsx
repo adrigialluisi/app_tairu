@@ -21,6 +21,19 @@ interface SearchComboboxProps {
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
   invalid?: boolean;
+  /** ícone/elemento dentro da caixa, à direita (ex.: setinha do seletor de moeda, ajustes-86) */
+  endAdornment?: ReactNode;
+  /** ícone dentro da caixa, à esquerda (ex.: lupa da busca de lugares, ajustes-87) */
+  startAdornment?: ReactNode;
+  /**
+   * 'prominent' (ajustes-87, busca do topo das Sugestões): 48px, fundo branco, borda bordô a 70%
+   * (3.44:1 no branco, 3.16:1 no stone-100 do miolo) e sombra leve — não parece um campo qualquer.
+   */
+  appearance?: 'default' | 'prominent';
+  /** classes da lista aberta — padrão: a largura do campo; campo estreito (moeda) pede uma lista mais larga */
+  contentClassName?: string;
+  /** acabou de ser preenchido pela leitura de um arquivo (ajustes-84) */
+  highlight?: boolean;
   /** CommandItem / CommandGroup */
   children: ReactNode;
 }
@@ -46,6 +59,11 @@ export function SearchCombobox({
   emptyText,
   enterRequiresNavigation = false,
   invalid = false,
+  endAdornment,
+  startAdornment,
+  appearance = 'default',
+  contentClassName,
+  highlight = false,
   children,
   ...aria
 }: SearchComboboxProps) {
@@ -94,11 +112,14 @@ export function SearchCombobox({
           <div
             ref={anchorRef}
             className={cn(
-              'relative flex h-11 items-center rounded-md border border-input bg-background transition-[color,box-shadow]',
+              'relative flex h-11 items-center rounded-md border border-input bg-background transition-[color,box-shadow,background-color] duration-300 motion-reduce:transition-none',
+              appearance === 'prominent' && 'h-12 border-primary/70 bg-card shadow-sm',
+              highlight && 'bg-accent-soft',
               'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
               invalid && 'border-destructive focus-within:border-destructive focus-within:ring-destructive/20',
             )}
           >
+            {startAdornment}
             <input
               id={id}
               className={cn(
@@ -122,6 +143,7 @@ export function SearchCombobox({
               onKeyDown={handleKeyDown}
               autoComplete="off"
             />
+            {endAdornment}
           </div>
         </PopoverAnchor>
         <PopoverContent
@@ -135,7 +157,7 @@ export function SearchCombobox({
           onInteractOutside={(e) => {
             if (anchorRef.current?.contains(e.target as Node)) e.preventDefault();
           }}
-          className="w-(--radix-popover-trigger-width) gap-0 rounded-md p-1"
+          className={cn('w-(--radix-popover-trigger-width) gap-0 rounded-md p-1', contentClassName)}
         >
           <CommandList
             ref={listRef}

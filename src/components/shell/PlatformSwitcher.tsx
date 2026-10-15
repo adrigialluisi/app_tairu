@@ -1,5 +1,10 @@
-import type { ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { usePlatform, type Platform } from '../../context/PlatformContext';
+import { useTrip } from '../../context/TripContext';
+import { useDocuments } from '../../context/DocumentsContext';
+import { findMockCompanion } from '../../data/mockCompanions';
 import { AppleIcon, AndroidIcon } from './PlatformIcons';
 import styles from './PlatformSwitcher.module.css';
 
@@ -18,6 +23,9 @@ const LABELS: Record<Platform, string> = {
   android: 'Android',
 };
 
+/** toque longo que abre o menu do moderador (ajustes-89) */
+const LONG_PRESS_MS = 800;
+
 interface PlatformSwitcherProps {
   /**
    * Quando true, renderiza só o botão, sem o wrapper fixo — pra telas que
@@ -26,29 +34,102 @@ interface PlatformSwitcherProps {
   inline?: boolean;
 }
 
+const menuItemClass =
+  'flex min-h-11 w-full cursor-pointer items-center rounded-md border-0 bg-transparent px-3 text-left text-(length:--text-base) text-foreground hover:bg-muted disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent';
+
 function ToggleButton() {
   const { platform, setPlatform } = usePlatform();
+  const trip = useTrip();
+  const docs = useDocuments();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // o toque longo também solta um click no fim: ele não pode trocar a plataforma
+  const longPressed = useRef(false);
   const Icon = ICONS[platform];
   const next = OTHER[platform];
 
+  function cancelPress() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }
+
+  function startPress() {
+    longPressed.current = false;
+    cancelPress();
+    timer.current = setTimeout(() => {
+      longPressed.current = true;
+      setMenuOpen(true);
+    }, LONG_PRESS_MS);
+  }
+
+  const scenarioInvited = trip.companions.some((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
+  const simulateHint = trip.groupUpdateSimulated
+    ? 'Já simulado. Recomece o teste pra simular de novo.'
+    : scenarioInvited
+      ? null
+      : 'Convide a Marina e o Rodrigo primeiro';
+
+  function simulate() {
+    const result = trip.simulateGroupUpdate();
+    setMenuOpen(false);
+    // simula "abrir o app de novo": a Início mostra o banner e as novidades
+    if (result.ok) navigate('/inicio');
+  }
+
+  function restart() {
+    setMenuOpen(false);
+    trip.resetTrip();
+    docs.clearDocuments();
+    navigate('/');
+  }
+
   return (
-    <button
-      type="button"
-      className={styles.toggle}
-      onClick={() => setPlatform(next)}
-      aria-label={`Trocar para ${LABELS[next]} (atual: ${LABELS[platform]})`}
-    >
-      <Icon />
-      <svg className={styles.chevron} width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-        <path
-          d="M1 1L5 5L9 1"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
+    <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+      <PopoverAnchor asChild>
+        <button
+          type="button"
+          className={styles.toggle}
+          onPointerDown={startPress}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          // no celular o toque longo abriria o menu do sistema
+          onContextMenu={(e) => e.preventDefault()}
+          onClick={() => {
+            if (longPressed.current) {
+              longPressed.current = false;
+              return;
+            }
+            setPlatform(next);
+          }}
+          aria-label={`Trocar para ${LABELS[next]} (atual: ${LABELS[platform]})`}
+        >
+          <Icon />
+          <svg className={styles.chevron} width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+            <path
+              d="M1 1L5 5L9 1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </PopoverAnchor>
+      <PopoverContent align="end" collisionPadding={16} className="w-64 gap-1 rounded-xl p-2" aria-label="Moderador">
+        <p className="m-0 px-3 pt-1 pb-1 text-(length:--text-sm) font-semibold text-muted-foreground">Moderador</p>
+        <button type="button" className={menuItemClass} disabled={simulateHint !== null} onClick={simulate}>
+          Simular: 2 dias depois
+        </button>
+        {simulateHint && (
+          <p className="m-0 px-3 pb-1 text-(length:--text-sm) text-muted-foreground">{simulateHint}</p>
+        )}
+        <button type="button" className={menuItemClass} onClick={restart}>
+          Recomeçar teste
+        </button>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -60,6 +141,10 @@ function ToggleButton() {
  * pra outra plataforma, sem abrir nada. Alvo de toque continua >= 44x44px
  * via padding, mesmo com a pintura visual pequena (ver docs/ajustes-32 e
  * docs/ajustes-33-switcher-inline-no-header.md).
+ *
+ * Toque longo (~800 ms, ajustes-89) abre o menu escondido do moderador: "Simular: 2 dias depois"
+ * (os convidados do cenário entram e trazem as novidades) e "Recomeçar teste" (zera a viagem e
+ * os documentos e volta pra Splash). O toque curto continua só alternando iOS/Android.
  *
  * Por padrão fica fixo no canto superior direito de toda tela (`inline`
  * ausente) — é assim que Splash e as telas com `AppBar` continuam

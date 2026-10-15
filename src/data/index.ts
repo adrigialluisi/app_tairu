@@ -1,3 +1,4 @@
+import airportsRaw from './airports.json';
 import citiesRaw from './cities.json';
 import currenciesRaw from './currencies.json';
 import placesRaw from './places.json';
@@ -12,7 +13,17 @@ export interface CityEntry {
   city: string;
   country: string;
   currencyCode: string;
+  /**
+   * nomes de região conhecidos que levam a esta cidade (ajustes-86): "Deserto do Atacama" → San Pedro
+   * de Atacama. Só onde é verdade — nunca inventar.
+   */
+  aliases?: string[];
+  /** linha de apoio quando a busca casou pelo apelido: "base pra visitar o Deserto do Atacama" */
+  aliasNote?: string;
 }
+
+/** resultado da busca de destino: `viaAlias` = casou pelo apelido, não pelo nome da cidade/país */
+export type CityMatch = CityEntry & { viaAlias: boolean };
 
 export interface CurrencyEntry {
   code: string;
@@ -29,18 +40,115 @@ function normalize(value: string): string {
   return value.normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase();
 }
 
-/** Autocomplete real: 2+ letras, ignora acento/caixa, casa cidade ou país. */
-export function searchCities(query: string, excludeIds: Set<string> = new Set()): CityEntry[] {
+/** Autocomplete real: 2+ letras, ignora acento/caixa, casa cidade, país ou apelido de região (ajustes-86). */
+export function searchCities(query: string, excludeIds: Set<string> = new Set()): CityMatch[] {
   const q = normalize(query.trim());
   if (q.length < 2) return [];
-  return cities
-    .filter((c) => !excludeIds.has(c.id))
-    .filter((c) => normalize(c.city).includes(q) || normalize(c.country).includes(q))
-    .slice(0, 8);
+  const matches: CityMatch[] = [];
+  for (const c of cities) {
+    if (excludeIds.has(c.id)) continue;
+    if (normalize(c.city).includes(q) || normalize(c.country).includes(q)) matches.push({ ...c, viaAlias: false });
+    else if (c.aliases?.some((alias) => normalize(alias).includes(q))) matches.push({ ...c, viaAlias: true });
+  }
+  return matches.slice(0, 8);
 }
 
 export function getCurrency(code: string): CurrencyEntry | undefined {
   return currencies.find((c) => c.code === code);
+}
+
+/**
+ * Aeroporto real (ajustes-86, src/data/airports.json, fonte docs/dados/airports.json): código IATA,
+ * nome curto do aeroporto e cidade. `cityId` liga com o cities.json quando a cidade existe lá;
+ * `nearCityIds` = cidades do cities.json sem aeroporto próprio que ele atende (ex.: CJC → San Pedro).
+ */
+export interface AirportEntry {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+  cityId: string | null;
+  nearCityIds?: string[];
+}
+
+export const airports: AirportEntry[] = airportsRaw as AirportEntry[];
+
+/** "São Paulo – Guarulhos"; quando o aeroporto tem o nome da cidade, só a cidade ("Miami") */
+export function airportLabel(a: AirportEntry): string {
+  return a.name === a.city ? a.city : `${a.city} – ${a.name}`;
+}
+
+/** texto salvo no campo do voo: "São Paulo – Guarulhos (GRU)" — o código vai junto, no fim */
+export function airportValue(a: AirportEntry): string {
+  return `${airportLabel(a)} (${a.iata})`;
+}
+
+export function getAirport(iata: string): AirportEntry | undefined {
+  return airports.find((a) => a.iata === iata.toUpperCase());
+}
+
+/** valor salvo → aeroporto, pelo "(XXX)" do fim; texto antigo/livre → undefined (só exibe o texto) */
+export function airportFromValue(value: string): AirportEntry | undefined {
+  const m = value.trim().match(/\(([A-Z]{3})\)$/);
+  return m ? getAirport(m[1]) : undefined;
+}
+
+/** aeroportos da cidade (e os que a atendem de perto) — sugestão sem digitar no voo daquele destino */
+export function airportsForCity(cityId: string): AirportEntry[] {
+  return [
+    ...airports.filter((a) => a.cityId === cityId),
+    ...airports.filter((a) => a.nearCityIds?.includes(cityId)),
+  ];
+}
+
+const cityNameById = new Map(cities.map((c) => [c.id, c.city]));
+
+/**
+ * Busca de aeroporto (2+ letras, sem acento/caixa): código, cidade, nome do aeroporto, país ou
+ * cidade atendida — "gru", "guaru" e "são paulo" levam a GRU. Código exato vem primeiro, depois
+ * código/cidade que começam com o texto, depois o resto.
+ */
+export function searchAirports(query: string): AirportEntry[] {
+  const q = normalize(query.trim());
+  if (q.length < 2) return [];
+  const rank = (a: AirportEntry): number => {
+    const code = a.iata.toLowerCase();
+    if (code === q) return 0;
+    if (code.startsWith(q) || normalize(a.city).startsWith(q)) return 1;
+    const near = (a.nearCityIds ?? []).map((id) => normalize(cityNameById.get(id) ?? ''));
+    if (normalize(a.name).includes(q) || normalize(a.city).includes(q) || near.some((n) => n.includes(q))) return 2;
+    if (normalize(a.country).includes(q)) return 3;
+    return -1;
+  };
+  return airports
+    .map((a) => ({ a, r: rank(a) }))
+    .filter((x) => x.r >= 0)
+    .sort((x, y) => x.r - y.r)
+    .slice(0, 8)
+    .map((x) => x.a);
+}
+
+/** países que usam a moeda, tirados do cities.json (ex.: CLP → Chile) — pra busca por país no seletor de moeda */
+const countriesByCurrency = new Map<string, string[]>();
+for (const c of cities) {
+  const list = countriesByCurrency.get(c.currencyCode) ?? [];
+  if (!list.includes(c.country)) list.push(c.country);
+  countriesByCurrency.set(c.currencyCode, list);
+}
+
+/**
+ * Busca de moeda (ajustes-86): por código, nome ou país, sem acento/caixa — "peso", "chile" e
+ * "clp" acham o Peso chileno. Busca vazia = todas.
+ */
+export function searchCurrencies(query: string): CurrencyEntry[] {
+  const q = normalize(query.trim());
+  if (!q) return currencies;
+  return currencies.filter(
+    (c) =>
+      normalize(c.code).includes(q) ||
+      normalize(c.name).includes(q) ||
+      (countriesByCurrency.get(c.code) ?? []).some((country) => normalize(country).includes(q)),
+  );
 }
 
 export interface PlaceEntry {
@@ -56,6 +164,31 @@ export interface PlaceEntry {
   wikiTitle?: string;
   /** "turistico" (pontos mais conhecidos/visitados) ou "fora-do-circuito" — ver docs/ajustes-37-quiz-turistico-x-fora-circuito.md */
   popularity: 'turistico' | 'fora-do-circuito';
+  /** foto local do Wikimedia Commons (ajustes-87); sem ela, a busca ao vivo na Wikipedia fica de reserva */
+  photo?: PlacePhoto;
+}
+
+/**
+ * Foto salva no protótipo (public/places/{id}.jpg, ~800px), sempre de licença livre e com crédito.
+ * `representative`: não existe foto livre do próprio lugar — é uma foto ilustrativa (ex.: outra
+ * parrilla de Buenos Aires pro El Desnivel), e o crédito diz isso.
+ */
+export interface PlacePhoto {
+  src: string;
+  author: string;
+  license: string;
+  sourceUrl: string;
+  representative?: boolean;
+}
+
+/** URL da foto local do lugar (com o base do Vite, como as fotos de public/memorias-exemplo), ou null */
+export function placePhotoUrl(place: Pick<PlaceEntry, 'photo'> | undefined | null): string | null {
+  return place?.photo ? `${import.meta.env.BASE_URL}${place.photo.src}` : null;
+}
+
+/** "Foto: autor · licença · Wikimedia Commons" — ou "Foto ilustrativa: …" quando não é do próprio lugar */
+export function placePhotoCredit(photo: PlacePhoto): string {
+  return `${photo.representative ? 'Foto ilustrativa' : 'Foto'}: ${photo.author} · ${photo.license} · Wikimedia Commons`;
 }
 
 export const places: PlaceEntry[] = placesRaw as PlaceEntry[];
@@ -66,6 +199,27 @@ export function getPlacesForCity(cityId: string): PlaceEntry[] {
 
 export function getPlaceById(id: string): PlaceEntry | undefined {
   return places.find((p) => p.id === id);
+}
+
+/**
+ * Busca do topo das Sugestões (ajustes-87): lugares da cidade pelo nome (ou título da Wikipedia,
+ * ex.: "caminito" acha "La Boca — Caminito") ou bairro, sem acento/caixa. Quem começa com o
+ * texto vem antes.
+ */
+export function searchPlacesInCity(cityId: string, query: string): PlaceEntry[] {
+  const q = normalize(query.trim());
+  if (!q) return [];
+  const scored: { place: PlaceEntry; score: number }[] = [];
+  for (const place of getPlacesForCity(cityId)) {
+    const names = [place.name, place.wikiTitle ?? ''].map(normalize);
+    const words = names.flatMap((n) => n.split(/[\s—-]+/));
+    let score = -1;
+    if (names.some((n) => n.startsWith(q)) || words.some((w) => w.startsWith(q))) score = 0;
+    else if (names.some((n) => n.includes(q))) score = 1;
+    else if (normalize(place.neighborhood).includes(q)) score = 2;
+    if (score >= 0) scored.push({ place, score });
+  }
+  return scored.sort((a, b) => a.score - b.score).map((s) => s.place);
 }
 
 export const INTEREST_LABELS: Record<QuizInterest, string> = {
@@ -156,6 +310,9 @@ export interface HotelEntry {
   /** caminho relativo a public/, ex.: "hotels/ba-alvear-palace.jpg" */
   photo: string | null;
   photoSourceUrl: string;
+  /** coordenada do OpenStreetMap (Nominatim, pelo nome ou número exato do endereço) — só onde bateu (ajustes-88) */
+  lat?: number;
+  lng?: number;
 }
 
 export const hotels: HotelEntry[] = hotelsRaw as HotelEntry[];

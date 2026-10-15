@@ -1,0 +1,195 @@
+/*
+  Álbum da viagem passada (ajustes-91). O .album é o pai da faixa presa e dos cabeçalhos de dia:
+  o sticky só vale dentro dele. --bar-h = altura da faixa (medida no componente).
+*/
+.album {
+  display: flex;
+  flex-direction: column;
+}
+
+/* faixa presa: pílulas de dia + Álbum/Mapa, fundo do miolo de ponta a ponta (regra do ajustes-85) */
+.bar {
+  position: sticky;
+  top: calc(-1 * var(--space-6));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--page);
+}
+
+.dayPills {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* folga pro anel de foco não ser cortado */
+  padding: 2px;
+  margin: -2px;
+}
+.dayPills::-webkit-scrollbar {
+  display: none;
+}
+
+/* pílula: --text no branco 17.49:1; ativa: branco no bordô 6.08:1 */
+.dayPill {
+  flex: none;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dayPill:focus-visible {
+  border-radius: 999px;
+}
+.dayPillActive {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--text-on-dark);
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-top: var(--space-4);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* tocar na pílula: o dia começa logo abaixo da faixa */
+  scroll-margin-top: calc(var(--bar-h) - var(--space-6));
+}
+
+/* cabeçalho forte do dia, preso logo abaixo das pílulas enquanto se rola aquele dia */
+.dayHeader {
+  position: sticky;
+  top: calc(var(--bar-h) - var(--space-6));
+  z-index: 10;
+  margin: 0 calc(-1 * var(--space-4));
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  background: var(--page);
+  border-bottom: 1px solid var(--card-border);
+}
+.dayTitle {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+}
+/* --muted no stone-100 do miolo: 6.99:1 */
+.dayPlaces {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.places {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.place {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.placeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.placeIcon {
+  flex: none;
+  color: var(--muted);
+}
+.placeName {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+/* discreto, à direita do nome: --accent-dark no stone-100 ≥ 8:1 */
+.addPhoto {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+.addPhoto:hover {
+  background: var(--bg-mid);
+}
+
+/* fotos: 3 por linha, quadradas */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--placeholder);
+  cursor: pointer;
+}
+.tileImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tileAvatar {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: flex;
+}
+.more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+}
