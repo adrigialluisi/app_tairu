@@ -62,7 +62,7 @@ export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps
 
       <p className={styles.hint}>
         O valor e a moeda vêm da Central.{' '}
-        <button type="button" className={styles.inlineLink} onClick={() => navigate('/central')}>
+        <button type="button" className={styles.inlineLink} onClick={() => navigate('/central', { replace: true })}>
           Editar valor na Central
         </button>
       </p>

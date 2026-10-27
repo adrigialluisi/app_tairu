@@ -1,4 +1,4 @@
-import { CalendarDays, PencilLine, Users } from 'lucide-react';
+import { CalendarDays, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,12 @@ import { EmptyState } from '../shell/EmptyState';
 import { ConflictDialog } from '../shell/ConflictDialog';
 import { activityConflict, firstTime } from '../../utils/activityConflicts';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AddedPlaceCard } from './AddedPlaceCard';
 import { CategoryTags, type CategoryTag } from './CategoryTags';
 import { EventCard } from './EventCard';
 import { GuestChoicesList, type GuestChoice } from './GuestChoicesList';
-import { PhotoCredits } from './PhotoCredits';
 import { PlaceCard } from './PlaceCard';
 import { SuggestionCarousel, SuggestionSection } from './SuggestionSection';
-import { addedCardId, focusCard, placeCardId } from '../../utils/focusCard';
+import { focusCard, placeCardId } from '../../utils/focusCard';
 import {
   INTEREST_LABELS,
   getEventsForDestination,
@@ -70,7 +68,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   const ranked = rankPlacesByProfile(cityPlaces, interests, discovery);
   const cityEvents = getEventsForDestination(destination.cityId, destination.dateStart, destination.dateEnd, destination.city);
 
-  const customPlaces = trip.selectedPlaces.filter((s) => s.destinationId === destination.id && !s.placeId);
 
   // Convidados (ajustes-67): quem quer cada lugar desta cidade e o que eles adicionaram
   const members = getMembers(trip);
@@ -203,9 +200,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     ...(groupPlaces.length > 0
       ? [{ key: 'grupo', icon: Users, label: 'Convidados', count: groupPlaces.length }]
       : []),
-    ...(customPlaces.length > 0
-      ? [{ key: 'adicionados', icon: PencilLine, label: 'Adicionados', count: customPlaces.length }]
-      : []),
     {
       key: 'eventos',
       icon: SECTION_ICONS.eventos,
@@ -315,7 +309,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
             <>
               <p className={styles.profileTitle}>Responda o perfil da viagem pra ver sugestões do seu jeito</p>
               <p className={styles.profileHint}>Enquanto isso, mostramos todas as categorias.</p>
-              <Button variant="secondary" onClick={() => navigate('/destinos')}>
+              <Button variant="secondary" onClick={() => navigate('/destinos', { replace: true })}>
                 Responder perfil
               </Button>
             </>
@@ -323,7 +317,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
             <>
               <p className={styles.profileTitle}>Sugestões com base no seu perfil</p>
               <CategoryTags tags={profileTags} size="md" />
-              <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos')}>
+              <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos', { replace: true })}>
                 Editar perfil
               </button>
             </>
@@ -365,24 +359,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
           </SuggestionSection>
         )}
 
-        {customPlaces.length > 0 && (
-          <SuggestionSection
-            id={sectionId('adicionados')}
-            icon={PencilLine}
-            title="Adicionados"
-            countLabel={countLabel(customPlaces.length, 'lugar', 'lugares')}
-            description="Lugares que você adicionou por conta própria."
-          >
-            <SuggestionCarousel label={`Lugares adicionados em ${destination.city}`}>
-              {customPlaces.map((s) => (
-                <li key={s.id}>
-                  <AddedPlaceCard selection={s} id={addedCardId(s.id)} onRemove={() => trip.removeSelectedPlace(s.id)} />
-                </li>
-              ))}
-            </SuggestionCarousel>
-          </SuggestionSection>
-        )}
-
+        {/* "Adicionados" saiu no ajustes-97: o que a pessoa traz por conta própria entra direto no roteiro, pelo "Adicionar lugares" */}
         <SuggestionSection
           id={sectionId('eventos')}
           icon={SECTION_ICONS.eventos}
@@ -419,7 +396,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
               icon={<CalendarDays />}
               tone="muted"
               action={
-                <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos')}>
+                <button type="button" className={styles.linkButton} onClick={() => navigate('/destinos', { replace: true })}>
                   Ir pra Destinos
                 </button>
               }
@@ -450,7 +427,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
                   <li key={place.id}>{placeCard(place)}</li>
                 ))}
               </SuggestionCarousel>
-              <PhotoCredits places={section.places} />
+              {/* créditos das fotos saíram daqui (ajustes-99c): ficam todos na tela /creditos, pelo rodapé da Início */}
             </SuggestionSection>
           ))
         )}

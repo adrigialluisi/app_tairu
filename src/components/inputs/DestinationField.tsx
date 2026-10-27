@@ -4,7 +4,6 @@ import { CommandItem } from '@/components/ui/command';
 import { searchCities, type CityEntry } from '../../data';
 import type { TripDestination } from '../../context/TripContext';
 import { Chip } from './Chip';
-import { CurrencySelect } from './CurrencySelect';
 import { DateRangeField } from './DateRangeField';
 import { SearchCombobox, comboboxItemClass } from './SearchCombobox';
 import { Icon } from '../shell/Icon';
@@ -15,7 +14,6 @@ interface DestinationFieldProps {
   destinations: TripDestination[];
   onAdd: (destination: Omit<TripDestination, 'id' | 'dateStart' | 'dateEnd'>) => void;
   onRemove: (id: string) => void;
-  onCurrencyChange: (id: string, currencyCode: string) => void;
   onDateRangeChange: (id: string, start: string | null, end: string | null) => void;
   dateOverlapError?: string | null;
   error?: string | null;
@@ -25,7 +23,6 @@ export function DestinationField({
   destinations,
   onAdd,
   onRemove,
-  onCurrencyChange,
   onDateRangeChange,
   dateOverlapError,
   error,
@@ -40,6 +37,7 @@ export function DestinationField({
   const suggestions = useMemo(() => searchCities(query, excludeIds), [query, excludeIds]);
 
   function selectCity(city: CityEntry) {
+    // a moeda vem da cidade e não é pedida aqui (ajustes-98): aparece só onde a pessoa lança um valor
     onAdd({ cityId: city.id, city: city.city, country: city.country, currencyCode: city.currencyCode });
     setQuery('');
     setOpen(false);
@@ -119,14 +117,14 @@ export function DestinationField({
           <span className={styles.detailsGroupLabel}>Detalhes por destino</span>
           <ul className={styles.detailsList}>
             {destinations.map((d, index) => {
-              const currencyId = `${baseId}-currency-${d.id}`;
               const headingId = `${baseId}-details-${d.id}`;
               return (
                 /*
                   Cada cartão diz de qual cidade é (cabeçalho com ordem, cidade e
                   país). O cartão é um grupo nomeado pelo cabeçalho, então o leitor
-                  de tela anuncia "Buenos Aires, Argentina" antes de "Moeda" e
-                  "Datas da estadia" — os rótulos visíveis não precisam repetir a cidade.
+                  de tela anuncia "Buenos Aires, Argentina" antes de "Datas da estadia"
+                  — o rótulo visível não precisa repetir a cidade. Sem "Moeda" desde o
+                  ajustes-98: só cidade + datas.
                 */
                 <Card asChild className="px-4">
                 <li key={d.id} className={styles.detailsCard} role="group" aria-labelledby={headingId}>
@@ -152,14 +150,6 @@ export function DestinationField({
                       <span>Remover</span>
                     </button>
                   </div>
-                  <CurrencySelect
-                    id={currencyId}
-                    label="Moeda"
-                    showLabel
-                    fullWidth
-                    value={d.currencyCode}
-                    onChange={(code) => onCurrencyChange(d.id, code)}
-                  />
                   <DateRangeField
                     label="Datas da estadia"
                     startISO={d.dateStart}

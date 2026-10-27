@@ -13,6 +13,24 @@ body,
   height: 100%;
 }
 
+/*
+  iPhone (ajustes-96): a página nunca rola pros lados. `clip` (Safari 16+) corta sem virar
+  contêiner de rolagem — o `hidden` faria o body rolar no lugar da janela e quebraria o sticky da
+  Início; o `hidden` fica só pra navegador antigo. Carrosséis e faixas de abas rolam por dentro.
+*/
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+@supports (overflow-x: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 body {
   margin: 0;
   color: var(--text);
@@ -31,6 +49,17 @@ body {
 button,
 input {
   font-family: inherit;
+}
+
+/*
+  iOS dá zoom automático ao tocar num campo com fonte menor que 16px — e a tela fica ampliada,
+  rolando pros lados (ajustes-96). Todo campo de texto, select e textarea tem 16px, por cima do
+  15px (--text-base) dos componentes; o !important vence as classes do Tailwind e dos CSS Modules.
+*/
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select,
+textarea {
+  font-size: 16px !important;
 }
 
 /* Foco de teclado visível em qualquer elemento interativo: anel de 2px

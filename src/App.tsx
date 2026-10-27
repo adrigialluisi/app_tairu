@@ -11,6 +11,7 @@ import { InviteCompanions } from './screens/InviteCompanions';
 import { Itinerary } from './screens/Itinerary';
 import { Central } from './screens/Central';
 import { Documents } from './screens/Documents';
+import { PhotoCredits } from './screens/PhotoCredits';
 import { Costs } from './screens/Costs';
 import { PastTrip } from './screens/PastTrip';
 import { PastTripRecap } from './screens/PastTripRecap';
@@ -59,6 +60,8 @@ export function App() {
                 <Route path="/roteiro" element={<Itinerary />} />
                 <Route path="/custos" element={<Costs />} />
                 <Route path="/documentos" element={<Documents />} />
+                {/* créditos de todas as fotos (ajustes-99c), sem menu fixo, aberto pelo rodapé da Início */}
+                <Route path="/creditos" element={<PhotoCredits />} />
                 <Route path="/viagem-passada/:id" element={<PastTrip />} />
                 <Route path="/viagem-passada/:id/recordacao" element={<PastTripRecap />} />
               </Routes>

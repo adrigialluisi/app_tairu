@@ -28,6 +28,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* nunca rola pros lados (ajustes-96): o que passar da largura é cortado, carrossel rola por dentro */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;

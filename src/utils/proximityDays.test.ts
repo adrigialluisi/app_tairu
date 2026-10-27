@@ -139,3 +139,29 @@ test('sem nenhum domingo na cidade, a Feria de Mataderos vai pro primeiro dia (a
   const days = computeProximityDays(items, 3, { weekdays: [1, 2, 3] });
   assert.equal(days.get('ba-feria-mataderos')?.day, 0);
 });
+
+/*
+  Lugar fixado no dia (ajustes-97): a pessoa adicionou o Café de los Angelitos (OpenStreetMap, sem
+  id do places.json) direto na quarta 18/11 — o 5º dia de Buenos Aires (índice 4). Depois de entrar
+  mais 3 lugares na cidade, ele continua no dia 18; os outros se organizam em volta.
+*/
+const ANGELITOS: ProximityItem = { id: 'osm-angelitos', lat: -34.6096, lng: -58.3926, meal: true, fixedDay: 4 };
+
+test('lugar fixado no dia 18 continua no dia 18 depois de adicionar 3 lugares na cidade', () => {
+  const before = computeProximityDays([...itemsOf(SCENARIO), ANGELITOS], 5, { lightDays: [0] });
+  assert.equal(before.get(ANGELITOS.id)?.day, 4);
+  const after = computeProximityDays(
+    [...itemsOf([...SCENARIO, 'ba-teatro-colon', 'ba-rosedal-palermo', 'ba-feria-san-telmo']), ANGELITOS],
+    5,
+    { lightDays: [0] },
+  );
+  assert.equal(after.get(ANGELITOS.id)?.day, 4);
+  // todo lugar continua com dia
+  assert.equal(after.size, SCENARIO.length + 3 + 1);
+});
+
+test('lugar fixado num dia em que não abre continua onde a pessoa pôs', () => {
+  const fixedSunday: ProximityItem = { ...itemsOf(['ba-feria-mataderos'])[0], openDays: [0], fixedDay: 2 };
+  const days = computeProximityDays([...itemsOf(SCENARIO), fixedSunday], 5, { weekdays: BA_WEEKDAYS });
+  assert.equal(days.get('ba-feria-mataderos')?.day, 2);
+});

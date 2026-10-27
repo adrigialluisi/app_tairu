@@ -2,12 +2,12 @@
   display: flex;
   gap: var(--space-3);
   position: relative;
-  padding-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
 }
 
-/* divisória entre paradas (ajustes-88): sob o conteúdo, com 24px de cada lado */
+/* divisória entre paradas (ajustes-88): sob o conteúdo, com 16px de cada lado (ajustes-97: 16px entre paradas) */
 .stop:not(.stopLast) > .content {
-  padding-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--card-border);
 }
 

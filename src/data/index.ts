@@ -207,6 +207,20 @@ export function getPlaceById(id: string): PlaceEntry | undefined {
 }
 
 /**
+ * Centro aproximado da cidade = média das coordenadas dos lugares dela no app (ajustes-97: a busca
+ * ao vivo do Photon procura perto daqui e descarta o que fica a mais de 40 km). Cidade sem lugar no
+ * app: null (a busca vai sem filtro de distância, com o nome da cidade no texto).
+ */
+export function cityCenter(cityId: string): { lat: number; lng: number } | null {
+  const list = getPlacesForCity(cityId);
+  if (list.length === 0) return null;
+  return {
+    lat: list.reduce((acc, p) => acc + p.lat, 0) / list.length,
+    lng: list.reduce((acc, p) => acc + p.lng, 0) / list.length,
+  };
+}
+
+/**
  * Busca do topo das Sugestões (ajustes-87): lugares da cidade pelo nome (ou título da Wikipedia,
  * ex.: "caminito" acha "La Boca — Caminito") ou bairro, sem acento/caixa. Quem começa com o
  * texto vem antes.

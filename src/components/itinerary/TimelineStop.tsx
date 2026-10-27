@@ -7,8 +7,12 @@ import { usePlaceThumbnail } from '../../hooks/usePlaceThumbnail';
 import styles from './TimelineStop.module.css';
 
 interface TimelineStopProps {
+  /** id do <li> — o "Adicionar lugares" rola até a parada nova e pisca (ajustes-97) */
+  id?: string;
   orderLabel: string;
   title: string;
+  /** logo depois do nome, na mesma linha — o alfinete do lugar fixado no dia (ajustes-97) */
+  titleAdornment?: ReactNode;
   description?: string;
   /** chips de categoria (ícone + rótulo) logo abaixo do título */
   tags?: ReactNode;
@@ -43,8 +47,10 @@ interface TimelineStopProps {
 */
 
 export function TimelineStop({
+  id,
   orderLabel,
   title,
+  titleAdornment,
   tags,
   description,
   photoSearchTitle,
@@ -65,7 +71,7 @@ export function TimelineStop({
   const thumbnailUrl = photoUrl ?? (photoSearchTitle ? wikiUrl : null);
 
   return (
-    <li className={`${styles.stop} ${isLast ? styles.stopLast : ''}`}>
+    <li id={id} className={`${styles.stop} ${isLast ? styles.stopLast : ''}`}>
       <span className={styles.dot} aria-hidden="true" />
       <div
         className={`${styles.content} ${tintColor && !skipped ? styles.tinted : ''}`}
@@ -82,6 +88,7 @@ export function TimelineStop({
         <div className={styles.titleRow}>
           <p className={`${styles.title} ${skipped ? styles.titleSkipped : ''}`}>
             {title}
+            {!skipped && titleAdornment}
             {skipped && <span className="visually-hidden"> (pulado)</span>}
           </p>
           {isNew && !skipped && <NewBadge />}

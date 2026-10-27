@@ -15,6 +15,7 @@ import { ExpenseForm, type ExpensePrefill } from '../components/costs/ExpenseFor
 import { SettlementPanel } from '../components/costs/SettlementPanel';
 import { useTrip } from '../context/TripContext';
 import { useSaveToast } from '../hooks/useSaveToast';
+import { getTripToday } from '../utils/tripToday';
 import { activeMembers, buildCostEntries, getMembers, type CostEntry } from '../utils/costs';
 import { formatISOToDisplay } from '../utils/dateMask';
 import { focusCard } from '../utils/focusCard';
@@ -66,7 +67,13 @@ export function Costs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const converterFrom = navState.currencyCode ?? trip.destinations[0]?.currencyCode ?? 'BRL';
+  // moeda de origem do Conversor (ajustes-98): a da cidade que chamou (Dicas locais), senão a do destino
+  // de hoje (viagem acontecendo), senão a do primeiro destino
+  const todayDestination = trip.destinations.find(
+    (d) => d.id === getTripToday(trip.destinations, trip.simulatedTodayISO)?.destinationId,
+  );
+  const converterFrom =
+    navState.currencyCode ?? todayDestination?.currencyCode ?? trip.destinations[0]?.currencyCode ?? 'BRL';
   const tripCurrencies = [...new Set([...trip.destinations.map((d) => d.currencyCode), 'BRL'])];
 
   function handleLaunchFromConverter(amount: string, currencyCode: string) {

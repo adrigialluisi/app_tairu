@@ -12,7 +12,6 @@ import { Tabs } from '../components/shell/Tabs';
 import { RouteMap, type RouteMapPin } from '../components/itinerary/RouteMap';
 import { ExamplePhotoDialog, type AlbumPhoto, type AlbumPhotoItem } from '../components/recap/ExamplePhotoDialog';
 import { TravelerAvatar } from '../components/recap/TravelerAvatar';
-import { PhotoCreditsDialog } from '../components/recap/PhotoCreditsDialog';
 import {
   EXAMPLE_TRAVELERS,
   getExamplePastTrip,
@@ -377,7 +376,7 @@ export function PastTrip() {
                 </section>
               ))}
               <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                Fotos de exemplo: imagens do Wikimedia Commons, com o crédito de cada uma na foto aberta.
+                Fotos de exemplo: imagens do Wikimedia Commons. Os créditos ficam em "Créditos das fotos", no rodapé da Início.
               </p>
             </div>
           ) : (
@@ -438,8 +437,6 @@ export function PastTrip() {
           </p>
         </Card>
 
-        {/* créditos das fotos de exemplo no rodapé (ajustes-95; antes eram o último cartão da recordação) */}
-        <PhotoCreditsDialog photos={stops.flatMap((stop) => photosOfStop(stop.id).map((photo) => ({ placeName: stop.name, photo })))} />
       </div>
       <ExamplePhotoDialog
         items={viewer?.items ?? []}

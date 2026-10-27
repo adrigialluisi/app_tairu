@@ -19,7 +19,7 @@ export function EmptyTripState({ message }: EmptyTripStateProps) {
     <EmptyState
       icon={<MapPin />}
       action={
-        <Button variant="primary" fullWidth onClick={() => navigate('/destinos')}>
+        <Button variant="primary" fullWidth onClick={() => navigate('/destinos', { replace: true })}>
           Ir pra Destinos
         </Button>
       }

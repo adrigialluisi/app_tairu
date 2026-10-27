@@ -14,7 +14,6 @@ import { TripProfileQuiz, quizSummaryLines } from '../components/quiz/TripProfil
 import { useTrip, type TripDestination } from '../context/TripContext';
 import { useSaveToast } from '../hooks/useSaveToast';
 import { formatISOToDisplay } from '../utils/dateMask';
-import { getCurrency } from '../data';
 import styles from './CreateTrip.module.css';
 
 /**
@@ -43,8 +42,8 @@ function formatDestinoSummaryLine(destination: TripDestination): string {
     destination.dateStart && destination.dateEnd
       ? `${formatISOToDisplay(destination.dateStart)} – ${formatISOToDisplay(destination.dateEnd)}`
       : 'datas a definir';
-  const currency = getCurrency(destination.currencyCode);
-  return `${destination.city}, ${destination.country} — ${dates} · ${currency?.code ?? destination.currencyCode}`;
+  // termina nas datas (ajustes-98): a moeda aparece só onde a pessoa lança um valor
+  return `${destination.city}, ${destination.country} — ${dates}`;
 }
 
 export function CreateTrip() {
@@ -122,7 +121,6 @@ export function CreateTrip() {
           // toast só em "Salvar destinos" (ajustes-85), não ao adicionar destino ou escolher datas
           onAdd={trip.addDestination}
           onRemove={trip.removeDestination}
-          onCurrencyChange={trip.setDestinationCurrency}
           onDateRangeChange={trip.setDestinationDateRange}
           dateOverlapError={overlapError}
         />

@@ -28,8 +28,8 @@
 /*
   Faixa presa no topo, como a do Tabs sticky (ajustes-85): fundo do miolo de ponta a ponta, -24px
   porque o sticky conta a partir do padding do miolo. O pai (o painel da aba) envolve todo o conteúdo.
-  Sugestões (ajustes-87): abas de cidade + "Buscar ou adicionar um lugar". Roteiro (ajustes-88):
-  cidade (no Mapa) + pílulas de data com o Lista/Mapa em ícone na mesma linha.
+  Sugestões do app: abas de cidade (a busca saiu no ajustes-97). Roteiro (ajustes-97): abas de
+  cidade + Lista | Mapa de largura total; as pílulas de data rolam com a página.
 */
 .stickyBar {
   position: sticky;
@@ -67,7 +67,8 @@
 .dayList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  /* 32px entre os cards dos dias (ajustes-97): o dia é o grupo maior da tela */
+  gap: var(--space-8);
 }
 
 .dayCard {
@@ -251,7 +252,8 @@
 .dayBlocks {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  /* 24px entre Agenda do dia / Lugares / Planos do grupo (ajustes-97) */
+  gap: var(--space-6);
 }
 
 /* rótulo do bloco → conteúdo: 8px */
@@ -261,11 +263,31 @@
   gap: var(--space-2);
 }
 
+/* título de bloco do card do dia (ajustes-97): pequeno, caixa alta, --muted (7.63:1 no branco) */
 .blockLabel {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
+}
+
+/* alfinete do lugar fixado no dia (ajustes-97), logo depois do nome — --muted, o nome diz o resto */
+.pinned {
+  display: inline-flex;
+  margin-left: var(--space-1);
+  vertical-align: -2px;
+  color: var(--muted);
+}
+
+/*
+  fim da aba Roteiro: o botão flutuante, sempre visível desde o ajustes-99 (48px + 16px da borda +
+  16px de folga), não cobre o último item
+*/
+.fabSpace {
+  height: 80px;
+  flex-shrink: 0;
 }
 
 .agendaList {
@@ -302,18 +324,6 @@
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text);
-}
-
-/* pílulas ocupam o que sobra (rolam na horizontal); o Lista/Mapa fica na ponta direita */
-.pillsRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.pillsSlot {
-  flex: 1;
-  min-width: 0;
 }
 
 /* "Planos do grupo" (ajustes-95b): cartões provisórios empilhados, 8px entre eles */

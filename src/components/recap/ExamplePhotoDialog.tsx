@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { ExamplePhoto } from '../../data/examplePastTrips';
@@ -33,8 +33,8 @@ const SWIPE_PX = 50;
 
 /**
  * Foto do álbum da viagem passada em tela cheia (ajustes-78/79; navegação no ajustes-91): lugar,
- * dia, quem adicionou e — na foto de exemplo — o crédito obrigatório do Wikimedia Commons com
- * link. Deslizar, as setas ‹ › (44px) ou ← → do teclado passam pra foto seguinte do mesmo dia.
+ * dia, quem adicionou e — na foto de exemplo — a marca "Foto de exemplo · Wikimedia Commons" (o
+ * crédito com autor, licença e link fica na tela /creditos desde o ajustes-99c). Deslizar, as setas ‹ › (44px) ou ← → do teclado passam pra foto seguinte do mesmo dia.
  * Dialog do shadcn (Esc fecha, foco preso); fundo stone-900, texto branco (17.49:1; o secundário
  * em branco 80%, ≥ 11:1).
  */
@@ -111,17 +111,8 @@ export function ExamplePhotoDialog({ items, index, onIndexChange, onClose }: Exa
               {item.photo.local ? (
                 'Foto do seu celular — fica só neste aparelho.'
               ) : (
-                <>
-                  Foto: {item.photo.author} · {item.photo.license} ·{' '}
-                  <a
-                    href={item.photo.sourcePage}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-11 items-center gap-1 font-medium text-white underline underline-offset-4"
-                  >
-                    Wikimedia Commons <Icon icon={ExternalLink} />
-                  </a>
-                </>
+                // crédito (autor, licença, link) centralizado na tela /creditos (ajustes-99c); aqui só a marca de exemplo
+                'Foto de exemplo · Wikimedia Commons'
               )}
             </DialogDescription>
           </div>

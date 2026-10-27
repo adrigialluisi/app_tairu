@@ -12,10 +12,13 @@ function airport(iata: string): string {
 /*
   Leitura SIMULADA de voucher/documento (docs/ajustes-84-tudo-que-sobe-preenche-sozinho.md):
   não existe OCR, backend nem IA. O app "lê" pelo nome do arquivo, em 2 níveis:
-  1. arquivo de exemplo conhecido (public/mock-vouchers/, nome exato, sem diferenciar maiúsculas)
-     → os dados daquele arquivo;
-  2. qualquer outro arquivo (ex.: foto do celular do participante) → preenchimento de exemplo
-     coerente com o contexto (destino, tipo). Nunca deixa de preencher.
+  1. arquivo de exemplo conhecido (public/mock-vouchers/, nome exato, sem diferenciar maiúsculas,
+     em PDF ou na imagem .jpg do kit — ajustes-96) → os dados daquele arquivo;
+  2. qualquer outro arquivo → preenchimento pelo CONTEXTO (destino, tipo). É o caso do teste no
+     celular (ajustes-96): a imagem do kit chega pela galeria com outro nome (IMG_1234.jpg) e
+     comprimida pelo WhatsApp — no Transporte de Buenos Aires vira o voo LA 4550, na Hospedagem de
+     Buenos Aires o Magnolia, nos outros destinos o voucher de exemplo da cidade. Nunca deixa de
+     preencher.
   `source` só serve pro código/moderador — a tela mostra a mesma mensagem nos dois casos.
 */
 export type ReadSource = 'reconhecido' | 'exemplo';
@@ -106,6 +109,9 @@ export const MOCK_TRANSPORT_VOUCHERS: Record<string, MockVoucherFields> = {
     baggage: '1 despachada + 1 de mão',
   },
 };
+
+/** a imagem do kit (ajustes-96) vale o mesmo que o PDF de mesmo nome */
+MOCK_TRANSPORT_VOUCHERS['voucher-voo-buenosaires-santiago.jpg'] = MOCK_TRANSPORT_VOUCHERS['voucher-voo-buenosaires-santiago.pdf'];
 
 /**
  * Trechos a mais de um voucher com conexão (ajustes-92). O formulário de voo guarda um voo só, então
@@ -213,6 +219,9 @@ export const MOCK_STAY_VOUCHERS: Record<string, MockStayVoucherFields> = {
     roomType: 'Duplo',
   },
 };
+
+/** a imagem do kit (ajustes-96) vale o mesmo que o PDF de mesmo nome */
+MOCK_STAY_VOUCHERS['voucher-hotel-buenosaires-magnolia.jpg'] = MOCK_STAY_VOUCHERS['voucher-hotel-buenosaires-magnolia.pdf'];
 
 const STAY_EXAMPLE_BY_CITY: Record<string, string> = {
   'buenos-aires-ar': 'voucher-hotel-buenosaires-magnolia.pdf',

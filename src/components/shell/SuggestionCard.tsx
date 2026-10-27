@@ -45,7 +45,7 @@ export function SuggestionCard({ message, actionLabel, to, storageKey }: Suggest
           <span aria-hidden="true">×</span>
         </UiButton>
       </AlertAction>
-      <Button onClick={() => navigate(to)}>{actionLabel}</Button>
+      <Button onClick={() => navigate(to, { replace: true })}>{actionLabel}</Button>
     </Alert>
   );
 }

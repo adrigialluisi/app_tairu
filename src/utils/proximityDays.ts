@@ -14,6 +14,11 @@ export interface ProximityItem {
   meal?: boolean;
   /** dias da semana em que funciona (0 = domingo … 6 = sábado), ex.: Feria de Mataderos [0] (ajustes-95) */
   openDays?: number[];
+  /**
+   * dia (índice local) em que a pessoa FIXOU o lugar (ajustes-97: escolheu o dia ao adicionar ou
+   * mudou de dia): a divisão nunca o move; os outros se organizam sem ele e ele entra na rota do dia
+   */
+  fixedDay?: number;
 }
 
 export interface ProximityOptions {
@@ -303,17 +308,22 @@ function routeOf(members: Located[], start: ProximityOptions['start']): Located[
  *    1 refeição por dia enquanto houver dia sem — os dois movem quarteirões inteiros;
  * 5. dias com lugar em ordem do bairro mais ao norte pro mais ao sul; dentro do dia, rota pelo
  *    vizinho mais próximo a partir do hotel (`options.start`) ou do lugar mais ao norte;
- * 6. lugar com dia da semana certo (`openDays`, com `options.weekdays`) muda pra um dia permitido.
+ * 6. lugar com dia da semana certo (`openDays`, com `options.weekdays`) muda pra um dia permitido;
+ * 7. lugar fixado (`fixedDay`, ajustes-97) fica no dia dele, fora dos passos acima, e entra na rota
+ *    desse dia — e o dia dele conta como ocupado pros lugares sem coordenada.
  * Item sem coordenada (lugar escrito à mão) entra no fim do dia normal com menos lugares.
  */
 export function computeProximityDays(
-  items: ProximityItem[],
+  allItems: ProximityItem[],
   dayCount: number,
   options: ProximityOptions = {},
 ): Map<string, { day: number; order: number }> {
   const result = new Map<string, { day: number; order: number }>();
-  if (items.length === 0) return result;
+  if (allItems.length === 0) return result;
   const days = Math.max(1, dayCount);
+  const isFixed = (p: ProximityItem) => typeof p.fixedDay === 'number' && Number.isFinite(p.fixedDay);
+  const fixed = allItems.filter(isFixed);
+  const items = allItems.filter((p) => !isFixed(p));
   const located = items.filter(hasCoords);
   const loose = items.filter((p) => !hasCoords(p));
 
@@ -358,6 +368,16 @@ export function computeProximityDays(
   );
   effectiveLight.forEach((d, i) => byDay.set(d, routeOf(lightGroups[i] ?? [], options.start)));
 
+  // 7. fixados: no dia escolhido pela pessoa (antes dos sem coordenada, pra contar como ocupado)
+  for (const item of fixed) {
+    const day = Math.min(Math.max(Math.round(item.fixedDay!), 0), days - 1);
+    byDay.set(day, [...(byDay.get(day) ?? []), item]);
+  }
+  for (const day of new Set(fixed.map((p) => Math.min(Math.max(Math.round(p.fixedDay!), 0), days - 1)))) {
+    const list = byDay.get(day) ?? [];
+    byDay.set(day, [...routeOf(list.filter(hasCoords), options.start), ...list.filter((p) => !hasCoords(p))]);
+  }
+
   // sem coordenada: no fim do dia normal com menos lugares (empate: o primeiro)
   for (const item of loose) {
     const target = (normalDays.length > 0 ? normalDays : [0]).reduce((best, d) =>
@@ -388,6 +408,8 @@ function fitOpenDays(
   for (const day of allDays) {
     for (const item of [...(byDay.get(day) ?? [])]) {
       const open = item.openDays;
+      // fixado pela pessoa: fica onde ela pôs, mesmo fechado (a parada avisa "Só abre aos…")
+      if (typeof item.fixedDay === 'number') continue;
       if (!open || open.length === 0 || open.includes(weekdays[day])) continue;
       const allowed = allDays.filter((d) => weekdays[d] !== undefined && open.includes(weekdays[d]));
       const score = (d: number) => {

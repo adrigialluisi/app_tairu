@@ -79,6 +79,9 @@ export function BottomNav() {
           <Link
             key={item.path}
             to={item.path}
+            // replace (ajustes-96): trocar de aba não empilha histórico, então o deslize de voltar
+            // do Safari não troca de seção sem querer; telas internas continuam empilhando
+            replace
             className={`${styles.item} ${active ? styles.itemActive : ''}`}
             aria-current={active ? 'page' : undefined}
           >

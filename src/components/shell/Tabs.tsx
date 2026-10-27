@@ -9,7 +9,7 @@ export interface TabItem {
   label: string;
   /** nome completo pro leitor de tela quando `label` é um rótulo curto ("San Pedro", ajustes-95b) */
   ariaLabel?: string;
-  /** ícone lucide opcional — só usado quando iconOnly */
+  /** ícone lucide opcional — usado quando iconOnly e no variant="full" (ícone + texto) */
   icon?: LucideIcon;
   /** só usado com variant="pill-date": linha de cima do pill (ex.: mês abreviado) */
   pillTop?: string;
@@ -26,8 +26,12 @@ interface TabsProps {
   label: string;
   /** quando true, mostra só o icon de cada item (label vira texto oculto + title) */
   iconOnly?: boolean;
-  /** 'segmented' (padrão, visual atual) ou 'pill-date' (pills de duas linhas, rolagem horizontal) */
-  variant?: 'segmented' | 'pill-date';
+  /**
+   * 'segmented' (padrão, visual atual), 'pill-date' (pills de duas linhas, rolagem horizontal) ou
+   * 'full' (controle segmentado de largura total, ícone + texto, 44px, igual nas duas plataformas —
+   * o Lista | Mapa do Roteiro, ajustes-97)
+   */
+  variant?: 'segmented' | 'pill-date' | 'full';
   /**
    * fica preso no topo da área rolável ao rolar (ajustes-85, "Navegação interna fixa" no CLAUDE.md).
    * O pai precisa envolver todo o conteúdo que as abas trocam — o sticky só vale dentro dele.
@@ -61,7 +65,10 @@ const stickyBar = 'sticky -top-6 z-20 -mx-4 -my-2 bg-(--page) px-4 py-2';
     stone-600 (6.08:1 no stone-200). Sem bordô;
   - Android: sem trilho, texto; sublinhado de 2px bordô na ativa e linha de
     base stone-300 na linha toda;
-  - iconOnly (Lista/Mapa): segmentado pequeno alinhado à direita, nas duas plataformas;
+  - iconOnly: segmentado pequeno alinhado à direita, nas duas plataformas;
+  - full (Lista | Mapa, ajustes-97 — o iconOnly ficava apagado na ponta das pílulas): trilho
+    stone-200 de largura total e 44px, nas duas plataformas; ativa branca com sombra leve, texto
+    stone-900 peso 600; inativa stone-600 (--muted, 6.08:1 no stone-200), ícone + texto;
   - pill-date: branca com borda stone-200 (mês 11px stone-500, dia 18px); a
     selecionada é bordô com TODO o texto branco, inclusive "Todos os dias".
     Barra de rolagem escondida (no-scrollbar).
@@ -69,7 +76,7 @@ const stickyBar = 'sticky -top-6 z-20 -mx-4 -my-2 bg-(--page) px-4 py-2';
   ::before (44px no total). `bg-transparent` sempre: sem o preflight, um
   <button> sem fundo herda o cinza padrão do navegador.
 */
-type Look = 'ios' | 'android' | 'icon' | 'pillDate';
+type Look = 'ios' | 'android' | 'icon' | 'pillDate' | 'full';
 
 const listBase =
   'h-auto w-full justify-start rounded-none p-0 text-foreground group-data-horizontal/tabs:h-auto';
@@ -82,6 +89,7 @@ const listByLook: Record<Look, string> = {
   android: 'gap-0 border-b border-border-strong bg-transparent',
   icon: 'ml-auto w-fit gap-1 rounded-lg bg-(--bg-mid) p-1',
   pillDate: '-m-1 no-scrollbar gap-2 overflow-x-auto bg-transparent p-1',
+  full: 'h-11 gap-1 rounded-lg bg-(--bg-mid) p-0.5 group-data-horizontal/tabs:h-11',
 };
 
 /* rolável (ajustes-95b): cada aba do tamanho do texto; o trilho do iOS rola junto */
@@ -98,6 +106,7 @@ const triggerByLook: Record<Look, string> = {
     'group-data-horizontal/tabs:after:bottom-[-1px] group-data-horizontal/tabs:after:h-0.5 after:bg-primary',
   ),
   icon: cn('h-9 w-11 flex-none rounded-md px-0 text-base', hitArea, segmentActive),
+  full: cn('h-10 flex-1 gap-1.5 rounded-md text-(length:--text-base)', segmentActive, 'data-active:shadow-sm'),
   pillDate: cn(
     'group/pill h-14 min-w-14 flex-none flex-col gap-0.5 rounded-lg border border-border bg-background px-2 text-foreground',
     'group-data-[variant=default]/tabs-list:data-active:shadow-none',
@@ -155,7 +164,7 @@ export function Tabs({
   scrollable = false,
 }: TabsProps) {
   const { platform } = usePlatform();
-  const look: Look = variant === 'pill-date' ? 'pillDate' : iconOnly ? 'icon' : platform;
+  const look: Look = variant === 'pill-date' ? 'pillDate' : variant === 'full' ? 'full' : iconOnly ? 'icon' : platform;
   const strip = scrollable || variant === 'pill-date';
   const { wrapRef, moreRight } = useScrollStrip(strip, `${name}-tab-${value}`, items.map((i) => i.value).join('|'));
 
@@ -197,6 +206,11 @@ export function Tabs({
                   {item.pillBottom}
                 </span>
                 <span className="visually-hidden">{item.label}</span>
+              </>
+            ) : variant === 'full' && item.icon ? (
+              <>
+                <item.icon className="size-4" aria-hidden="true" />
+                {item.label}
               </>
             ) : iconOnly && item.icon ? (
               <>

@@ -116,10 +116,13 @@ export function TransportItemForm({
   const [pickupAt, setPickupAt] = useState(carRental?.pickupAt ?? '');
   const [dropoffLocation, setDropoffLocation] = useState(carRental?.dropoffLocation ?? '');
   const [dropoffAt, setDropoffAt] = useState(carRental?.dropoffAt ?? '');
-  const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
-  const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
-  const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
   const trip = useTrip();
+  const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
+  // padrão = moeda do destino do item (ajustes-98: a moeda saiu de Destinos e aparece só aqui), editável
+  const [costCurrencyCode, setCostCurrencyCode] = useState(
+    initialItem?.costCurrencyCode ?? trip.destinations.find((d) => d.id === destinationId)?.currencyCode ?? 'BRL',
+  );
+  const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
   const af = useAutofill();
   const tripRange = { startISO: getTripStartISO(trip.destinations), endISO: getTripEndISO(trip.destinations) };
   const destinationEntry = trip.destinations.find((d) => d.id === destinationId);
@@ -195,7 +198,7 @@ export function TransportItemForm({
         id: `${leg.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         destinationId,
         costAmount: '',
-        costCurrencyCode: 'BRL',
+        costCurrencyCode,
         voucherFileName,
       });
     }

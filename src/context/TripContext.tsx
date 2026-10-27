@@ -49,7 +49,39 @@ export interface TripPlaceSelection {
   addedBy: MemberId;
   /** outros membros que também querem ir */
   alsoWantedBy: MemberId[];
+  /**
+   * dia (yyyy-mm-dd) em que a pessoa fixou o lugar ao adicionar pelo "Adicionar lugares" (ajustes-97):
+   * a divisão por proximidade não o move. "Mudar de dia" fixa pelo override; "Deixar o app escolher
+   * o dia" tira os dois.
+   */
+  pinnedDayISO?: string;
+  /**
+   * lugar achado na busca ao vivo do OpenStreetMap (Photon, ajustes-97): sem placeId, com nome,
+   * coordenada, endereço e categoria próprios — entra no mapa e na proximidade como qualquer lugar.
+   * `customLabel` recebe o nome, então as telas que só mostram o nome continuam iguais.
+   */
+  source?: 'osm';
+  name?: string;
+  lat?: number;
+  lng?: number;
+  address?: string;
+  /** categoria do app (gastronomia, cultura, natureza, compras) ou 'lugar' */
+  category?: string;
+  osmId?: string;
 }
+
+/** a seleção sem o dia fixado (ajustes-97) */
+function withoutPin(selection: TripPlaceSelection): TripPlaceSelection {
+  const copy = { ...selection };
+  delete copy.pinnedDayISO;
+  return copy;
+}
+
+/** o que o "Adicionar lugares" (ajustes-97) põe no roteiro */
+export type NewItineraryPlace =
+  | { kind: 'app'; placeId: string; categories: string[] }
+  | { kind: 'osm'; name: string; lat: number; lng: number; address: string; category: string; osmId: string }
+  | { kind: 'custom'; label: string };
 
 export interface ItineraryOverride {
   placeSelectionId: string;
@@ -386,7 +418,6 @@ export interface TripContextValue extends TripState {
   setName: (name: string) => void;
   addDestination: (destination: Omit<TripDestination, 'id' | 'dateStart' | 'dateEnd'>) => void;
   removeDestination: (id: string) => void;
-  setDestinationCurrency: (id: string, currencyCode: string) => void;
   setDestinationDateRange: (id: string, start: string | null, end: string | null) => void;
   addCompanion: (email: string) => void;
   /** cancela um convite pendente ou remove da viagem quem entrou (os lugares e gastos dele ficam) */
@@ -398,13 +429,19 @@ export interface TripContextValue extends TripState {
   toggleQuizInterest: (interest: QuizInterest) => void;
   toggleQuizCompanionType: (value: QuizCompanionType) => void;
   togglePlace: (destinationId: string, place: { placeId: string; categories: string[] }) => void;
-  /** devolve o id da seleção nova (a tela rola até o cartão em "Adicionados", ajustes-87) */
-  addCustomPlace: (destinationId: string, label: string) => string;
   /**
    * "Eu também" (ajustes-87): você entra (ou sai) de um lugar que um convidado escolheu, sem mexer
    * na escolha dele — o lugar continua no roteiro do grupo.
    */
   toggleMyInterest: (selectionId: string) => void;
+  /**
+   * "Adicionar lugares" (ajustes-97): põe o lugar no roteiro da participante, fixado no dia escolhido
+   * (null = deixar o app escolher). Lugar do app que já estava na viagem como plano de um convidado:
+   * ela entra nele (alsoWantedBy). Devolve o id da seleção, pra tela rolar até a parada.
+   */
+  addPlaceToItinerary: (destinationId: string, place: NewItineraryPlace, pinnedDayISO: string | null) => string;
+  /** "Deixar o app escolher o dia" (ajustes-97): tira a fixação (pinnedDayISO e o override de dia) */
+  unpinItineraryItem: (placeSelectionId: string) => void;
   removeSelectedPlace: (id: string) => void;
   moveItineraryItem: (placeSelectionId: string, newDayIndex: number) => void;
   toggleItinerarySkipped: (placeSelectionId: string) => void;
@@ -636,8 +673,6 @@ export function TripProvider({ children }: { children: ReactNode }) {
           },
         ]),
       removeDestination: (id) => setDestinations((prev) => prev.filter((d) => d.id !== id)),
-      setDestinationCurrency: (id, currencyCode) =>
-        setDestinations((prev) => prev.map((d) => (d.id === id ? { ...d, currencyCode } : d))),
       setDestinationDateRange: (id, start, end) =>
         setDestinations((prev) => prev.map((d) => (d.id === id ? { ...d, dateStart: start, dateEnd: end } : d))),
       addCompanion: (email) => {
@@ -731,21 +766,57 @@ export function TripProvider({ children }: { children: ReactNode }) {
           ];
         });
       },
-      addCustomPlace: (destinationId, label) => {
-        const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        setSelectedPlaces((prev) => [
-          ...prev,
-          {
-            id,
-            destinationId,
-            placeId: null,
-            customLabel: label,
-            categories: [],
-            addedBy: 'voce',
-            alsoWantedBy: [],
-          },
-        ]);
+      addPlaceToItinerary: (destinationId, place, pinnedDayISO) => {
+        const pin = pinnedDayISO ? { pinnedDayISO } : {};
+        if (place.kind === 'app') {
+          const existing = selectedPlaces.find((s) => s.destinationId === destinationId && s.placeId === place.placeId);
+          if (existing) {
+            setSelectedPlaces((prev) =>
+              prev.map((s) => {
+                if (s.id !== existing.id) return s;
+                const mine = s.addedBy === 'voce' || s.alsoWantedBy.includes('voce');
+                return {
+                  ...withoutPin(s),
+                  ...pin,
+                  alsoWantedBy: mine ? s.alsoWantedBy : ['voce', ...s.alsoWantedBy],
+                };
+              }),
+            );
+            // dia novo escolhido: vale a fixação nova, não um "Mudar de dia" antigo
+            setItineraryOverrides((prev) => prev.filter((o) => o.placeSelectionId !== existing.id || o.skipped));
+            return existing.id;
+          }
+        }
+        const id = `${place.kind === 'app' ? place.placeId : place.kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const base = { id, destinationId, addedBy: 'voce' as MemberId, alsoWantedBy: [] as MemberId[], ...pin };
+        const selection: TripPlaceSelection =
+          place.kind === 'app'
+            ? { ...base, placeId: place.placeId, customLabel: null, categories: place.categories }
+            : place.kind === 'osm'
+              ? {
+                  ...base,
+                  placeId: null,
+                  customLabel: place.name,
+                  categories: place.category === 'lugar' ? [] : [place.category],
+                  source: 'osm',
+                  name: place.name,
+                  lat: place.lat,
+                  lng: place.lng,
+                  address: place.address,
+                  category: place.category,
+                  osmId: place.osmId,
+                }
+              : { ...base, placeId: null, customLabel: place.label, categories: [] };
+        setSelectedPlaces((prev) => [...prev, selection]);
         return id;
+      },
+      unpinItineraryItem: (placeSelectionId) => {
+        setSelectedPlaces((prev) =>
+          prev.map((s) => {
+            return s.id === placeSelectionId ? withoutPin(s) : s;
+          }),
+        );
+        setItineraryOverrides((prev) => prev.filter((o) => o.placeSelectionId !== placeSelectionId || o.skipped));
       },
       toggleMyInterest: (selectionId) =>
         setSelectedPlaces((prev) =>

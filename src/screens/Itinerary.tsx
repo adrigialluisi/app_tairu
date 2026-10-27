@@ -4,12 +4,16 @@ import {
   CalendarX,
   Camera,
   ChevronRight,
-  Clock,
   List,
   Map as MapIcon,
   MapPin,
   Pencil,
+  Pin,
+  PinOff,
+  Plus,
   RotateCcw,
+  Trash2,
+  UserRound,
   Route,
   SkipForward,
   TriangleAlert,
@@ -18,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
 import { ScreenShell } from '../components/shell/ScreenShell';
@@ -51,8 +56,10 @@ import { MemberTag } from '../components/shell/MemberTag';
 import { YOU, activeMembers, getMembers } from '../utils/costs';
 import { joinPt } from '../utils/retrospective';
 import { CategoryTags } from '../components/suggestions/CategoryTags';
-import { PlaceSearchBar } from '../components/suggestions/PlaceSearchBar';
 import { SuggestionsPanel } from '../components/suggestions/SuggestionsPanel';
+import { AddPlacesSheet } from '../components/itinerary/AddPlacesSheet';
+import { FloatingActionButton } from '../components/shell/FloatingActionButton';
+import { focusCard } from '../utils/focusCard';
 import {
   INTEREST_LABELS,
   formatCategories,
@@ -73,6 +80,7 @@ import {
   groupPlansByDay,
   isMyPlace,
   proximityOptionsFor,
+  selectionCoords,
   daysBetween,
   getTripEndISO,
   getTripStartISO,
@@ -176,8 +184,8 @@ function mapDayLabel(iso: string): string {
 }
 
 /**
- * Lugares customizados (sem placeId) não têm coordenada — ficam de fora do
- * mapa, só na lista. Eventos escolhidos com lat/lng entram como pin no dia
+ * Lugares escritos à mão (sem placeId nem coordenada) ficam de fora do mapa, só na lista; o lugar
+ * do OpenStreetMap (ajustes-97) entra com a coordenada e o endereço dele. Eventos escolhidos com lat/lng entram como pin no dia
  * deles; evento sem coordenada (ex.: Lua cheia) fica de fora.
  * Desde o ajustes-80: cada dia tem a sua cor (`colorIndex` = dia local do
  * destino), o número no pino é a ordem da parada no dia (a mesma "Parada N"
@@ -199,23 +207,24 @@ function buildMapPins(
     const order = (nextOrder.get(a.localDayIndex) ?? 0) + 1;
     nextOrder.set(a.localDayIndex, order);
     const place = a.place.placeId ? getPlaceById(a.place.placeId) : undefined;
-    if (!place) {
+    const coords = selectionCoords(a.place);
+    if (!coords) {
       missingCount++;
       continue;
     }
     pins.push({
       id: a.place.id,
-      name: place.name,
-      neighborhood: place.neighborhood,
-      lat: place.lat,
-      lng: place.lng,
+      name: place?.name ?? placeLabel(a.place),
+      neighborhood: place?.neighborhood ?? a.place.address ?? '',
+      lat: coords.lat,
+      lng: coords.lng,
       dayNumber: range.globalDayIndexes[a.localDayIndex] + 1,
       dayLabel: tripStartISO ? mapDayLabel(globalDayToISO(tripStartISO, range.globalDayIndexes[a.localDayIndex])) : undefined,
       skipped: a.skipped,
       colorIndex: a.localDayIndex,
       order,
       kind: 'place',
-      photoTitle: place.wikiTitle ?? place.name,
+      photoTitle: place ? (place.wikiTitle ?? place.name) : placeLabel(a.place),
       photoUrl: placePhotoUrl(place),
     });
   }
@@ -242,6 +251,20 @@ function buildMapPins(
     }
   }
   return { pins, missingCount };
+}
+
+/** id da parada na Lista — o "Adicionar lugares" rola até ela e pisca (ajustes-97) */
+const stopId = (selectionId: string) => `parada-${selectionId}`;
+
+/**
+ * Chips da parada: categorias do lugar do app; lugar que a pessoa trouxe por conta própria (escrito
+ * à mão ou do OpenStreetMap, ajustes-97) leva o selo discreto "Adicionado por você".
+ */
+function stopTags(selection: TripPlaceSelection, place: PlaceEntry | undefined) {
+  const toTag = (c: string) => ({ key: c, icon: categoryIcon(c), label: INTEREST_LABELS[c as QuizInterest] ?? c });
+  if (place) return place.categories.map(toTag);
+  const own = { key: 'own', icon: UserRound as LucideIcon, label: 'Adicionado por você' };
+  return selection.category && selection.category !== 'lugar' ? [toTag(selection.category), own] : [own];
 }
 
 /** classe de item dos menus ⋯ (mesma de Convidados): 44px de toque */
@@ -276,10 +299,9 @@ export function Itinerary() {
     (useLocation().state as { tab?: 'lugares' | 'roteiro'; destinationId?: string; section?: string } | null) ?? {};
   // "Simular: durante a viagem" (ajustes-94): o Roteiro abre no dia de hoje, na cidade de hoje
   const today = getTripToday(trip.destinations, trip.simulatedTodayISO);
-  // valor interno 'lugares' mantido; o rótulo visível é "Sugestões" (ajustes-60)
-  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>(
-    navState.tab ?? (today ? 'roteiro' : 'lugares'),
-  );
+  // valor interno 'lugares' mantido; o rótulo visível é "Sugestões do app" (ajustes-97). Abre sempre
+  // no Roteiro, a não ser que quem chamou peça outra aba (Novidades → Escolhas dos convidados)
+  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>(navState.tab ?? 'roteiro');
   const [activeDestinationId, setActiveDestinationId] = useState(
     () =>
       (navState.destinationId && trip.destinations.some((d) => d.id === navState.destinationId)
@@ -316,6 +338,18 @@ export function Itinerary() {
   // parada com o formulário de gasto aberto (ajustes-88)
   const [expenseStopId, setExpenseStopId] = useState<string | null>(null);
   const { message, visible, show } = useSaveToast();
+  // "Adicionar lugares" (ajustes-97): a chave remonta a folha a cada abertura (começa limpa, no dia da tela)
+  const [addSheet, setAddSheet] = useState<{ open: boolean; key: number; dayISO?: string | null; destinationId?: string }>({
+    open: false,
+    key: 0,
+  });
+  // parada pra rolar e piscar depois que a tela renderizar com ela
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pendingFocus) return;
+    focusCard(pendingFocus);
+    setPendingFocus(null);
+  }, [pendingFocus]);
 
   // --- fotos por atração (docs/ajustes-75-fotos-por-atracao.md) ---
   // um <input type="file"> só pra tela toda; a parada/evento que pediu fica guardada até o arquivo chegar
@@ -444,7 +478,7 @@ export function Itinerary() {
                   key={e.id}
                   type="button"
                   className={styles.stopExpense}
-                  onClick={() => navigate('/custos', { state: { expenseId: e.id } })}
+                  onClick={() => navigate('/custos', { replace: true, state: { expenseId: e.id } })}
                   aria-label={`Gasto em ${label}: ${amount !== null ? formatMoney(amount, e.currencyCode) : e.amount}. Ver em Custos`}
                 >
                   <Icon icon={Wallet} />
@@ -496,7 +530,7 @@ export function Itinerary() {
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               {/* "Alterar" no lugar do ⋯ solto (ajustes-95): mesmo estilo e tamanho de Foto e Gasto */}
-              <Button variant="secondary" className={styles.stopAction} aria-label={`Alterar ${label}: mudar de dia ou marcar como pulei`}>
+              <Button variant="secondary" className={styles.stopAction} aria-label={`Alterar ${label}: mudar de dia, deixar o app escolher ou marcar como pulei`}>
                 <Icon icon={Pencil} /> Alterar
               </Button>
             </DropdownMenuTrigger>
@@ -506,6 +540,7 @@ export function Itinerary() {
                   <DropdownMenuLabel className="px-3 text-(length:--text-sm) text-muted-foreground">
                     Mudar de dia
                   </DropdownMenuLabel>
+                  {/* mudar de dia FIXA o lugar no dia novo (ajustes-97) */}
                   <DropdownMenuRadioGroup
                     value={String(assignment.localDayIndex)}
                     onValueChange={(v) => moveStop(assignment.place, Number(v))}
@@ -516,12 +551,23 @@ export function Itinerary() {
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>
+                  {assignment.pinned && (
+                    <DropdownMenuItem className={MENU_ITEM} onSelect={() => trip.unpinItineraryItem(assignment.place.id)}>
+                      <Icon icon={PinOff} /> Deixar o app escolher o dia
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                 </>
               )}
               <DropdownMenuItem className={MENU_ITEM} onSelect={() => trip.toggleItinerarySkipped(assignment.place.id)}>
                 <Icon icon={SkipForward} /> Pulei
               </DropdownMenuItem>
+              {/* lugar só seu: sai do roteiro aqui (a seção "Adicionados" das Sugestões saiu no ajustes-97) */}
+              {assignment.place.addedBy === YOU && assignment.place.alsoWantedBy.length === 0 && (
+                <DropdownMenuItem className={MENU_ITEM} onSelect={() => trip.removeSelectedPlace(assignment.place.id)}>
+                  <Icon icon={Trash2} /> Tirar do roteiro
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </>
@@ -604,7 +650,7 @@ export function Itinerary() {
 
   function openAgendaItem(item: AgendaItem) {
     if (item.link.path === '/central') {
-      navigate('/central', { state: { tab: item.link.tab } });
+      navigate('/central', { replace: true, state: { tab: item.link.tab } });
     } else {
       setMainTab(item.link.tab);
     }
@@ -750,13 +796,46 @@ export function Itinerary() {
     show('Lugar adicionado ao seu roteiro');
   }
 
+  // --- "Adicionar lugares" (ajustes-97) ---
+  const daysWithPlaces = new Map<string, string>();
+  if (tripStartISO) {
+    for (const range of dayRanges) {
+      for (const a of assignmentsByDestination.get(range.destinationId) ?? []) {
+        daysWithPlaces.set(a.place.id, globalDayToISO(tripStartISO, range.globalDayIndexes[a.localDayIndex]));
+      }
+    }
+  }
+  const selectedDayISO = tripStartISO && activeDayFilter !== 'all' ? globalDayToISO(tripStartISO, activeDayFilter) : null;
+  // aba "Todas": a folha sugere a cidade do dia selecionado (ou a primeira com dias)
+  const sheetFallbackDestination =
+    (activeDayFilter !== 'all' && findRangeForGlobalDay(dayRanges, activeDayFilter)?.destinationId) ||
+    dayRanges[0]?.destinationId ||
+    '';
+
+  /** abre a folha; dia e cidade vêm do "Adicionar lugares" de um dia vazio (senão, o dia das pílulas) */
+  function openAddSheet(dayISO?: string, destinationId?: string) {
+    setAddSheet((prev) => ({ open: true, key: prev.key + 1, dayISO: dayISO ?? selectedDayISO, destinationId }));
+  }
+
+  /** depois de adicionar ou de tocar em "Já no seu roteiro": Lista, no dia certo, rola e pisca */
+  function showStop(selectionId: string, destinationId: string, dayISO: string | null) {
+    setAddSheet((prev) => ({ ...prev, open: false }));
+    setRoteiroView('lista');
+    if (roteiroCity !== 'all' && roteiroCity !== destinationId) setRoteiroCity(destinationId);
+    if (dayFilter !== 'all') {
+      // com um dia escolhido nas pílulas, vai pro dia do lugar; "o app escolhe" → todos os dias
+      setDayFilter(dayISO && tripStartISO ? daysBetween(tripStartISO, dayISO) - 1 : 'all');
+    }
+    setPendingFocus(stopId(selectionId));
+  }
+
   /** Atalho pro Conversor de Custos já com a moeda da cidade (docs/ajustes-62-conversor-de-moedas.md). */
   function converterLink(currencyCode: string) {
     return (
       <button
         type="button"
         className={styles.converterLink}
-        onClick={() => navigate('/custos', { state: { tab: 'conversor', currencyCode } })}
+        onClick={() => navigate('/custos', { replace: true, state: { tab: 'conversor', currencyCode } })}
       >
         <Icon icon={Banknote} /> Abrir conversor ({currencyCode} → BRL)
       </button>
@@ -768,6 +847,12 @@ export function Itinerary() {
       appBar={<AppBar title="Roteiro da viagem" subtitle={trip.name || undefined} onHome={() => navigate('/inicio')} />}
       bottomNav={bottomNav}
       toast={<SaveToast visible={visible} message={message} />}
+      fab={
+        // só na sub-aba Roteiro, com dias no roteiro (ajustes-97)
+        mainTab === 'roteiro' && tripStartISO && dayRanges.length > 0 ? (
+          <FloatingActionButton icon={Plus} label="Adicionar lugares" onClick={() => openAddSheet()} raised={visible} />
+        ) : undefined
+      }
     >
       <div className={styles.intro}>
         <h2 className={styles.title}>Seu roteiro dia a dia</h2>
@@ -780,8 +865,8 @@ export function Itinerary() {
         name={MAIN_TABS_NAME}
         label="Seções do roteiro"
         items={[
-          { value: 'lugares', label: 'Sugestões' },
           { value: 'roteiro', label: 'Roteiro' },
+          { value: 'lugares', label: 'Sugestões do app' },
           { value: 'dicas', label: 'Dicas locais' },
         ]}
         value={mainTab}
@@ -795,7 +880,10 @@ export function Itinerary() {
           aria-labelledby={`${MAIN_TABS_NAME}-tab-lugares`}
           className={styles.panel}
         >
-          {/* abas de cidade + busca presas no topo juntas (ajustes-87, regra do ajustes-85) */}
+          {/*
+            abas de cidade presas no topo (regra do ajustes-85). A busca "Buscar ou adicionar um lugar"
+            saiu daqui no ajustes-97: adicionar o que é seu é o "Adicionar lugares" da aba Roteiro.
+          */}
           <div className={styles.stickyBar}>
             <DestinationTabs
               name={DESTINATION_TABS_NAME}
@@ -804,7 +892,6 @@ export function Itinerary() {
               value={activeDestinationId}
               onChange={handleActiveDestinationChange}
             />
-            {activeDestination && <PlaceSearchBar destination={activeDestination} onToast={show} />}
           </div>
 
           {activeDestination && (
@@ -836,18 +923,14 @@ export function Itinerary() {
           aria-labelledby={`${MAIN_TABS_NAME}-tab-roteiro`}
           className={styles.viewPanel}
         >
-          {/* planos dos convidados como referência no dia (ajustes-95b): só aparece quando existe algum */}
-          {hasGroupPlans && (
-            <Switch label="Mostrar planos do grupo" checked={showGroupPlans} onChange={setShowGroupPlans} />
-          )}
-
           {/*
-            Faixa presa no topo (ajustes-88, regra do ajustes-85): cidade (no Mapa) + pílulas de data,
-            com o Lista/Mapa em ícone na ponta direita da linha das pílulas. As abas Sugestões ·
-            Roteiro · Dicas rolam com a página, pra não comer metade da tela.
+            Do mais amplo pro mais específico (ajustes-97): cidade → Lista | Mapa (os dois presos no
+            topo, regra do ajustes-85) → pílulas de data (rolam com a página, pra faixa presa não comer
+            a tela) → dias. O Lista | Mapa saiu da ponta das pílulas, onde ficava apagado, e virou um
+            controle de largura total com ícone + texto.
           */}
           <div className={styles.stickyBar}>
-            {/* abas de cidade com "Todas" (ajustes-95), presas junto com as pílulas, na Lista e no Mapa */}
+            {/* abas de cidade com "Todas" (ajustes-95) */}
             <DestinationTabs
               name={ROTEIRO_CITY_TABS_NAME}
               label="Cidade do roteiro"
@@ -856,45 +939,47 @@ export function Itinerary() {
               onChange={handleRoteiroCityChange}
               allLabel="Todas"
             />
-            <div className={styles.pillsRow}>
-              <div className={styles.pillsSlot}>
-                {tripStartISO && visibleDays.length > 1 && (
-                  <Tabs
-                    name="itinerary-day"
-                    label="Dia do roteiro"
-                    variant="pill-date"
-                    items={[
-                      { value: 'all', label: 'Todos os dias' },
-                      ...visibleDays.map((globalDay) => {
-                        const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
-                        // a pílula de hoje diz "Hoje" no lugar do mês (ajustes-94)
-                        const isToday = today?.globalDay === globalDay;
-                        return {
-                          value: String(globalDay),
-                          label: `${isToday ? 'Hoje, ' : ''}${formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay))}`,
-                          pillTop: isToday ? 'Hoje' : monthAbbrev,
-                          pillBottom: day,
-                        };
-                      }),
-                    ]}
-                    value={activeDayFilter === 'all' ? 'all' : String(activeDayFilter)}
-                    onChange={(v) => setDayFilter(v === 'all' ? 'all' : Number(v))}
-                  />
-                )}
-              </div>
-              <Tabs
-                name={ROTEIRO_VIEW_TABS_NAME}
-                label="Visualização do roteiro"
-                iconOnly
-                items={[
-                  { value: 'lista', label: 'Lista', icon: List },
-                  { value: 'mapa', label: 'Mapa', icon: MapIcon },
-                ]}
-                value={roteiroView}
-                onChange={(v) => setRoteiroView(v as 'lista' | 'mapa')}
-              />
-            </div>
+            <Tabs
+              name={ROTEIRO_VIEW_TABS_NAME}
+              label="Visualização do roteiro"
+              variant="full"
+              items={[
+                { value: 'lista', label: 'Lista', icon: List },
+                { value: 'mapa', label: 'Mapa', icon: MapIcon },
+              ]}
+              value={roteiroView}
+              onChange={(v) => setRoteiroView(v as 'lista' | 'mapa')}
+            />
           </div>
+
+          {tripStartISO && visibleDays.length > 1 && (
+            <Tabs
+              name="itinerary-day"
+              label="Dia do roteiro"
+              variant="pill-date"
+              items={[
+                { value: 'all', label: 'Todos os dias' },
+                ...visibleDays.map((globalDay) => {
+                  const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
+                  // a pílula de hoje diz "Hoje" no lugar do mês (ajustes-94)
+                  const isToday = today?.globalDay === globalDay;
+                  return {
+                    value: String(globalDay),
+                    label: `${isToday ? 'Hoje, ' : ''}${formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay))}`,
+                    pillTop: isToday ? 'Hoje' : monthAbbrev,
+                    pillBottom: day,
+                  };
+                }),
+              ]}
+              value={activeDayFilter === 'all' ? 'all' : String(activeDayFilter)}
+              onChange={(v) => setDayFilter(v === 'all' ? 'all' : Number(v))}
+            />
+          )}
+
+          {/* planos dos convidados como referência no dia (ajustes-95b): só aparece quando existe algum */}
+          {roteiroView === 'lista' && hasGroupPlans && (
+            <Switch label="Mostrar planos do grupo" checked={showGroupPlans} onChange={setShowGroupPlans} />
+          )}
 
           {!tripStartISO || !tripEndISO || dayRanges.length === 0 ? (
             <EmptyTripState message="Nenhum destino com datas completas ainda. Preencha as datas em Destinos pra ver o roteiro dia a dia." />
@@ -926,7 +1011,7 @@ export function Itinerary() {
                   {trip.selectedPlaces.some(isMyPlace) && (
                     <p className="m-0 flex items-start gap-2 text-(length:--text-sm) text-muted-foreground">
                       <Icon icon={Route} className="mt-0.5" />
-                      Organizamos os dias juntando os lugares que ficam perto. Você pode mover o que quiser.
+                      Organizamos os dias juntando os lugares que ficam perto. O que você fixou num dia (alfinete) não sai de lá.
                     </p>
                   )}
 
@@ -953,9 +1038,7 @@ export function Itinerary() {
                               </div>
                               {freeDayAgenda.length > 0 && (
                                 <div className={styles.dayBlock}>
-                                  <h4 className={styles.blockLabel}>
-                                    <Icon icon={Clock} />{' '}Agenda do dia
-                                  </h4>
+                                  <h4 className={styles.blockLabel}>Agenda do dia</h4>
                                   {renderAgenda(freeDayAgenda)}
                                 </div>
                               )}
@@ -1002,46 +1085,33 @@ export function Itinerary() {
                             <div className={styles.dayBlocks}>
                               {dayAgenda.length > 0 && (
                                 <div className={styles.dayBlock}>
-                                  <h4 className={styles.blockLabel}>
-                                    <Icon icon={Clock} />{' '}Agenda do dia
-                                  </h4>
+                                  <h4 className={styles.blockLabel}>Agenda do dia</h4>
                                   {renderAgenda(dayAgenda)}
                                 </div>
                               )}
 
                               <div className={styles.dayBlock}>
-                                <h4 className={styles.blockLabel}>
-                                  <Icon icon={MapPin} />{' '}Lugares pra visitar
-                                </h4>
+                                <h4 className={styles.blockLabel}>Lugares</h4>
                                 {dayItems.length === 0 ? (
-                                  dayAgenda.length > 0 ? (
-                                    <p className={styles.emptyDay}>
-                                      Sem lugares pra esse dia.{' '}
-                                      <button
-                                        type="button"
-                                        className={styles.inlineLink}
-                                        onClick={() => setMainTab('lugares')}
-                                      >
-                                        Veja as Sugestões
-                                      </button>
-                                      .
-                                    </p>
-                                  ) : (
-                                    <p className={styles.emptyDay}>Nenhum lugar alocado pra esse dia ainda.</p>
-                                  )
+                                  // dia vazio: atalho pro "Adicionar lugares" já nesse dia (ajustes-97)
+                                  <p className={styles.emptyDay}>
+                                    Nenhum lugar nesse dia ainda.{' '}
+                                    <button
+                                      type="button"
+                                      className={styles.inlineLink}
+                                      onClick={() => openAddSheet(dateISO, range.destinationId)}
+                                    >
+                                      Adicionar lugares
+                                    </button>
+                                  </p>
                                 ) : (
                                   <ul className={styles.timelineList}>
                                     {[...active, ...skipped].map((assignment, index) => {
                                       const place = assignment.place.placeId
                                         ? getPlaceById(assignment.place.placeId)
                                         : undefined;
-                                      const tags = place
-                                        ? place.categories.map((c) => ({
-                                            key: c,
-                                            icon: categoryIcon(c),
-                                            label: INTEREST_LABELS[c as QuizInterest] ?? c,
-                                          }))
-                                        : [{ key: 'custom', icon: Pencil, label: 'Adicionado por você' }];
+                                      const tags = stopTags(assignment.place, place);
+                                      const isOsm = assignment.place.source === 'osm';
                                       const stopParts = stopPhotoParts({
                                         key: `place:${assignment.place.id}`,
                                         label: placeLabel(assignment.place),
@@ -1053,6 +1123,14 @@ export function Itinerary() {
                                       return (
                                         <TimelineStop
                                           key={assignment.place.id}
+                                          id={stopId(assignment.place.id)}
+                                          titleAdornment={
+                                            assignment.pinned && (
+                                              <span className={styles.pinned} role="img" aria-label="Fixado neste dia">
+                                                <Icon icon={Pin} />
+                                              </span>
+                                            )
+                                          }
                                           guestTag={
                                             guest.guests.length > 0 && (
                                               <span className={styles.stopGuest}>
@@ -1074,10 +1152,12 @@ export function Itinerary() {
                                           {groupLine(assignment.place)}
                                         </>
                                       }
-                                          description={place?.description}
-                                          photoSearchTitle={place ? (place.wikiTitle ?? place.name) : undefined}
+                                          description={place?.description ?? assignment.place.address}
+                                          photoSearchTitle={
+                                            place ? (place.wikiTitle ?? place.name) : isOsm ? placeLabel(assignment.place) : undefined
+                                          }
                                           photoUrl={placePhotoUrl(place) ?? undefined}
-                                          fallbackIcon={placeIllustrationIcon(place?.categories)}
+                                          fallbackIcon={placeIllustrationIcon(place?.categories ?? (isOsm ? assignment.place.categories : undefined))}
                                           skipped={assignment.skipped}
                                           isLast={index === dayItems.length - 1}
                                           photos={stopParts.thumbs}
@@ -1141,6 +1221,29 @@ export function Itinerary() {
                 </div>
               )}
             </>
+          )}
+
+          {/* espaço no fim pro botão flutuante não cobrir o último item (ajustes-97) */}
+          <div className={styles.fabSpace} aria-hidden="true" />
+
+          {tripStartISO && dayRanges.length > 0 && (
+            <AddPlacesSheet
+              key={addSheet.key}
+              open={addSheet.open}
+              onOpenChange={(open) => setAddSheet((prev) => ({ ...prev, open }))}
+              destinations={trip.destinations.filter((d) => dayRanges.some((r) => r.destinationId === d.id))}
+              dayRanges={dayRanges}
+              tripStartISO={tripStartISO}
+              cityId={roteiroDestination && dayRanges.some((r) => r.destinationId === roteiroDestination.id) ? roteiroDestination.id : null}
+              fallbackDestinationId={addSheet.destinationId ?? sheetFallbackDestination}
+              selectedDayISO={addSheet.dayISO ?? null}
+              dayOfSelection={(id) => daysWithPlaces.get(id) ?? null}
+              onAdded={(id, destinationId, dayISO) => {
+                showStop(id, destinationId, dayISO);
+                show('Salvo');
+              }}
+              onGoTo={(id, destinationId) => showStop(id, destinationId, daysWithPlaces.get(id) ?? null)}
+            />
           )}
         </div>
       )}

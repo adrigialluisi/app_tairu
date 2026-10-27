@@ -1,6 +1,5 @@
-/** ids dos cartões da aba Sugestões — a busca do topo e a lista de convidados rolam até eles */
+/** ids dos cartões da aba Sugestões — a lista de convidados rola até eles */
 export const placeCardId = (destinationId: string, placeId: string) => `lugar-${destinationId}-${placeId}`;
-export const addedCardId = (selectionId: string) => `adicionado-${selectionId}`;
 
 /**
  * Rola até o cartão (no meio da tela, pra não ficar embaixo das abas e da busca presas no topo)

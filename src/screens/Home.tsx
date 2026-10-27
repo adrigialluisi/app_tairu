@@ -335,6 +335,14 @@ export function Home() {
         <Button variant="primary" fullWidth onClick={handleNewTrip}>
           Nova viagem
         </Button>
+        {/* créditos das fotos num lugar só (ajustes-99c): link pequeno, abaixo de tudo, --muted no branco 7.63:1 */}
+        <button
+          type="button"
+          className="-my-2 inline-flex min-h-11 cursor-pointer items-center self-center border-0 bg-transparent p-0 text-(length:--text-sm) text-muted-foreground underline underline-offset-4"
+          onClick={() => navigate('/creditos')}
+        >
+          Créditos das fotos
+        </button>
       </div>
     </div>
   );

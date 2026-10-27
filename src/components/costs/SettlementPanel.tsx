@@ -131,7 +131,7 @@ export function SettlementPanel({ entries, members, onSaved, onAddExpense }: Set
         <Button onClick={onAddExpense}>
           <Icon icon={Plus} /> Lançar gasto
         </Button>
-        <button type="button" className={styles.inviteLink} onClick={() => navigate('/convidar')}>
+        <button type="button" className={styles.inviteLink} onClick={() => navigate('/convidar', { replace: true })}>
           Convidar alguém pra viagem
         </button>
       </div>

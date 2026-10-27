@@ -127,7 +127,11 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         mimeType: file.type,
       },
     ]);
-    const read = readReceiptFile(file);
+    // pelo nome ou, foto/PDF qualquer, pelo contexto do cenário (ajustes-96); pela parada, só pelo nome
+    const read = readReceiptFile(file, {
+      cityId: destinations.find((d) => d.id === place)?.cityId ?? null,
+      fromStop: !!(initialExpense?.placeSelectionId ?? initialPrefill?.placeSelectionId),
+    });
     af.read(() => {
       if (read) {
         setAmountUnread(false);
@@ -142,7 +146,8 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         return ['description', 'amount', 'currency', 'date'];
       }
       /*
-        Qualquer outra foto: o valor NUNCA é inventado, e nada é dado como "lido da nota" (sem faixa
+        Aberto pela parada do Roteiro, com foto que não é nota do kit (ajustes-96: fora da parada,
+        qualquer foto cai no contexto): o valor NUNCA é inventado, e nada é dado como "lido da nota" (sem faixa
         verde). O que o contexto sabe já está no formulário — aberto pela parada do Roteiro, vem com
         o lugar, a cidade, a moeda e o dia (prefill). O valor fica como está (vazio, se ninguém
         digitou), com foco e o pedido do total.
@@ -241,7 +246,6 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         buttonLabel="Enviar foto da nota"
         filledMessage="Preenchemos os campos com o que lemos da nota. Confira antes de salvar."
         fileNoun="nota"
-        accept="image/*"
       />
 
       <fieldset disabled={af.reading} className="contents">
