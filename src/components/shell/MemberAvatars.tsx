@@ -12,6 +12,8 @@ interface MemberAvatarsProps {
  * Miolo: Avatar do shadcn (ver docs/ajustes-70-...md). O grupo é um <span> com as mesmas classes do
  * AvatarGroup (que é <div>) porque o componente aparece dentro de <p>.
  * --text sobre --bg-low (stone-200): 13.93:1; borda branca de 2px separa um círculo do outro.
+ * Desde o ajustes-94 cada membro tem a sua cor (Member.color, src/utils/memberColors.ts): fundo na
+ * cor e iniciais brancas (≥ 5.47:1). "Outro" de Custos, sem cor, continua no stone-200.
  */
 export function MemberAvatars({ members, size = 'sm' }: MemberAvatarsProps) {
   if (members.length === 0) return null;
@@ -30,6 +32,7 @@ export function MemberAvatars({ members, size = 'sm' }: MemberAvatarsProps) {
         >
           <AvatarFallback
             className={`bg-(--bg-low) font-semibold tracking-[0.02em] text-foreground ${size === 'md' ? 'text-xs' : 'text-[10px]'} group-data-[size=sm]/avatar:text-[10px]`}
+            style={m.color ? { background: m.color, color: '#fff' } : undefined}
           >
             {m.initials}
           </AvatarFallback>

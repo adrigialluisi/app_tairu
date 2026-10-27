@@ -1,10 +1,9 @@
 import { Receipt } from 'lucide-react';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../shell/Button';
-import { PaidSplitFields } from './PaidSplitFields';
-import type { CentralCostOverride, MemberId } from '../../context/TripContext';
-import type { CostEntry, Member } from '../../utils/costs';
+import { PaidByField, SplitWithField, usePaidSplit } from './PaidSplitFields';
+import type { CentralCostOverride } from '../../context/TripContext';
+import { YOU, type CostEntry, type Member } from '../../utils/costs';
 import { formatMoney } from '../../utils/money';
 import { Icon } from '../shell/Icon';
 import styles from '../central/TransportItemForm.module.css';
@@ -22,22 +21,28 @@ interface CentralCostFormProps {
  */
 export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps) {
   const navigate = useNavigate();
-  const [paidBy, setPaidBy] = useState<MemberId>(entry.paidBy);
-  const [splitWith, setSplitWith] = useState<MemberId[]>(entry.splitWith);
+  const paidSplit = usePaidSplit({
+    paidBy: entry.paidBy,
+    paidByName: entry.paidByName,
+    splitWith: entry.splitWith,
+    splitCount: entry.splitCount,
+  });
 
-  function toggleSplit(id: MemberId) {
-    setSplitWith((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }
-
+  // total ÷ "Dividido entre quantas pessoas?" (ajustes-95b)
   const perPersonLabel =
-    entry.amountBRL !== null && splitWith.length > 0
-      ? `Cada um: ${formatMoney(entry.amountBRL / splitWith.length, 'BRL')}`
+    entry.amountBRL !== null && paidSplit.splitCount
+      ? `Cada um: ${formatMoney(entry.amountBRL / paidSplit.splitCount, 'BRL')}`
       : null;
 
   function handleSave() {
-    if (splitWith.length === 0) return;
-    const allSelected = members.every((m) => splitWith.includes(m.id));
-    onSave({ sourceId: entry.id, paidBy, splitWith: allSelected ? null : splitWith });
+    if (!paidSplit.valid) return;
+    onSave({
+      sourceId: entry.id,
+      paidBy: paidSplit.paidBy ?? YOU,
+      ...(paidSplit.paidByName ? { paidByName: paidSplit.paidByName } : {}),
+      splitWith: paidSplit.splitForSave(members),
+      ...(paidSplit.countForSave() ? { splitCount: paidSplit.countForSave() } : {}),
+    });
   }
 
   return (
@@ -49,24 +54,9 @@ export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps
         </p>
       </div>
 
-      {members.length > 1 ? (
-        <PaidSplitFields
-          members={members}
-          paidBy={paidBy}
-          onPaidByChange={setPaidBy}
-          splitWith={splitWith}
-          onToggleSplit={toggleSplit}
-          perPersonLabel={perPersonLabel}
-        />
-      ) : (
-        <p className={styles.hint}>
-          Quer dividir esse gasto? Convide alguém em{' '}
-          <button type="button" className={styles.inlineLink} onClick={() => navigate('/convidar')}>
-            Convidados
-          </button>
-          .
-        </p>
-      )}
+      {/* "Quem pagou?" primeiro e sem depender de convidado aceito (ajustes-95) */}
+      <PaidByField members={members} state={paidSplit} />
+      <SplitWithField members={members} state={paidSplit} perPersonLabel={perPersonLabel} />
 
       <p className={styles.hint}>
         O valor e a moeda vêm da Central.{' '}
@@ -76,7 +66,7 @@ export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps
       </p>
 
       <div className={styles.actions}>
-        <Button fullWidth disabled={splitWith.length === 0} onClick={handleSave}>
+        <Button fullWidth disabled={!paidSplit.valid} onClick={handleSave}>
           Salvar gasto
         </Button>
       </div>

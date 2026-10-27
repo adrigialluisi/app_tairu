@@ -77,6 +77,20 @@
   object-fit: cover;
 }
 
+/* fotos do lugar na viagem passada (ajustes-94): até 3 miniaturas embaixo do texto */
+.popupPhotos {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.popupThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-photo);
+  object-fit: cover;
+}
+
 .popupText {
   display: flex;
   flex-direction: column;

@@ -151,7 +151,7 @@
     "description": "Igreja colonial de 1732, ao lado do cemitério da Recoleta.",
     "lat": -34.5879,
     "lng": -58.3928,
-    "popularity": "fora-do-circuito",
+    "popularity": "turistico",
     "photo": {
       "src": "places/ba-basilica-pilar.jpg",
       "author": "Butterfly austral",
@@ -171,7 +171,7 @@
     "description": "Grande parque urbano com jardim de rosas e lagos, ideal pra caminhar.",
     "lat": -34.5711,
     "lng": -58.4138,
-    "popularity": "fora-do-circuito",
+    "popularity": "turistico",
     "photo": {
       "src": "places/ba-rosedal-palermo.jpg",
       "author": "Roberto Fiadone",
@@ -191,7 +191,7 @@
     "lat": -34.5735,
     "lng": -58.4147,
     "wikiTitle": "Jardim Japonês de Buenos Aires",
-    "popularity": "fora-do-circuito",
+    "popularity": "turistico",
     "photo": {
       "src": "places/ba-jardim-japones.jpg",
       "author": "Smmvinicius",
@@ -230,7 +230,7 @@
     "description": "Museu de arte latino-americana, com obras de Frida Kahlo e Tarsila do Amaral.",
     "lat": -34.5769,
     "lng": -58.403,
-    "popularity": "fora-do-circuito",
+    "popularity": "turistico",
     "photo": {
       "src": "places/ba-malba.jpg",
       "author": "B.jars",
@@ -239,22 +239,43 @@
     }
   },
   {
-    "id": "ba-puerto-madero",
+    "id": "ba-puente-de-la-mujer",
     "cityId": "buenos-aires-ar",
-    "name": "Puerto Madero",
+    "name": "Puente de la Mujer",
+    "wikiTitle": "Puente de la Mujer",
+    "neighborhood": "Puerto Madero",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Ponte giratória de Santiago Calatrava sobre o dique de Puerto Madero, cartão-postal do bairro.",
+    "lat": -34.6081,
+    "lng": -58.3655,
+    "popularity": "turistico",
+    "photo": {
+      "src": "places/ba-puente-de-la-mujer.jpg",
+      "author": "Mariordo (Mario Roberto Durán Ortiz)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Puente_de_la_Mujer_BsAs_09.jpg"
+    }
+  },
+  {
+    "id": "ba-cabana-las-lilas",
+    "cityId": "buenos-aires-ar",
+    "name": "Cabaña Las Lilas",
     "neighborhood": "Puerto Madero",
     "categories": [
       "gastronomia"
     ],
-    "description": "Bairro portuário revitalizado, restaurantes à beira d'água e o Puente de la Mujer.",
-    "lat": -34.6083,
-    "lng": -58.3629,
+    "description": "Parrilla clássica à beira do dique de Puerto Madero, conhecida pelos cortes de carne argentina.",
+    "lat": -34.6041,
+    "lng": -58.3667,
     "popularity": "turistico",
     "photo": {
-      "src": "places/ba-puerto-madero.jpg",
-      "author": "Diego Delso",
-      "license": "CC BY-SA 3.0",
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Puerto_Madero,_Buenos_Aires,_Argentina3.jpg"
+      "src": "places/ba-cabana-las-lilas.jpg",
+      "author": "Hermann Luyken",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:2011.10.17.160951_Puerto_Madero_Buenos_Aires.jpg",
+      "representative": true
     }
   },
   {
@@ -269,7 +290,7 @@
     "description": "A \"Broadway portenha\": teatros, livrarias 24h e pizzarias clássicas.",
     "lat": -34.6041,
     "lng": -58.3925,
-    "popularity": "fora-do-circuito",
+    "popularity": "turistico",
     "photo": {
       "src": "places/ba-avenida-corrientes.jpg",
       "author": "GCBA",
@@ -434,6 +455,172 @@
       "author": "Madamebiblio",
       "license": "CC BY 4.0",
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ciudad_Cultural_Konex_durante_la_Media_Party_Buenos_Aires_2025.jpg"
+    }
+  },
+  {
+    "id": "ba-feria-mataderos",
+    "cityId": "buenos-aires-ar",
+    "name": "Feria de Mataderos",
+    "wikiTitle": "Feria de Mataderos",
+    "neighborhood": "Mataderos",
+    "categories": [
+      "gastronomia",
+      "cultura"
+    ],
+    "description": "Feira criolla de domingo, com choripán, comida do interior, folclore e artesanato gaúcho, longe do roteiro turístico.",
+    "lat": -34.6624,
+    "lng": -58.5,
+    "popularity": "fora-do-circuito",
+    "openDays": [
+      0
+    ],
+    "photo": {
+      "src": "places/ba-feria-mataderos.jpg",
+      "author": "Carlos Adampol Galindo",
+      "license": "CC BY-SA 2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Feria_de_Mataderos,_Buenos_Aires,_Argentina_(4188927458).jpg"
+    }
+  },
+  {
+    "id": "ba-las-violetas",
+    "cityId": "buenos-aires-ar",
+    "name": "Confitería Las Violetas",
+    "wikiTitle": "Confitería Las Violetas",
+    "neighborhood": "Almagro",
+    "categories": [
+      "gastronomia",
+      "cultura"
+    ],
+    "description": "Confeitaria de 1884, com vitrais e chá da tarde, frequentada mais por portenhos do que por turistas.",
+    "lat": -34.6112,
+    "lng": -58.4209,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-las-violetas.jpg",
+      "author": "Cadaverexquisito",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Interior_del_Caf%C3%A9_Las_Violetas.jpg"
+    }
+  },
+  {
+    "id": "ba-bar-el-federal",
+    "cityId": "buenos-aires-ar",
+    "name": "Bar El Federal",
+    "wikiTitle": "Bar El Federal",
+    "neighborhood": "San Telmo",
+    "categories": [
+      "gastronomia"
+    ],
+    "description": "Bar notable de esquina, de 1864, com balcão de madeira original, a algumas quadras da feira de San Telmo.",
+    "lat": -34.6196,
+    "lng": -58.3742,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-bar-el-federal.jpg",
+      "author": "Roberto Fiadone",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bar_El_Federal,_Carlos_Calvo_599.jpg"
+    }
+  },
+  {
+    "id": "ba-casa-gardel",
+    "cityId": "buenos-aires-ar",
+    "name": "Museu Casa Carlos Gardel e Pasaje Gardel",
+    "wikiTitle": "Museo Casa Carlos Gardel",
+    "neighborhood": "Abasto",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Casa onde o Gardel viveu, numa rua de fileteado e bares de tango no Abasto.",
+    "lat": -34.6017,
+    "lng": -58.4079,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-casa-gardel.jpg",
+      "author": "Roberto Fiadone",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Museo_Carlos_Gardel,_Buenos_Aires.jpg"
+    }
+  },
+  {
+    "id": "ba-murais-coghlan",
+    "cityId": "buenos-aires-ar",
+    "name": "Murais de Coghlan",
+    "wikiTitle": "Coghlan",
+    "neighborhood": "Coghlan",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Bairro residencial com murais grandes de street art de artistas argentinos e estrangeiros.",
+    "lat": -34.5607,
+    "lng": -58.4747,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-murais-coghlan.jpg",
+      "author": "Guache Street Art",
+      "license": "CC BY 2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Making_of_a_mural_in_Buenos_Aires.jpg"
+    }
+  },
+  {
+    "id": "ba-basilica-maria-auxiliadora",
+    "cityId": "buenos-aires-ar",
+    "name": "Basílica María Auxiliadora y San Carlos",
+    "wikiTitle": "Basílica María Auxiliadora y San Carlos (Buenos Aires)",
+    "neighborhood": "Almagro",
+    "categories": [
+      "cultura"
+    ],
+    "description": "Igreja de Almagro com o interior todo listrado e colorido, pouco visitada por turistas.",
+    "lat": -34.6145,
+    "lng": -58.4229,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-basilica-maria-auxiliadora.jpg",
+      "author": "Nicolas Solop",
+      "license": "CC BY-SA 2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Basilica_de_Maria_Auxiliadora_(21899377555).jpg"
+    }
+  },
+  {
+    "id": "ba-parque-memoria",
+    "cityId": "buenos-aires-ar",
+    "name": "Parque de la Memoria",
+    "wikiTitle": "Parque de la Memoria de Buenos Aires",
+    "neighborhood": "Costanera Norte",
+    "categories": [
+      "natureza",
+      "cultura"
+    ],
+    "description": "Parque à beira do Rio da Prata, com esculturas e o memorial às vítimas do terrorismo de Estado.",
+    "lat": -34.5394,
+    "lng": -58.4422,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-parque-memoria.jpg",
+      "author": "Roberto Fiadone",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Parque_de_la_Memor%C3%ADa_Buenos_Aires_02.JPG"
+    }
+  },
+  {
+    "id": "ba-reserva-costanera-sur",
+    "cityId": "buenos-aires-ar",
+    "name": "Reserva Ecológica Costanera Sur",
+    "wikiTitle": "Reserva ecológica Costanera Sur (Buenos Aires)",
+    "neighborhood": "Puerto Madero",
+    "categories": [
+      "natureza"
+    ],
+    "description": "Trilhas e lagoas com centenas de espécies de aves, logo ao lado de Puerto Madero.",
+    "lat": -34.6069,
+    "lng": -58.3527,
+    "popularity": "fora-do-circuito",
+    "photo": {
+      "src": "places/ba-reserva-costanera-sur.jpg",
+      "author": "Roberto Fiadone",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Reserva_Ecol%C3%B3gica_Costanera_Sur,_01.jpg"
     }
   },
   {

@@ -1,4 +1,4 @@
-import { Bell, Compass, FileText, Luggage, TriangleAlert, User, Wallet } from 'lucide-react';
+import { Bell, CalendarDays, Compass, FileText, Luggage, TriangleAlert, User, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +13,24 @@ import { useDocuments, type PersonalDocument } from '../context/DocumentsContext
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
 import { formatCompanionsLabel, formatDatesLabel, formatDestinationsLabel } from '../utils/tripSummary';
 import { getTripEndISO } from '../utils/itinerary';
+import { formatMonthYearRange } from '../utils/dateMask';
+import { getTripToday, type TripToday } from '../utils/tripToday';
 import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
 import { Icon } from '../components/shell/Icon';
 import { Card } from '@/components/ui/card';
 import { EXAMPLE_PAST_TRIPS, type ExamplePastTrip } from '../data/examplePastTrips';
 import styles from './Home.module.css';
 
-function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onClick: () => void }) {
+function TripHeroCard({
+  trip,
+  today,
+  onClick,
+}: {
+  trip: ReturnType<typeof useTrip>;
+  /** "Simular: durante a viagem" (ajustes-94): selo "Em andamento" (ajustes-95) e a linha do dia */
+  today: TripToday | null;
+  onClick: () => void;
+}) {
   const heroCity = trip.destinations[0]?.city ?? '';
   const thumbnailUrl = usePlaceThumbnail(heroCity);
 
@@ -33,11 +44,18 @@ function TripHeroCard({ trip, onClick }: { trip: ReturnType<typeof useTrip>; onC
           <span className={styles.heroPhotoFallback} aria-hidden="true"><Icon icon={Luggage} /></span>
         )}
         <Badge variant="accent" className={styles.heroBadge}>
-          Sua viagem
+          {/* estado da viagem (ajustes-95): antes do início, "Planejando"; com a viagem acontecendo, "Em andamento" */}
+          {today ? 'Em andamento' : 'Planejando'}
         </Badge>
       </div>
       <div className={styles.heroContent}>
         <span className={styles.heroName}>{trip.name.trim() || 'Viagem sem nome'}</span>
+        {today && (
+          // --accent-dark no branco: 9.67:1
+          <span className={styles.heroToday}>
+            {today.city} · Dia {today.globalDay + 1} de {today.totalDays}
+          </span>
+        )}
         <span className={styles.heroMeta}>
           {formatDestinationsLabel(trip.destinations)} · {formatDatesLabel(trip.destinations)}
         </span>
@@ -65,8 +83,10 @@ function PastTripCard({ trip, onOpen }: { trip: ExamplePastTrip; onOpen?: () => 
         ) : (
           <span className={styles.pastTripPhotoFallback} aria-hidden="true"><Icon icon={Luggage} /></span>
         )}
+        {/* mês e ano da viagem no lugar de "Exemplo" (ajustes-95); o leitor de tela continua ouvindo "Exemplo" */}
         <Badge variant="neutral" className={styles.exampleBadge}>
-          Exemplo
+          <span className="visually-hidden">Exemplo · </span>
+          {formatMonthYearRange(trip.startISO, trip.endISO)}
         </Badge>
       </div>
       <div className={styles.pastTripContent}>
@@ -148,7 +168,7 @@ function DocumentAlerts({ documents, tripEndISO }: { documents: PersonalDocument
 const GROUP_UPDATES_ID = 'novidades-na-viagem';
 
 /**
- * "Novidades na viagem" (ajustes-89), acima de Avisos: o que chegou no "Simular: 2 dias depois".
+ * "Novidades na viagem" (ajustes-89), acima de Avisos: o que chegou no "Simular: uma semana antes da viagem".
  * Cada linha leva à seção e some quando a pessoa passa por ela (unseenUpdates); sem nenhuma, o
  * bloco some.
  */
@@ -159,12 +179,18 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
 
   const members = getMembers(trip);
   const joined = members.filter((m) => convidados.includes(m.id));
-  // cidade com mais lugares novos: é onde as Sugestões abrem
-  const byDestination = new Map<string, number>();
-  for (const s of trip.selectedPlaces) {
-    if (roteiro.includes(s.id)) byDestination.set(s.destinationId, (byDestination.get(s.destinationId) ?? 0) + 1);
-  }
-  const topDestination = [...byDestination.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  /*
+    Lugares sugeridos, uma linha por cidade (ajustes-94: no teste a participante só percebeu que os
+    amigos entraram): "2 lugares sugeridos em Buenos Aires", com os avatares de quem sugeriu, que
+    abre as Sugestões da cidade já em "Escolhas dos convidados". Na ordem dos destinos.
+  */
+  const placeRows = trip.destinations
+    .map((d) => {
+      const fresh = trip.selectedPlaces.filter((sel) => sel.destinationId === d.id && roteiro.includes(sel.id));
+      const who = members.filter((m) => fresh.some((sel) => sel.addedBy === m.id || sel.alsoWantedBy.includes(m.id)) && m.id !== 'voce');
+      return { destination: d, count: fresh.length, who };
+    })
+    .filter((r) => r.count > 0);
 
   const row = (key: string, icon: ReactNode, text: ReactNode, onClick: () => void) => (
     <button key={key} type="button" className={`${styles.alertRow} ${styles.alertRowSoon}`} onClick={onClick}>
@@ -188,13 +214,15 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
           `${joinPt(joined.map((m) => m.label))} ${joined.length === 1 ? 'entrou' : 'entraram'} na viagem`,
           () => navigate('/convidar'),
         )}
-      {roteiro.length > 0 &&
+      {placeRows.map(({ destination, count, who }) =>
         row(
-          'roteiro',
-          <Icon icon={Compass} />,
-          `${roteiro.length} ${roteiro.length === 1 ? 'lugar sugerido' : 'lugares sugeridos'}`,
-          () => navigate('/roteiro', { state: { tab: 'lugares', destinationId: topDestination } }),
-        )}
+          `roteiro-${destination.id}`,
+          who.length > 0 ? <MemberAvatars members={who} /> : <Icon icon={Compass} />,
+          `${count} ${count === 1 ? 'lugar sugerido' : 'lugares sugeridos'} em ${destination.city}`,
+          () =>
+            navigate('/roteiro', { state: { tab: 'lugares', destinationId: destination.id, section: 'grupo' } }),
+        ),
+      )}
       {custos.length > 0 &&
         row(
           'custos',
@@ -218,6 +246,7 @@ export function Home() {
   }
 
   const tripEndISO = getTripEndISO(trip.destinations);
+  const today = getTripToday(trip.destinations, trip.simulatedTodayISO);
   const alertCount = docs.documents.filter((d) => needsAttention(d, tripEndISO)).length;
   const documentsSubtitle =
     docs.documents.length === 0
@@ -252,7 +281,20 @@ export function Home() {
 
       <DocumentAlerts documents={docs.documents} tripEndISO={tripEndISO} />
 
-      {hasActiveTrip && <TripHeroCard trip={trip} onClick={() => navigate('/destinos')} />}
+      {hasActiveTrip && (
+        <div className={styles.heroGroup}>
+          <TripHeroCard trip={trip} today={today} onClick={() => navigate('/destinos')} />
+          {today && (
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => navigate('/roteiro', { state: { tab: 'roteiro', destinationId: today.destinationId } })}
+            >
+              <Icon icon={CalendarDays} /> Ver o dia de hoje
+            </Button>
+          )}
+        </div>
+      )}
 
       <section className={styles.pastTrips} aria-label="Viagens passadas (exemplo)">
         <h2 className={styles.sectionTitle}>Viagens passadas</h2>
@@ -288,6 +330,7 @@ export function Home() {
         </button>
       </div>
 
+      {/* fixo no rodapé (ajustes-95): sticky no fim da tela, sempre visível, sem esconder o último item */}
       <div className={styles.actions}>
         <Button variant="primary" fullWidth onClick={handleNewTrip}>
           Nova viagem

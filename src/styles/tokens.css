@@ -74,6 +74,18 @@
   --map-skipped: var(--field-border); /* stone-500, pino de lugar pulado — branco 4.8:1 */
 
   /*
+    Cor fixa de cada membro (ajustes-94; quem fica com qual: src/utils/memberColors.ts). Você usa
+    o --accent. Texto branco sobre a cor ≥ 5.02:1 (tag "Marina" e avatar); a cor a 8% sobre o
+    branco (fundo do cartão escolhido por convidado) deixa --text ≥ 15.36:1 e --muted ≥ 6.70:1;
+    a cor como borda contra o branco ≥ 5.47:1. Fora do verde do --success e do âmbar do --warning.
+  */
+  --member-teal: #0f766e; /* Marina — branco 5.47:1 */
+  --member-indigo: #4f46e5; /* Rodrigo — branco 6.29:1 */
+  --member-sky: #0369a1; /* branco 5.93:1 */
+  --member-orange: #9a3412; /* branco 7.31:1 */
+  --member-violet: #6d28d9; /* branco 7.10:1 */
+
+  /*
     Gráfico de Custos (docs/ajustes-74-...md): 6 categorias, tons da paleta
     (bordô e stone) alternando escuro/claro na ordem das categorias, pra que
     vizinhos na barra se diferenciem (≥ 3.03:1 entre vizinhos) — e uma linha

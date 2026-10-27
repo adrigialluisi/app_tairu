@@ -15,7 +15,25 @@
   border-top: 1px solid var(--card-border);
 }
 
+/*
+  Linha = atalho até o cartão + botão "+"/✓ à direita (ajustes-95). Filete de 4px à esquerda na cor
+  de quem sugeriu, em toda linha (o nome também está escrito na linha: a cor nunca fica sozinha).
+*/
+.rowWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-right: var(--space-3);
+  border-left: 4px solid var(--row-color, transparent);
+}
+
+.rowWrap:hover {
+  background: var(--bg-top);
+}
+
 .row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -30,9 +48,6 @@
   cursor: pointer;
 }
 
-.row:hover {
-  background: var(--bg-top);
-}
 
 .thumb {
   flex: 0 0 auto;
@@ -79,28 +94,11 @@
 }
 
 /* --muted no branco: 7.63:1 */
-.metaText,
-.status {
+.metaText {
   min-width: 0;
   font-size: var(--text-sm);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* --accent-dark no branco: 9.67:1, sempre com o ícone ✓ */
-.statusMine {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--accent-dark);
-}
-
-.chevron {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 18px;
 }

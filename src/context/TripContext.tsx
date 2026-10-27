@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { findMockCompanion } from '../data/mockCompanions';
+import { MOCK_COMPANIONS, findMockCompanion } from '../data/mockCompanions';
 import type { Settlement } from '../utils/settlement';
 import {
   MOCK_EXPENSE_PREFIX,
@@ -26,8 +26,8 @@ export interface TripCompanion {
   email: string;
   /**
    * 'entrou' só acontece com os dois convidados do cenário fixo
-   * (src/data/mockCompanions.ts, SIMULAÇÃO), e só quando o moderador aciona "Simular: 2 dias
-   * depois" (ajustes-89); até lá, e pra qualquer outro e-mail, fica em 'convite-enviado'.
+   * (src/data/mockCompanions.ts, SIMULAÇÃO), e só quando o moderador aciona "Simular: uma semana
+   * antes da viagem" (ajustes-89/94); até lá, e pra qualquer outro e-mail, fica em 'convite-enviado'.
    */
   status: 'convite-enviado' | 'entrou';
   /** só preenchido quando é um convidado simulado do cenário */
@@ -212,8 +212,12 @@ export interface Expense {
   destinationId: string | null;
   category: ExpenseCategory;
   paidBy: MemberId;
+  /** nome digitado quando quem pagou foi "Outro", de fora da viagem (paidBy = externalMemberId, ajustes-94) */
+  paidByName?: string;
   /** null = dividir entre todos os membros atuais (inclui quem for convidado depois) */
   splitWith: MemberId[] | null;
+  /** "Dividido entre quantas pessoas?" (ajustes-95b), só quando passa dos marcados; sem ele, o número de marcados */
+  splitCount?: number;
   /** ISO yyyy-mm-dd ou null */
   date: string | null;
   attachments: Attachment[];
@@ -226,7 +230,11 @@ export interface CentralCostOverride {
   /** id do TransportItem / StayItem / OtherItem */
   sourceId: string;
   paidBy: MemberId;
+  /** "Outro" de fora da viagem (ajustes-94), como em Expense */
+  paidByName?: string;
   splitWith: MemberId[] | null;
+  /** como em Expense (ajustes-95b) */
+  splitCount?: number;
 }
 
 /** Foto da viagem (Memórias, ajustes-64) — em memória via URL.createObjectURL, como os anexos. */
@@ -332,12 +340,17 @@ interface TripState {
   formerCompanions: TripCompanion[];
   /** chaves de contribuições simuladas que a pessoa removeu — nunca recriar (ajustes-67) */
   dismissedMockKeys: string[];
-  /** "Simular: 2 dias depois" já foi usado (ajustes-89) — só volta com "Recomeçar teste" */
+  /** "Simular: uma semana antes da viagem" já foi usado (ajustes-89/94) — só volta com "Recomeçar teste" */
   groupUpdateSimulated: boolean;
+  /**
+   * "Simular: durante a viagem" (ajustes-94): o "hoje" do app, ISO yyyy-mm-dd — a Início mostra
+   * "Acontecendo agora" e o Roteiro abre nesse dia. null = fora da viagem (o padrão).
+   */
+  simulatedTodayISO: string | null;
   /** o que chegou na simulação e a pessoa ainda não viu, por seção do menu (ids dos itens) */
   unseenUpdates: UnseenUpdates;
   /** banner "Marina e Rodrigo entraram…" na Início (seq muda a cada simulação, pra tela mostrar uma vez) */
-  groupUpdateNotice: { seq: number; message: string } | null;
+  groupUpdateNotice: { seq: number; message: string; title: string } | null;
 }
 
 /** ajustes-89: ids do que os convidados trouxeram e ainda não foi visto (lugares, gastos, quem entrou) */
@@ -415,6 +428,12 @@ export interface TripContextValue extends TripState {
    * simulação já foi usada; `message` é o texto do banner (ou o motivo).
    */
   simulateGroupUpdate: () => { ok: boolean; message: string };
+  /**
+   * Moderador (ajustes-94): "durante a viagem" — põe o app em 15/11/2026. Se a simulação do grupo
+   * ainda não rodou, roda antes (convidando a Marina e o Rodrigo, se faltar). `ok: false` sem
+   * destino com datas.
+   */
+  simulateDuringTrip: () => { ok: boolean; message: string };
   /** a pessoa saiu da seção: o que era novidade dela deixa de ser (número do menu e selo "Novo") */
   markSectionSeen: (section: UpdateSection) => void;
   resetTrip: () => void;
@@ -454,7 +473,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [dismissedMockKeys, setDismissedMockKeys] = useState<string[]>([]);
   const [groupUpdateSimulated, setGroupUpdateSimulated] = useState(false);
   const [unseenUpdates, setUnseenUpdates] = useState<UnseenUpdates>(NO_UPDATES);
-  const [groupUpdateNotice, setGroupUpdateNotice] = useState<{ seq: number; message: string } | null>(null);
+  const [groupUpdateNotice, setGroupUpdateNotice] = useState<{ seq: number; message: string; title: string } | null>(null);
+  const [simulatedTodayISO, setSimulatedTodayISO] = useState<string | null>(null);
 
   function dismissMockKeys(keys: string[]) {
     if (keys.length === 0) return;
@@ -469,13 +489,18 @@ export function TripProvider({ children }: { children: ReactNode }) {
   }
 
   /*
-    SIMULAÇÃO "dois dias depois" (ajustes-89, substitui a entrada automática de 2,5 s do ajustes-67):
-    só os convidados do cenário que estão em "Convite enviado" entram; as contribuições deles entram
-    uma vez (applyMockContributions) e viram novidade nas seções (unseenUpdates).
+    SIMULAÇÃO "uma semana antes da viagem" (era "dois dias depois", ajustes-89/94; substitui a entrada
+    automática de 2,5 s do ajustes-67): só os convidados do cenário que estão em "Convite enviado"
+    entram; as contribuições deles entram uma vez (applyMockContributions) e viram novidade nas
+    seções (unseenUpdates). `currentCompanions` deixa o "durante a viagem" simular com os convites
+    que ele acabou de criar.
   */
-  function simulateGroupUpdate(): { ok: boolean; message: string } {
+  function simulateGroupUpdate(
+    currentCompanions: TripCompanion[] = companions,
+    title = 'Faltam poucos dias pra viagem',
+  ): { ok: boolean; message: string } {
     if (groupUpdateSimulated) return { ok: false, message: 'Já simulado. Use "Recomeçar teste" pra simular de novo.' };
-    const joining = companions.filter((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
+    const joining = currentCompanions.filter((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
     if (joining.length === 0) return { ok: false, message: 'Convide a Marina e o Rodrigo primeiro' };
     const joined: TripCompanion[] = joining.map((c) => {
       const profile = findMockCompanion(c.email)!;
@@ -490,7 +515,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       stayItems,
       dismissedMockKeys,
     });
-    setCompanions((prev) => prev.map((c) => joined.find((j) => j.id === c.id) ?? c));
+    setCompanions(currentCompanions.map((c) => joined.find((j) => j.id === c.id) ?? c));
     setSelectedPlaces(result.selectedPlaces);
     setExpenses(result.expenses);
     setGroupUpdateSimulated(true);
@@ -510,8 +535,30 @@ export function TripProvider({ children }: { children: ReactNode }) {
         ? `${names} ${verb} na viagem e ${joined.length === 1 ? 'adicionou' : 'adicionaram'} ${joinPt(parts)}`
         : `${names} ${verb} na viagem`;
     // seq pelo relógio: depois de "Recomeçar teste" a próxima simulação também mostra o banner
-    setGroupUpdateNotice({ seq: Date.now(), message });
+    setGroupUpdateNotice({ seq: Date.now(), message, title });
     return { ok: true, message };
+  }
+
+  /** dia 2 da viagem do cenário (14 a 27/11/2026), à noite: Buenos Aires · Dia 2 de 14 */
+  const DURING_TRIP_TODAY = '2026-11-15';
+
+  function simulateDuringTrip(): { ok: boolean; message: string } {
+    if (!destinations.some((d) => d.dateStart && d.dateEnd)) {
+      return { ok: false, message: 'Cadastre os destinos e as datas primeiro' };
+    }
+    if (!groupUpdateSimulated) {
+      // Parte 3 sem ter passado pela Parte 2: Marina e Rodrigo precisam estar na viagem
+      const missing = MOCK_COMPANIONS.filter(
+        (m) => !companions.some((c) => c.email.trim().toLowerCase() === m.email.toLowerCase()),
+      ).map((m): TripCompanion => ({
+        id: `${m.email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        email: m.email,
+        status: 'convite-enviado',
+      }));
+      simulateGroupUpdate([...companions, ...missing], 'Sua viagem começou');
+    }
+    setSimulatedTodayISO(DURING_TRIP_TODAY);
+    return { ok: true, message: 'Viagem acontecendo: 15/11' };
   }
 
   /*
@@ -562,7 +609,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
       groupUpdateSimulated,
       unseenUpdates,
       groupUpdateNotice,
-      simulateGroupUpdate,
+      simulatedTodayISO,
+      simulateGroupUpdate: () => simulateGroupUpdate(),
+      simulateDuringTrip,
       markSectionSeen: (section) =>
         setUnseenUpdates((prev) => (prev[section].length === 0 ? prev : { ...prev, [section]: [] })),
       setName,
@@ -690,7 +739,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
       toggleMyInterest: (selectionId) =>
         setSelectedPlaces((prev) =>
           prev.map((s) => {
-            if (s.id !== selectionId || s.addedBy === 'voce') return s;
+            if (s.id !== selectionId) return s;
+            if (s.addedBy === 'voce') {
+              // você adicionou e um convidado também quer (ajustes-95): desfazer passa o lugar pra ele
+              const [first, ...rest] = s.alsoWantedBy.filter((m) => m !== 'voce');
+              return first ? { ...s, addedBy: first, alsoWantedBy: rest } : s;
+            }
             return s.alsoWantedBy.includes('voce')
               ? { ...s, alsoWantedBy: s.alsoWantedBy.filter((m) => m !== 'voce') }
               : { ...s, alsoWantedBy: ['voce', ...s.alsoWantedBy] };
@@ -820,6 +874,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setGroupUpdateSimulated(false);
         setUnseenUpdates(NO_UPDATES);
         setGroupUpdateNotice(null);
+        setSimulatedTodayISO(null);
         setName('');
         setDestinations([]);
         setCompanions([]);
@@ -874,6 +929,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       groupUpdateSimulated,
       unseenUpdates,
       groupUpdateNotice,
+      simulatedTodayISO,
     ],
   );
 

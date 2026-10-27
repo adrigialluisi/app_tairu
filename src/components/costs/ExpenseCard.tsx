@@ -1,5 +1,5 @@
 import { Receipt, Users } from 'lucide-react';
-import { CATEGORY_META, memberLabel, type CostEntry, type Member } from '../../utils/costs';
+import { CATEGORY_META, effectiveSplitCount, memberLabel, type CostEntry, type Member } from '../../utils/costs';
 import { formatMoney } from '../../utils/money';
 import { MOCK_EXPENSE_PREFIX } from '../../utils/mockContributions';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ interface ExpenseCardProps {
   entry: CostEntry;
   members: Member[];
   onEdit: () => void;
-  /** veio na simulação "2 dias depois" e ainda não foi visto (ajustes-89) */
+  /** veio na simulação "uma semana antes da viagem" e ainda não foi visto (ajustes-89) */
   isNew?: boolean;
   /** comprovantes do gasto: foto da nota vira miniatura que abre em tela cheia (ajustes-90) */
   attachments?: Attachment[];
@@ -27,9 +27,10 @@ export function ExpenseCard({ entry, members, onEdit, isNew = false, attachments
   const receiptPhotos = attachments.filter(isImageAttachment);
   const meta = CATEGORY_META[entry.category];
   const payer = memberLabel(members, entry.paidBy);
-  const splitCount = entry.splitWith.length;
+  // "Dividido entre N pessoas" conta também quem não está no app (ajustes-95b)
+  const splitCount = effectiveSplitCount(entry);
   const paidLine =
-    members.length > 1
+    members.length > 1 || splitCount > 1
       ? `Pago por ${payer} · dividido entre ${splitCount} ${splitCount === 1 ? 'pessoa' : 'pessoas'}`
       : `Pago por ${payer}`;
 

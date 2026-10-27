@@ -293,36 +293,6 @@
   opacity: 0.85;
 }
 
-/* Créditos das fotos: lista que rola (recebe toque — o resto da tela continua avançando) */
-.creditsSlide {
-  justify-content: flex-start;
-  /* a lista rola dentro da tela, em vez de crescer o cartão pra fora dela */
-  min-height: 0;
-  overflow: hidden;
-}
-.creditsList {
-  pointer-events: auto;
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  overflow-y: auto;
-  min-height: 0;
-  flex: 1;
-  font-size: var(--text-sm);
-  line-height: 1.4;
-}
-.creditPlace {
-  font-weight: var(--font-weight-semibold);
-}
-.creditLink {
-  color: var(--text-on-dark);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 /* destaque */
 .highlightList {
   margin: var(--space-2) 0 0;

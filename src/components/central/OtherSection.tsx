@@ -2,6 +2,8 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTrip, type OtherItem, type TripDestination } from '../../context/TripContext';
 import { EmptyTripState } from '../shell/EmptyTripState';
+import { ConflictDialog } from '../shell/ConflictDialog';
+import { activityConflict } from '../../utils/activityConflicts';
 import { Button } from '../shell/Button';
 import { OtherItemCard } from './OtherItemCard';
 import { OtherItemForm } from './OtherItemForm';
@@ -22,6 +24,26 @@ function sortOtherItems(items: OtherItem[], destinations: TripDestination[]): Ot
 export function OtherSection() {
   const trip = useTrip();
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  // passeio/ingresso num horário em que o grupo está viajando (ajustes-94): confirma antes de salvar
+  const [pending, setPending] = useState<{ item: OtherItem; message: string } | null>(null);
+
+  function save(item: OtherItem) {
+    trip.saveOtherItem(item);
+    setEditingId(null);
+  }
+
+  function handleSave(item: OtherItem) {
+    const conflict =
+      item.type === 'seguro'
+        ? null
+        : activityConflict(trip, {
+            cityId: trip.destinations.find((d) => d.id === item.destinationId)?.cityId ?? null,
+            dateISO: item.startDate,
+            time: item.time.trim(),
+          });
+    if (conflict) setPending({ item, message: conflict.message });
+    else save(item);
+  }
 
   if (trip.destinations.length === 0) {
     return <EmptyTripState message="Essa viagem ainda não tem destinos cadastrados. Volte e cadastre a viagem primeiro." />;
@@ -41,10 +63,7 @@ export function OtherSection() {
             key={item.id}
             destinations={trip.destinations}
             initialItem={item}
-            onSave={(updated) => {
-              trip.saveOtherItem(updated);
-              setEditingId(null);
-            }}
+            onSave={handleSave}
             onCancel={() => setEditingId(null)}
             onRemove={() => {
               trip.removeOtherItem(item.id);
@@ -65,10 +84,7 @@ export function OtherSection() {
         <OtherItemForm
           destinations={trip.destinations}
           initialItem={null}
-          onSave={(item) => {
-            trip.saveOtherItem(item);
-            setEditingId(null);
-          }}
+          onSave={handleSave}
           onCancel={() => setEditingId(null)}
         />
       )}
@@ -80,6 +96,15 @@ export function OtherSection() {
           <Icon icon={Plus} /> Adicionar registro
         </Button>
       )}
+
+      <ConflictDialog
+        message={pending?.message ?? null}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          if (pending) save(pending.item);
+          setPending(null);
+        }}
+      />
     </div>
   );
 }

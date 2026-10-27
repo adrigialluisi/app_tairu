@@ -76,7 +76,7 @@ export function Costs() {
   }
 
   const members = getMembers(trip);
-  // nos formulários só entra quem está na viagem; quem saiu continua nos cards e no rateio (ajustes-83)
+  // nos formulários entram Você e todos os convidados, aceitos ou pendentes (ajustes-95); quem saiu continua nos cards e no rateio (ajustes-83)
   const choosableMembers = activeMembers(members);
   const entries = buildCostEntries(trip);
   const destinationIds = new Set(trip.destinations.map((d) => d.id));
@@ -154,7 +154,7 @@ export function Costs() {
       bottomNav={<BottomNav />}
       toast={<SaveToast visible={visible} message={message} />}
     >
-      <CostSummary entries={entries} memberCount={members.length} />
+      <CostSummary entries={entries} memberCount={choosableMembers.length} />
 
       <div className={styles.tabsBlock}>
         <Tabs
@@ -225,7 +225,16 @@ export function Costs() {
             aria-labelledby={`${TABS_NAME}-tab-rateio`}
             className={styles.panel}
           >
-            <SettlementPanel entries={entries} members={members} onSaved={show} />
+            <SettlementPanel
+              entries={entries}
+              members={members}
+              onSaved={show}
+              onAddExpense={() => {
+                setPrefill(undefined);
+                setEditingId('new');
+                setTab('lancamentos');
+              }}
+            />
           </div>
         )}
 

@@ -29,7 +29,7 @@ export interface RecapPhoto {
   placeName?: string;
   /** foto de exemplo: "Berthold Werner · CC BY-SA 4.0" (crédito obrigatório do Wikimedia Commons) */
   credit?: string;
-  /** foto de exemplo: página do arquivo no Commons — vai no cartão "Créditos das fotos" (ajustes-91) */
+  /** foto de exemplo: página do arquivo no Commons (os créditos ficam na tela da viagem passada, ajustes-95) */
   sourceUrl?: string;
   /** foto em pé (medida ao abrir a recordação): vai de preferência em tela cheia (ajustes-91) */
   portrait?: boolean;
@@ -40,7 +40,8 @@ export interface RecapPhoto {
 /*
   Cartões de foto (ajustes-91, substituem a grade de 4 do "Lisboa em fotos"): a maioria em tela
   cheia com zoom lento, alternando com montagens de 2 (split) e 3 (hero) pra dar ritmo. Nunca
-  grade de 4 ou mais. Créditos saem de cima das fotos e vão pro cartão "Créditos das fotos".
+  grade de 4 ou mais. Créditos saem de cima das fotos; desde o ajustes-95 nem cartão de créditos tem
+  mais — ficam no link "Créditos das fotos" do rodapé da viagem passada (PastTrip).
 */
 type PhotoLayout = 'photo-full' | 'photo-split' | 'photo-hero';
 
@@ -53,7 +54,6 @@ type Slide =
   /** cidade sem foto escolhida: foto real do lugar (Wikipedia), em tela cheia */
   | { kind: 'place-full'; cityIndex: number; stop: PastTripStop }
   | { kind: 'highlight' }
-  | { kind: 'credits' }
   | { kind: 'outro' };
 
 const DURATION: Record<Slide['kind'], number> = {
@@ -67,7 +67,6 @@ const DURATION: Record<Slide['kind'], number> = {
   'photo-split': 4500,
   'photo-hero': 4500,
   highlight: 5500,
-  credits: 9000,
   outro: Number.POSITIVE_INFINITY, // último slide fica parado, com as ações
 };
 
@@ -119,7 +118,6 @@ function buildSlides(cities: PastTripCity[], photos: Record<string, RecapPhoto[]
     }
   });
   slides.push({ kind: 'highlight' });
-  if (Object.values(photos).some((list) => list.some((p) => p.credit))) slides.push({ kind: 'credits' });
   slides.push({ kind: 'outro' });
   return slides;
 }
@@ -405,7 +403,7 @@ export function StoryPlayer({ trip, photos, onClose }: StoryPlayerProps) {
               ))}
               {city.stops.length > 4 && <li className={styles.chip}>+{city.stops.length - 4}</li>}
             </ul>
-            {/* de onde vêm as fotos dessa cidade — o crédito de cada uma fica no cartão de créditos */}
+            {/* de onde vêm as fotos dessa cidade — o crédito de cada uma fica na tela da viagem passada */}
             {(photos[city.id] ?? []).some((p) => p.credit) ? (
               <p className={styles.sourceLine}>Fotos de exemplo · Wikimedia Commons</p>
             ) : (photos[city.id] ?? []).length === 0 ? (
@@ -448,36 +446,6 @@ export function StoryPlayer({ trip, photos, onClose }: StoryPlayerProps) {
             />
           </div>
         );
-      case 'credits': {
-        const credited = [
-          ...new Map(
-            Object.values(photos)
-              .flat()
-              .filter((p) => p.credit)
-              .map((p) => [p.id, p]),
-          ).values(),
-        ];
-        return (
-          <div className={`${styles.slide} ${styles.bgDark} ${styles.creditsSlide}`}>
-            <p className={styles.eyebrow}>Fotos de exemplo · Wikimedia Commons</p>
-            <h2 className={styles.headline}>Créditos das fotos</h2>
-            <ul className={styles.creditsList}>
-              {credited.map((p) => (
-                <li key={p.id}>
-                  <span className={styles.creditPlace}>{p.placeName}</span> — {p.credit} ·{' '}
-                  {p.sourceUrl ? (
-                    <a href={p.sourceUrl} target="_blank" rel="noreferrer" className={styles.creditLink}>
-                      Wikimedia Commons
-                    </a>
-                  ) : (
-                    'Wikimedia Commons'
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      }
       case 'highlight':
         return (
           <div className={`${styles.slide} ${styles.bgAccent}`}>

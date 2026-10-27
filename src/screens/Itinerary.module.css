@@ -124,10 +124,13 @@
   Faixa de ações da parada (ajustes-88): Foto e Gasto compactos (44px, secundário) e o ⋯ na
   ponta direita. Em 375px cabem os três numa linha.
 */
+/* Foto · Gasto · Alterar (ajustes-95): os três cabem lado a lado em 360px, sem quebrar linha */
 .stopAction.stopAction {
   height: var(--touch-target);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2);
+  gap: var(--space-1);
   font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 /* "ARS 120.000 · ≈ R$ 409" — gasto lançado pela parada; leva ao lançamento em Custos. --text no branco 17.49:1 */
@@ -161,22 +164,6 @@
   font-size: 13px;
   color: var(--muted);
   margin: 0;
-}
-
-.dayTipsLink {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: var(--touch-target);
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent-dark);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .tipsCategory {
@@ -306,20 +293,6 @@
   cursor: pointer;
 }
 
-/*
-  "Ver dicas locais" + "Fotos do dia": rodapé do cartão, separado por uma
-  divisória em vez de um vão grande (ajustes-72, seção 3). Lado a lado quando
-  cabem; quando quebram, as linhas de 44px (alvo de toque) ficam coladas.
-*/
-.dayLinks {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: var(--space-4);
-  row-gap: 0;
-  border-top: 1px solid var(--card-border);
-  padding-top: var(--space-1);
-}
-
 /* Parada sugerida/querida por convidado (ajustes-67) */
 .groupLine {
   display: flex;
@@ -341,4 +314,23 @@
 .pillsSlot {
   flex: 1;
   min-width: 0;
+}
+
+/* "Planos do grupo" (ajustes-95b): cartões provisórios empilhados, 8px entre eles */
+.planList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* tag de quem sugeriu + ✓ (desfazer) no canto da parada; 4px de respiro pro alvo de 44px do ✓ */
+.stopGuest {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
 }

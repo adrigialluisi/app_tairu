@@ -47,7 +47,7 @@ export function ReadStatus({ reading, filled, filledMessage = DEFAULT_FILLED_MES
 }
 
 interface VoucherUploadProps {
-  /** arquivo enviado; null = mostra só o botão de enviar (Outros: o arquivo vai pra lista de anexos) */
+  /** arquivo enviado; null = mostra só o botão de enviar (em Outros, é o anexo mais recente do registro) */
   fileName: string | null;
   reading: boolean;
   filled: boolean;

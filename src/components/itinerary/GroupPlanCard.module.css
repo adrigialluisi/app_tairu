@@ -1,0 +1,62 @@
+/*
+  Plano do grupo no Roteiro (ajustes-95b): provisório, então nada de cartão cheio — fundo
+  transparente e borda tracejada na cor de quem vai (decorativa: o nome está escrito no cartão, a
+  cor nunca fica sozinha). Foto menor que a da parada (48px). Respiro de 12px à direita pro alvo
+  de 44px do "+" (JoinButton) caber dentro do cartão.
+*/
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1.5px dashed var(--plan-color, var(--field-border));
+  border-radius: var(--radius-card);
+}
+
+.thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  background: var(--placeholder);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--field-border);
+  font-size: 22px;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text);
+}
+
+/* --muted no fundo do cartão do dia (branco): 7.63:1 */
+.meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

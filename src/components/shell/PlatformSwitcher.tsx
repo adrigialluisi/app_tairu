@@ -70,6 +70,16 @@ function ToggleButton() {
       ? null
       : 'Convide a Marina e o Rodrigo primeiro';
 
+  const duringHint = trip.destinations.some((d) => d.dateStart && d.dateEnd)
+    ? null
+    : 'Cadastre os destinos e as datas primeiro';
+
+  function simulateDuringTrip() {
+    const result = trip.simulateDuringTrip();
+    setMenuOpen(false);
+    if (result.ok) navigate('/inicio');
+  }
+
   function simulate() {
     const result = trip.simulateGroupUpdate();
     setMenuOpen(false);
@@ -120,11 +130,11 @@ function ToggleButton() {
       <PopoverContent align="end" collisionPadding={16} className="w-64 gap-1 rounded-xl p-2" aria-label="Moderador">
         <p className="m-0 px-3 pt-1 pb-1 text-(length:--text-sm) font-semibold text-muted-foreground">Moderador</p>
         <button type="button" className={menuItemClass} disabled={simulateHint !== null} onClick={simulate}>
-          Simular: 2 dias depois
+          Simular: uma semana antes da viagem
         </button>
-        {simulateHint && (
-          <p className="m-0 px-3 pb-1 text-(length:--text-sm) text-muted-foreground">{simulateHint}</p>
-        )}
+        <button type="button" className={menuItemClass} disabled={duringHint !== null} onClick={simulateDuringTrip}>
+          Simular: durante a viagem
+        </button>
         <button type="button" className={menuItemClass} onClick={restart}>
           Recomeçar teste
         </button>
@@ -142,9 +152,10 @@ function ToggleButton() {
  * via padding, mesmo com a pintura visual pequena (ver docs/ajustes-32 e
  * docs/ajustes-33-switcher-inline-no-header.md).
  *
- * Toque longo (~800 ms, ajustes-89) abre o menu escondido do moderador: "Simular: 2 dias depois"
- * (os convidados do cenário entram e trazem as novidades) e "Recomeçar teste" (zera a viagem e
- * os documentos e volta pra Splash). O toque curto continua só alternando iOS/Android.
+ * Toque longo (~800 ms, ajustes-89) abre o menu escondido do moderador, um atalho por parte do
+ * teste (ajustes-94): "Simular: uma semana antes da viagem" (os convidados do cenário entram e
+ * trazem as novidades), "Simular: durante a viagem" (o app vai pra 15/11/2026, com a viagem
+ * acontecendo) e "Recomeçar teste" (zera a viagem, a data simulada e os documentos e volta pra Splash). O toque curto continua só alternando iOS/Android.
  *
  * Por padrão fica fixo no canto superior direito de toda tela (`inline`
  * ausente) — é assim que Splash e as telas com `AppBar` continuam

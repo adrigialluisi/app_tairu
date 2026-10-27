@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { AgendaItem } from '../../utils/agenda';
 import { Icon } from '../shell/Icon';
@@ -16,10 +17,12 @@ interface AgendaRowProps {
   action?: ReactNode;
   /** faixa embaixo da linha, alinhada com o título (ex.: fotos do evento, ajustes-75) */
   below?: ReactNode;
+  /** selo de alerta "Conflita com o voo das 14:00" (ajustes-94) — âmbar --warning, 5.89:1, com ícone */
+  warning?: string;
 }
 
 /** Linha compacta da "Agenda do dia": hora · ícone · título/subtítulo, com conectora entre os ícones. */
-export function AgendaRow({ item, isLast, onOpen, openHint, dateLabel, action, below }: AgendaRowProps) {
+export function AgendaRow({ item, isLast, onOpen, openHint, dateLabel, action, below, warning }: AgendaRowProps) {
   return (
     <li className={`${styles.row} ${isLast ? styles.rowLast : ''}`}>
       <button type="button" className={styles.main} onClick={onOpen}>
@@ -33,6 +36,11 @@ export function AgendaRow({ item, isLast, onOpen, openHint, dateLabel, action, b
         <span className={styles.text}>
           <span className={styles.title}>{item.title}</span>
           {item.subtitle && <span className={styles.subtitle}>{item.subtitle}</span>}
+          {warning && (
+            <span className="mt-1 inline-flex items-start gap-1 text-(length:--text-sm) font-medium text-warning">
+              <Icon icon={TriangleAlert} className="mt-0.5" /> {warning}
+            </span>
+          )}
           <span className="visually-hidden"> — {openHint}</span>
         </span>
       </button>

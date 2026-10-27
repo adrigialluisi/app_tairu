@@ -8,9 +8,16 @@ export function wantersOf(selection: TripPlaceSelection, members: Member[]): Mem
   return members.filter((m) => ids.includes(m.id));
 }
 
-/** "Marina quer ir" / "Marina e Rodrigo querem ir" / "Você e Marina querem ir" — null se só você quer. */
-export function wantersText(wanters: Member[]): string | null {
-  if (!wanters.some((m) => m.id !== YOU)) return null;
-  const names = wanters.map((m) => m.shortName);
-  return `${joinPt(names)} ${names.length === 1 ? 'quer' : 'querem'} ir`;
+/**
+ * Quem vai (ajustes-95b, planos do grupo provisórios) — null se nenhum convidado quer:
+ * - você também vai: "Você e Marina vão";
+ * - só convidados: "Marina vai · toque + pra ir também" (sem o convite, só "Marina vai", no
+ *   cartão de plano do Roteiro, que já tem o "+" ao lado).
+ */
+export function goersText(wanters: Member[], { hint = true }: { hint?: boolean } = {}): string | null {
+  const guests = wanters.filter((m) => m.id !== YOU);
+  if (guests.length === 0) return null;
+  const names = joinPt(guests.map((m) => m.shortName));
+  if (wanters.some((m) => m.id === YOU)) return `Você e ${names} vão`;
+  return `${names} ${guests.length === 1 ? 'vai' : 'vão'}${hint ? ' · toque + pra ir também' : ''}`;
 }

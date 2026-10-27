@@ -5,8 +5,6 @@ import {
   Camera,
   ChevronRight,
   Clock,
-  Ellipsis,
-  Lightbulb,
   List,
   Map as MapIcon,
   MapPin,
@@ -14,10 +12,12 @@ import {
   RotateCcw,
   Route,
   SkipForward,
+  TriangleAlert,
+  Users,
   Wallet,
   X,
 } from 'lucide-react';
-import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../components/shell/AppBar';
 import { ScreenShell } from '../components/shell/ScreenShell';
@@ -43,7 +43,12 @@ import { RouteMap, type RouteMapPin } from '../components/itinerary/RouteMap';
 import { TimelineStop } from '../components/itinerary/TimelineStop';
 import { AgendaRow } from '../components/itinerary/AgendaRow';
 import { MemberAvatars } from '../components/shell/MemberAvatars';
-import { YOU, activeMembers, getMembers, memberLabel } from '../utils/costs';
+import { JoinButton } from '../components/shell/JoinButton';
+import { Switch } from '../components/shell/Switch';
+import { GroupPlanCard } from '../components/itinerary/GroupPlanCard';
+import { goersText, wantersOf } from '../utils/members';
+import { MemberTag } from '../components/shell/MemberTag';
+import { YOU, activeMembers, getMembers } from '../utils/costs';
 import { joinPt } from '../utils/retrospective';
 import { CategoryTags } from '../components/suggestions/CategoryTags';
 import { PlaceSearchBar } from '../components/suggestions/PlaceSearchBar';
@@ -65,17 +70,23 @@ import { isRoteiroComplete } from '../utils/tripProgress';
 import { useMarkSectionSeen } from '../hooks/useMarkSectionSeen';
 import {
   computeDestinationAssignments,
+  groupPlansByDay,
+  isMyPlace,
   proximityOptionsFor,
   daysBetween,
   getTripEndISO,
   getTripStartISO,
   globalDayToISO,
   splitDaysByDestination,
+  weekdayOfISO,
   type DestinationDayRange,
   type ItineraryItemAssignment,
 } from '../utils/itinerary';
 import { categoryIcon, placeIllustrationIcon } from '../utils/categoryVisuals';
 import { buildAgenda, type AgendaItem } from '../utils/agenda';
+import { getTripToday } from '../utils/tripToday';
+import { activityConflict } from '../utils/activityConflicts';
+import { closedDayWarning, openDaysLabel } from '../utils/openDays';
 import {
   formatISOToDayPill,
   formatISOToDisplay,
@@ -106,7 +117,37 @@ const MAIN_TABS_NAME = 'itinerary-main';
 const DESTINATION_TABS_NAME = 'itinerary-destination';
 const TIPS_TABS_NAME = 'itinerary-tips-destination';
 const ROTEIRO_VIEW_TABS_NAME = 'itinerary-roteiro-view';
-const MAP_DAY_TABS_NAME = 'itinerary-map-day';
+const ROTEIRO_CITY_TABS_NAME = 'itinerary-roteiro-city';
+
+/**
+ * Dias (índice global) que aparecem numa cidade nas abas do Roteiro (ajustes-95): os dela mais o
+ * dia em que ela sai pra próxima — o dia de fronteira é de quem chega, mas aparece nas duas.
+ */
+function cityDays(destination: TripDestination, dayRanges: DestinationDayRange[], tripStartISO: string | null): number[] {
+  const own = dayRanges.find((r) => r.destinationId === destination.id)?.globalDayIndexes ?? [];
+  if (!tripStartISO || !destination.dateEnd) return own;
+  const leavingDay = daysBetween(tripStartISO, destination.dateEnd) - 1;
+  return own.includes(leavingDay) ? own : [...own, leavingDay].sort((a, b) => a - b);
+}
+
+/**
+ * Lugar que só abre em alguns dias (ajustes-95): "Só aos domingos" na parada; se ela caiu num dia em
+ * que o lugar não abre (nenhum dia da cidade servia, ou a pessoa mudou de dia), vira o aviso âmbar
+ * "Só abre aos domingos" — --warning no branco 5.89:1, sempre com o ícone.
+ */
+function openDaysLine(place: PlaceEntry | undefined, dateISO: string): ReactNode {
+  const label = openDaysLabel(place?.openDays);
+  if (!place?.openDays || !label) return null;
+  return place.openDays.includes(weekdayOfISO(dateISO)) ? (
+    <p className="m-0 flex items-center gap-1 text-(length:--text-sm) text-muted-foreground">
+      <Icon icon={CalendarDays} /> {label}
+    </p>
+  ) : (
+    <p className="m-0 flex items-center gap-1 text-(length:--text-sm) font-medium text-warning">
+      <Icon icon={TriangleAlert} /> {closedDayWarning(place.openDays)}
+    </p>
+  );
+}
 
 function placeLabel(selection: TripPlaceSelection): string {
   if (selection.customLabel) return selection.customLabel;
@@ -229,22 +270,49 @@ function dayNeighborhoods(assignments: ItineraryItemAssignment[]): string {
 export function Itinerary() {
   const trip = useTrip();
   const navigate = useNavigate();
-  // "Novidades na viagem" da Início (ajustes-89) abre as Sugestões já na cidade com mais novidades
-  const navState = (useLocation().state as { tab?: 'lugares'; destinationId?: string } | null) ?? {};
+  // "Novidades na viagem" da Início (ajustes-89) abre as Sugestões já na cidade com mais novidades;
+  // "Ver o dia de hoje" (ajustes-94) abre o Roteiro na cidade de hoje
+  const navState =
+    (useLocation().state as { tab?: 'lugares' | 'roteiro'; destinationId?: string; section?: string } | null) ?? {};
+  // "Simular: durante a viagem" (ajustes-94): o Roteiro abre no dia de hoje, na cidade de hoje
+  const today = getTripToday(trip.destinations, trip.simulatedTodayISO);
   // valor interno 'lugares' mantido; o rótulo visível é "Sugestões" (ajustes-60)
-  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>(navState.tab ?? 'lugares');
+  const [mainTab, setMainTab] = useState<'lugares' | 'roteiro' | 'dicas'>(
+    navState.tab ?? (today ? 'roteiro' : 'lugares'),
+  );
   const [activeDestinationId, setActiveDestinationId] = useState(
     () =>
       (navState.destinationId && trip.destinations.some((d) => d.id === navState.destinationId)
         ? navState.destinationId
-        : trip.destinations[0]?.id) ?? '',
+        : (today?.destinationId ?? trip.destinations[0]?.id)) ?? '',
   );
   // ajustes-89: lugares dos convidados são novidade até a pessoa sair do Roteiro
   useMarkSectionSeen('roteiro');
+  // "N lugares sugeridos em Buenos Aires" (ajustes-94) chega direto em "Escolhas dos convidados"
+  useEffect(() => {
+    if (!navState.section || !navState.destinationId) return;
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`sugestoes-${navState.destinationId}-${navState.section}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
+    // só na chegada à tela
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [tipsDestinationId, setTipsDestinationId] = useState(() => trip.destinations[0]?.id ?? '');
   const [roteiroView, setRoteiroView] = useState<'lista' | 'mapa'>('lista');
-  const [mapDayFilter, setMapDayFilter] = useState<'all' | number>('all');
-  const [listDayFilter, setListDayFilter] = useState<'all' | number>('all');
+  /*
+    Aba Roteiro (ajustes-95): cidade ('all' = Todas) + dia (índice global), os mesmos na Lista e no
+    Mapa. Com a viagem "acontecendo", abre na cidade e no dia de hoje.
+  */
+  const [roteiroCity, setRoteiroCity] = useState<string>(() =>
+    navState.tab === 'roteiro' && navState.destinationId && trip.destinations.some((d) => d.id === navState.destinationId)
+      ? navState.destinationId
+      : (today?.destinationId ?? 'all'),
+  );
+  const [dayFilter, setDayFilter] = useState<'all' | number>(today ? today.globalDay : 'all');
+  // "Mostrar planos do grupo" (ajustes-95b): ligado por padrão
+  const [showGroupPlans, setShowGroupPlans] = useState(true);
   // parada com o formulário de gasto aberto (ajustes-88)
   const [expenseStopId, setExpenseStopId] = useState<string | null>(null);
   const { message, visible, show } = useSaveToast();
@@ -325,8 +393,9 @@ export function Itinerary() {
   }
 
   /*
-    Ações da parada (ajustes-88). Normal: faixa única [Foto] [Gasto] … [⋯] — o seletor de dia não
-    cabia junto em 375px, então foi pro ⋯ como "Mudar de dia", com o "Pulei". Pulada: só o nome
+    Ações da parada (ajustes-88). Normal: faixa única [Foto] [Gasto] [Alterar] — o seletor de dia não
+    cabia junto em 375px, então foi pro menu como "Mudar de dia", com o "Pulei"; o ⋯ solto que abria
+    esse menu virou o botão "Alterar" no ajustes-95. Pulada: só o nome
     riscado e "Desfazer" à direita. "Gasto" abre o ExpenseForm ali mesmo, já preenchido com o lugar,
     a cidade, a moeda, o dia e a categoria — a pessoa só digita o valor. O gasto guarda a parada
     (placeSelectionId) e aparece nela como "ARS 120.000 · ≈ R$ 409", que leva ao lançamento em Custos.
@@ -426,13 +495,9 @@ export function Itinerary() {
           </Button>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="link"
-                iconOnly
-                aria-label={`Mais ações de ${label}`}
-                className="ml-auto text-muted-foreground hover:bg-muted hover:text-foreground hover:no-underline"
-              >
-                <Icon icon={Ellipsis} />
+              {/* "Alterar" no lugar do ⋯ solto (ajustes-95): mesmo estilo e tamanho de Foto e Gasto */}
+              <Button variant="secondary" className={styles.stopAction} aria-label={`Alterar ${label}: mudar de dia ou marcar como pulei`}>
+                <Icon icon={Pencil} /> Alterar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-auto min-w-52">
@@ -480,12 +545,6 @@ export function Itinerary() {
 
   function handleActiveDestinationChange(id: string) {
     setActiveDestinationId(id);
-    setMapDayFilter('all');
-  }
-
-  function openTipsForDestination(destinationId: string) {
-    setTipsDestinationId(destinationId);
-    setMainTab('dicas');
   }
 
   if (trip.destinations.length === 0) {
@@ -518,6 +577,21 @@ export function Itinerary() {
     ]),
   );
 
+  // planos dos convidados (ajustes-95b), cada um no dia em que cairia se a participante tocasse "+"
+  const plansByDestination = new Map(
+    dayRanges.map((range) => [
+      range.destinationId,
+      groupPlansByDay(
+        range.destinationId,
+        range.globalDayIndexes.length,
+        trip.selectedPlaces,
+        trip.itineraryOverrides,
+        proximityOptionsFor(trip, range.destinationId),
+      ),
+    ]),
+  );
+  const hasGroupPlans = [...plansByDestination.values()].some((m) => m.size > 0);
+
   // --- aba Sugestões ---
   const activeDestination = trip.destinations.find((d) => d.id === activeDestinationId);
   const chosenEvents = selectedEvents(trip.selectedEventIds);
@@ -547,6 +621,10 @@ export function Itinerary() {
             onOpen={() => openAgendaItem(item)}
             openHint={item.link.path === '/central' ? 'abrir na Central' : 'ver nas Sugestões'}
             dateLabel={withDate ? formatISOToDisplay(item.dateISO).slice(0, 5) : undefined}
+            warning={
+              // evento, passeio ou ingresso da cidade depois do voo que sai dela (ajustes-94)
+              activityConflict(trip, { cityId: item.cityId, dateISO: item.dateISO, time: item.time })?.agendaBadge
+            }
             action={
               item.kind === 'evento' ? (
                 <button
@@ -583,21 +661,38 @@ export function Itinerary() {
     );
   }
 
-  // --- aba Roteiro / mapa ---
-  const activeRange = activeDestination ? dayRanges.find((r) => r.destinationId === activeDestination.id) : undefined;
-  const activeAssignments = activeDestination ? (assignmentsByDestination.get(activeDestination.id) ?? []) : [];
-  const { pins: mapPins, missingCount: mapMissingCount } = buildMapPins(
-    activeRange,
-    activeAssignments,
-    activeDestination
-      ? chosenEvents.filter((e) => cityIsInTripOn([activeDestination], activeDestination.cityId, e.date))
-      : [],
-    tripStartISO,
-  );
+  // --- aba Roteiro: cidade + dia (ajustes-95) ---
+  const roteiroDestination = trip.destinations.find((d) => d.id === roteiroCity);
+  const allDays = Array.from({ length: totalDays }, (_, i) => i);
+  // dias da cidade escolhida; o dia de troca de cidade ("Buenos Aires → Santiago") aparece nas duas
+  const visibleDays = roteiroDestination ? cityDays(roteiroDestination, dayRanges, tripStartISO) : allDays;
+  const activeDayFilter = dayFilter !== 'all' && visibleDays.includes(dayFilter) ? dayFilter : 'all';
+
+  function handleRoteiroCityChange(id: string) {
+    setRoteiroCity(id);
+    const nextDestination = trip.destinations.find((d) => d.id === id);
+    const nextDays = nextDestination ? cityDays(nextDestination, dayRanges, tripStartISO) : allDays;
+    // com a viagem acontecendo, a cidade de hoje volta pro dia de hoje; senão, todos os dias
+    setDayFilter(today && nextDays.includes(today.globalDay) ? today.globalDay : 'all');
+  }
+
+  // mapa: os pinos de cada cidade no escopo (Todas = todas as cidades da viagem)
+  const mapScope = roteiroDestination ? [roteiroDestination] : trip.destinations;
+  const mapPins: RouteMapPin[] = [];
+  let mapMissingCount = 0;
+  for (const d of mapScope) {
+    const built = buildMapPins(
+      dayRanges.find((r) => r.destinationId === d.id),
+      assignmentsByDestination.get(d.id) ?? [],
+      chosenEvents.filter((e) => cityIsInTripOn([d], d.cityId, e.date)),
+      tripStartISO,
+    );
+    // em "Todas", a cor segue o dia da viagem, pra 2 cidades não repetirem a cor do mesmo dia local
+    mapPins.push(...(roteiroDestination ? built.pins : built.pins.map((p) => ({ ...p, colorIndex: p.dayNumber - 1 }))));
+    mapMissingCount += built.missingCount;
+  }
   const filteredMapPins =
-    mapDayFilter === 'all' || !activeRange
-      ? mapPins
-      : mapPins.filter((p) => p.dayNumber === (activeRange.globalDayIndexes[mapDayFilter] as number) + 1);
+    activeDayFilter === 'all' ? mapPins : mapPins.filter((p) => p.dayNumber === activeDayFilter + 1);
 
   // --- aba Dicas locais ---
   const tipsDestination = trip.destinations.find((d) => d.id === tipsDestinationId);
@@ -615,25 +710,44 @@ export function Itinerary() {
       )
     : [];
 
-  /** "Sugerido por Marina" / "Marina também quer" nas paradas (convidados simulados, ajustes-67) */
+  /*
+    Convidados nas paradas (ajustes-67; visual do ajustes-94; regra do ajustes-95b): no roteiro da
+    participante só entram as paradas DELA (isMyPlace). Quem sugeriu vira a tag colorida no canto e,
+    se algum convidado também vai, a parada ganha o ✓ ao lado — tocar desfaz e o lugar volta a ser
+    plano provisório do convidado. Embaixo, "Você e Marina vão".
+  */
+  function guestOf(selection: TripPlaceSelection) {
+    const suggestedBy = selection.addedBy !== YOU ? members.find((m) => m.id === selection.addedBy) : undefined;
+    const wanters = wantersOf(selection, members);
+    const guests = wanters.filter((m) => m.id !== YOU);
+    return { suggestedBy, wanters, guests };
+  }
+
   function groupLine(selection: TripPlaceSelection) {
-    const others = selection.alsoWantedBy.filter((m) => m !== YOU);
-    const suggestedBy = selection.addedBy !== YOU ? memberLabel(members, selection.addedBy).split(' ')[0] : null;
-    if (!suggestedBy && others.length === 0) return null;
-    const avatars = members.filter((m) => m.id !== YOU && (m.id === selection.addedBy || others.includes(m.id)));
-    const alsoNames = members.filter((m) => others.includes(m.id)).map((m) => m.shortName);
-    const text = [
-      suggestedBy ? `Sugerido por ${suggestedBy}` : '',
-      alsoNames.length > 0 ? `${joinPt(alsoNames)} também ${alsoNames.length === 1 ? 'quer' : 'querem'}` : '',
-    ]
-      .filter(Boolean)
-      .join(' · ');
+    const { wanters, guests } = guestOf(selection);
+    const text = goersText(wanters);
+    if (!text) return null;
     return (
       <p className={styles.groupLine}>
-        <MemberAvatars members={avatars} />
+        <MemberAvatars members={guests} />
         <span>{text}</span>
       </p>
     );
+  }
+
+  /** ✓ da parada que um convidado também quer: sai do seu roteiro e volta a ser plano dele */
+  function leavePlace(selection: TripPlaceSelection) {
+    const { guests } = guestOf(selection);
+    trip.toggleMyInterest(selection.id);
+    show(
+      `Saiu do seu roteiro. Continua como plano ${guests.length === 1 ? 'da' : 'de'} ${joinPt(guests.map((m) => m.shortName))}.`,
+    );
+  }
+
+  /** "+" num plano do grupo: vira parada sua e entra na divisão por proximidade */
+  function joinPlan(selection: TripPlaceSelection) {
+    trip.toggleMyInterest(selection.id);
+    show('Lugar adicionado ao seu roteiro');
   }
 
   /** Atalho pro Conversor de Custos já com a moeda da cidade (docs/ajustes-62-conversor-de-moedas.md). */
@@ -722,6 +836,10 @@ export function Itinerary() {
           aria-labelledby={`${MAIN_TABS_NAME}-tab-roteiro`}
           className={styles.viewPanel}
         >
+          {/* planos dos convidados como referência no dia (ajustes-95b): só aparece quando existe algum */}
+          {hasGroupPlans && (
+            <Switch label="Mostrar planos do grupo" checked={showGroupPlans} onChange={setShowGroupPlans} />
+          )}
 
           {/*
             Faixa presa no topo (ajustes-88, regra do ajustes-85): cidade (no Mapa) + pílulas de data,
@@ -729,57 +847,38 @@ export function Itinerary() {
             Roteiro · Dicas rolam com a página, pra não comer metade da tela.
           */}
           <div className={styles.stickyBar}>
-            {roteiroView === 'mapa' && (
-              <DestinationTabs
-                name={DESTINATION_TABS_NAME}
-                label="Destino do mapa"
-                destinations={trip.destinations}
-                value={activeDestinationId}
-                onChange={handleActiveDestinationChange}
-              />
-            )}
+            {/* abas de cidade com "Todas" (ajustes-95), presas junto com as pílulas, na Lista e no Mapa */}
+            <DestinationTabs
+              name={ROTEIRO_CITY_TABS_NAME}
+              label="Cidade do roteiro"
+              destinations={trip.destinations}
+              value={roteiroCity}
+              onChange={handleRoteiroCityChange}
+              allLabel="Todas"
+            />
             <div className={styles.pillsRow}>
               <div className={styles.pillsSlot}>
-                {tripStartISO && roteiroView === 'mapa' && activeRange && activeRange.globalDayIndexes.length > 0 && (
+                {tripStartISO && visibleDays.length > 1 && (
                   <Tabs
-                    name={MAP_DAY_TABS_NAME}
-                    label="Dia do mapa"
-                    variant="pill-date"
-                    items={[
-                      { value: 'all', label: 'Todos os dias' },
-                      ...activeRange.globalDayIndexes.map((globalDay, i) => {
-                        const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
-                        return {
-                          value: String(i),
-                          label: formatISOToDisplay(globalDayToISO(tripStartISO, globalDay)),
-                          pillTop: monthAbbrev,
-                          pillBottom: day,
-                        };
-                      }),
-                    ]}
-                    value={mapDayFilter === 'all' ? 'all' : String(mapDayFilter)}
-                    onChange={(v) => setMapDayFilter(v === 'all' ? 'all' : Number(v))}
-                  />
-                )}
-                {tripStartISO && roteiroView === 'lista' && totalDays > 1 && (
-                  <Tabs
-                    name="itinerary-list-day"
+                    name="itinerary-day"
                     label="Dia do roteiro"
                     variant="pill-date"
                     items={[
                       { value: 'all', label: 'Todos os dias' },
-                      ...Array.from({ length: totalDays }, (_, globalDay) => {
+                      ...visibleDays.map((globalDay) => {
                         const { monthAbbrev, day } = formatISOToDayPill(globalDayToISO(tripStartISO, globalDay));
+                        // a pílula de hoje diz "Hoje" no lugar do mês (ajustes-94)
+                        const isToday = today?.globalDay === globalDay;
                         return {
                           value: String(globalDay),
-                          label: formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay)),
-                          pillTop: monthAbbrev,
+                          label: `${isToday ? 'Hoje, ' : ''}${formatISOToWeekdayDisplay(globalDayToISO(tripStartISO, globalDay))}`,
+                          pillTop: isToday ? 'Hoje' : monthAbbrev,
                           pillBottom: day,
                         };
                       }),
                     ]}
-                    value={listDayFilter === 'all' ? 'all' : String(listDayFilter)}
-                    onChange={(v) => setListDayFilter(v === 'all' ? 'all' : Number(v))}
+                    value={activeDayFilter === 'all' ? 'all' : String(activeDayFilter)}
+                    onChange={(v) => setDayFilter(v === 'all' ? 'all' : Number(v))}
                   />
                 )}
               </div>
@@ -808,14 +907,12 @@ export function Itinerary() {
                   aria-labelledby={`${ROTEIRO_VIEW_TABS_NAME}-tab-mapa`}
                   className={styles.viewPanel}
                 >
-                  {activeDestination && (
-                    <RouteMap
-                      cityLabel={activeDestination.city}
-                      pins={filteredMapPins}
-                      missingCount={mapMissingCount}
-                      routeByDay
-                    />
-                  )}
+                  <RouteMap
+                    cityLabel={roteiroDestination?.city ?? 'esta viagem'}
+                    pins={filteredMapPins}
+                    missingCount={mapMissingCount}
+                    routeByDay
+                  />
                 </div>
               )}
 
@@ -826,7 +923,7 @@ export function Itinerary() {
                   aria-labelledby={`${ROTEIRO_VIEW_TABS_NAME}-tab-lista`}
                   className={styles.viewPanel}
                 >
-                  {trip.selectedPlaces.length > 0 && (
+                  {trip.selectedPlaces.some(isMyPlace) && (
                     <p className="m-0 flex items-start gap-2 text-(length:--text-sm) text-muted-foreground">
                       <Icon icon={Route} className="mt-0.5" />
                       Organizamos os dias juntando os lugares que ficam perto. Você pode mover o que quiser.
@@ -834,8 +931,8 @@ export function Itinerary() {
                   )}
 
                   <ul className={styles.dayList}>
-                    {Array.from({ length: totalDays }, (_, i) => i)
-                      .filter((globalDay) => listDayFilter === 'all' || globalDay === listDayFilter)
+                    {visibleDays
+                      .filter((globalDay) => activeDayFilter === 'all' || globalDay === activeDayFilter)
                       .map((globalDay) => {
                         const dateISO = globalDayToISO(tripStartISO, globalDay);
                         const range = findRangeForGlobalDay(dayRanges, globalDay);
@@ -873,9 +970,17 @@ export function Itinerary() {
                         const active = dayItems.filter((a) => !a.skipped);
                         const skipped = dayItems.filter((a) => a.skipped);
                         const neighborhoods = dayNeighborhoods(active);
+                        const dayPlans = showGroupPlans
+                          ? (plansByDestination.get(range.destinationId)?.get(localDay) ?? [])
+                          : [];
                         // Agenda entra pela data (evento, voo, check-in…), mesmo num dia de fronteira
                         // que o roteiro atribui ao destino seguinte (ex.: Feira de San Telmo no 22/11).
                         const dayAgenda = agenda.filter((a) => a.dateISO === dateISO);
+                        // dia de fronteira (ajustes-94): continua contando pra cidade de chegada, mas o
+                        // cabeçalho diz de onde se sai — "Buenos Aires → Santiago"
+                        const leaving = trip.destinations.find(
+                          (d) => d.id !== range.destinationId && d.dateEnd === dateISO && d.dateStart !== dateISO,
+                        );
 
                         return (
                           <Card asChild className="px-4">
@@ -889,7 +994,8 @@ export function Itinerary() {
                               </h3>
                               <span className={styles.daySubtitle}>
                                 <Icon icon={MapPin} />{' '}
-                                {range.city} · Dia {globalDay + 1} de {totalDays}
+                                {leaving ? `${leaving.city} → ${range.city}` : range.city} · Dia {globalDay + 1} de{' '}
+                                {totalDays}
                               </span>
                             </div>
 
@@ -943,14 +1049,28 @@ export function Itinerary() {
                                         placeSelectionId: assignment.place.id,
                                         eventId: null,
                                       }, true);
+                                      const guest = guestOf(assignment.place);
                                       return (
                                         <TimelineStop
                                           key={assignment.place.id}
+                                          guestTag={
+                                            guest.guests.length > 0 && (
+                                              <span className={styles.stopGuest}>
+                                                {guest.suggestedBy && <MemberTag member={guest.suggestedBy} />}
+                                                <JoinButton
+                                                  joined
+                                                  label={`Você vai a ${placeLabel(assignment.place)}. Tocar pra desfazer`}
+                                                  onClick={() => leavePlace(assignment.place)}
+                                                />
+                                              </span>
+                                            )
+                                          }
                                           orderLabel={`Parada ${index + 1}`}
                                           title={placeLabel(assignment.place)}
                                           tags={
                                         <>
                                           <CategoryTags tags={tags} />
+                                          {openDaysLine(place, dateISO)}
                                           {groupLine(assignment.place)}
                                         </>
                                       }
@@ -975,23 +1095,33 @@ export function Itinerary() {
                                   </ul>
                                 )}
                               </div>
-                            </div>
 
-                            <div className={styles.dayLinks}>
-                              <button
-                                type="button"
-                                className={styles.dayTipsLink}
-                                onClick={() => openTipsForDestination(range.destinationId)}
-                              >
-                                <Icon icon={Lightbulb} /> Ver dicas locais desse dia →
-                              </button>
+                              {/* planos dos convidados nesse dia: só referência, o "+" traz pro seu roteiro (ajustes-95b) */}
+                              {dayPlans.length > 0 && (
+                                <div className={styles.dayBlock}>
+                                  <h4 className={styles.blockLabel}>
+                                    <Icon icon={Users} />{' '}Planos do grupo
+                                  </h4>
+                                  <ul className={styles.planList}>
+                                    {dayPlans.map((plan) => (
+                                      <GroupPlanCard
+                                        key={plan.id}
+                                        place={plan.placeId ? getPlaceById(plan.placeId) : undefined}
+                                        title={placeLabel(plan)}
+                                        wanters={wantersOf(plan, members)}
+                                        onJoin={() => joinPlan(plan)}
+                                      />
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           </li>
                           </Card>
                         );
                       })}
 
-                    {listDayFilter === 'all' && agendaOutsideTrip.length > 0 && (
+                    {activeDayFilter === 'all' && !roteiroDestination && agendaOutsideTrip.length > 0 && (
                       <Card asChild className="px-4">
                       <li className={styles.dayCard}>
                         <div className={styles.dayHeader}>

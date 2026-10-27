@@ -143,6 +143,21 @@
   color: var(--text);
 }
 
+/* link secundário do estado vazio (ajustes-95): --accent-dark no branco 9.67:1, alvo de 44px */
+.inviteLink {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .note {
   margin: 0;
   font-size: var(--text-sm);

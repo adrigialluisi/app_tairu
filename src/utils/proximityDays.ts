@@ -12,6 +12,8 @@ export interface ProximityItem {
   lng?: number | null;
   /** lugar de comer (categoria `gastronomia`): no máximo 1 por dia enquanto houver dia sem (ajustes-88) */
   meal?: boolean;
+  /** dias da semana em que funciona (0 = domingo … 6 = sábado), ex.: Feria de Mataderos [0] (ajustes-95) */
+  openDays?: number[];
 }
 
 export interface ProximityOptions {
@@ -22,6 +24,8 @@ export interface ProximityOptions {
   lightDays?: number[];
   /** de onde o dia começa (hotel do destino, quando a Central tem um com coordenada); sem ele, o lugar mais ao norte */
   start?: { lat: number; lng: number } | null;
+  /** dia da semana de cada dia local (0 = domingo), pra respeitar `openDays` (ajustes-95) */
+  weekdays?: number[];
 }
 
 type Located = ProximityItem & { lat: number; lng: number };
@@ -298,7 +302,8 @@ function routeOf(members: Located[], start: ProximityOptions['start']): Located[
  * 4. equilíbrio com folga entre os dias com lugar (até 2 de diferença, desvio ≤ 1,5×) e no máximo
  *    1 refeição por dia enquanto houver dia sem — os dois movem quarteirões inteiros;
  * 5. dias com lugar em ordem do bairro mais ao norte pro mais ao sul; dentro do dia, rota pelo
- *    vizinho mais próximo a partir do hotel (`options.start`) ou do lugar mais ao norte.
+ *    vizinho mais próximo a partir do hotel (`options.start`) ou do lugar mais ao norte;
+ * 6. lugar com dia da semana certo (`openDays`, com `options.weekdays`) muda pra um dia permitido.
  * Item sem coordenada (lugar escrito à mão) entra no fim do dia normal com menos lugares.
  */
 export function computeProximityDays(
@@ -361,6 +366,48 @@ export function computeProximityDays(
     byDay.set(target, [...(byDay.get(target) ?? []), item]);
   }
 
+  if (options.weekdays) fitOpenDays(byDay, days, options.weekdays, options.start);
+
   for (const [day, list] of byDay) list.forEach((item, order) => result.set(item.id, { day, order }));
   return result;
+}
+
+/**
+ * 6. Lugar que só abre em alguns dias da semana (`openDays`, ajustes-95) vai pro dia permitido mais
+ * perto do resto do dia (até 2,5 km de um lugar dele; senão um dia vazio; empate: o com menos
+ * lugares, depois o primeiro). Se nenhum dia da cidade servir, vai pro primeiro dia — a tela avisa
+ * ("Só abre aos domingos"). O dia que recebe refaz a rota.
+ */
+function fitOpenDays(
+  byDay: Map<number, ProximityItem[]>,
+  days: number,
+  weekdays: number[],
+  start: ProximityOptions['start'],
+) {
+  const allDays = Array.from({ length: days }, (_, d) => d);
+  for (const day of allDays) {
+    for (const item of [...(byDay.get(day) ?? [])]) {
+      const open = item.openDays;
+      if (!open || open.length === 0 || open.includes(weekdays[day])) continue;
+      const allowed = allDays.filter((d) => weekdays[d] !== undefined && open.includes(weekdays[d]));
+      const score = (d: number) => {
+        const located = (byDay.get(d) ?? []).filter(hasCoords);
+        if (!hasCoords(item) || located.length === 0) return NEIGHBORHOOD_KM;
+        return Math.min(NEIGHBORHOOD_KM, ...located.map((p) => haversineKm(item, p)));
+      };
+      const target =
+        allowed.length === 0
+          ? 0
+          : allowed.reduce((best, d) => {
+              const diff = score(d) - score(best);
+              if (diff < -EPS) return d;
+              if (diff > EPS) return best;
+              return (byDay.get(d)?.length ?? 0) < (byDay.get(best)?.length ?? 0) ? d : best;
+            });
+      if (target === day) continue;
+      byDay.set(day, (byDay.get(day) ?? []).filter((p) => p !== item));
+      const next = [...(byDay.get(target) ?? []), item];
+      byDay.set(target, [...routeOf(next.filter(hasCoords), start), ...next.filter((p) => !hasCoords(p))]);
+    }
+  }
 }

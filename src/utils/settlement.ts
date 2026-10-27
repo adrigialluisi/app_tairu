@@ -7,6 +7,27 @@
 /** id de membro ('voce' ou o id do convidado) — mesmo tipo do TripContext */
 type MemberId = string;
 
+/**
+ * Pessoa de fora da viagem que pagou um gasto ("Outro" em "Quem pagou?", ajustes-94): entra no
+ * rateio pelo nome digitado. O id vem do nome sem diferenciar maiúscula, acento e espaços, então
+ * "Paula", "paula " e "PAULA" contam como a mesma pessoa em todos os gastos.
+ */
+export const EXTERNAL_MEMBER_PREFIX = 'outro:';
+
+export function externalMemberId(name: string): MemberId {
+  const key = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  return `${EXTERNAL_MEMBER_PREFIX}${key}`;
+}
+
+export function isExternalMemberId(id: MemberId): boolean {
+  return id.startsWith(EXTERNAL_MEMBER_PREFIX);
+}
+
 /** o mínimo de um lançamento que o rateio precisa (CostEntry de utils/costs.ts encaixa aqui) */
 export interface BalanceEntry {
   /** null = moeda sem cotação: fica de fora do rateio (a tela conta à parte) */
@@ -14,6 +35,18 @@ export interface BalanceEntry {
   paidBy: MemberId;
   /** já resolvido (null → todos os membros) */
   splitWith: MemberId[];
+  /**
+   * "Dividido entre quantas pessoas?" (ajustes-95b): pode ser maior que os marcados, pra incluir
+   * gente que não está no app. Cada marcado (menos quem pagou) deve total ÷ esse número pra quem
+   * pagou; as partes de quem não está marcado ficam fora do acerto. Sem o campo (ou menor que os
+   * marcados): o número de marcados.
+   */
+  splitCount?: number;
+}
+
+/** Em quantas partes o gasto foi dividido: splitCount, nunca menos que os marcados. */
+export function effectiveSplitCount(entry: Pick<BalanceEntry, 'splitWith' | 'splitCount'>): number {
+  return Math.max(entry.splitCount ?? 0, entry.splitWith.length);
 }
 
 /**
@@ -34,25 +67,33 @@ export interface MemberBalance {
   memberId: MemberId;
   paidBRL: number;
   shareBRL: number;
+  /** o que pagou pela parte de quem não está marcado no gasto (ajustes-95b): fica fora do acerto */
+  outsideBRL: number;
   /** positivo = vai receber; negativo = deve */
   balanceBRL: number;
 }
 
 /**
- * Saldo de cada membro: o que pagou − a parte dele nos gastos, ajustado pelos acertos (quem pagou
- * o acerto sobe, quem recebeu desce). Entradas sem amountBRL ficam de fora.
+ * Saldo de cada membro: o que pagou − a parte dele nos gastos − o que pagou por quem está fora do
+ * acerto (ajustes-95b), ajustado pelos acertos (quem pagou o acerto sobe, quem recebeu desce).
+ * Entradas sem amountBRL ficam de fora.
  */
 export function computeBalances(
   entries: BalanceEntry[],
   members: { id: MemberId }[],
   settlements: Settlement[] = [],
 ): MemberBalance[] {
-  const byId = new Map(members.map((m) => [m.id, { memberId: m.id, paidBRL: 0, shareBRL: 0, balanceBRL: 0 }]));
+  const byId = new Map(
+    members.map((m) => [m.id, { memberId: m.id, paidBRL: 0, shareBRL: 0, outsideBRL: 0, balanceBRL: 0 }]),
+  );
   for (const e of entries) {
     if (e.amountBRL === null || e.splitWith.length === 0) continue;
     const payer = byId.get(e.paidBy);
-    if (payer) payer.paidBRL += e.amountBRL;
-    const share = e.amountBRL / e.splitWith.length;
+    const share = e.amountBRL / effectiveSplitCount(e);
+    if (payer) {
+      payer.paidBRL += e.amountBRL;
+      payer.outsideBRL += e.amountBRL - share * e.splitWith.length;
+    }
     for (const id of e.splitWith) {
       const m = byId.get(id);
       if (m) m.shareBRL += share;
@@ -64,7 +105,7 @@ export function computeBalances(
     if (from) from.paidBRL += s.amountBRL;
     if (to) to.paidBRL -= s.amountBRL;
   }
-  return [...byId.values()].map((b) => ({ ...b, balanceBRL: b.paidBRL - b.shareBRL }));
+  return [...byId.values()].map((b) => ({ ...b, balanceBRL: b.paidBRL - b.shareBRL - b.outsideBRL }));
 }
 
 export interface Transfer {

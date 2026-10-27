@@ -12,6 +12,7 @@ import { Tabs } from '../components/shell/Tabs';
 import { RouteMap, type RouteMapPin } from '../components/itinerary/RouteMap';
 import { ExamplePhotoDialog, type AlbumPhoto, type AlbumPhotoItem } from '../components/recap/ExamplePhotoDialog';
 import { TravelerAvatar } from '../components/recap/TravelerAvatar';
+import { PhotoCreditsDialog } from '../components/recap/PhotoCreditsDialog';
 import {
   EXAMPLE_TRAVELERS,
   getExamplePastTrip,
@@ -191,16 +192,31 @@ export function PastTrip() {
     setAdded((prev) => ({ ...prev, [stop.id]: [...(prev[stop.id] ?? []), ...photos] }));
   }
 
-  const mapStops = mapCity === 'todas' ? stops : (cities.find((c) => c.id === mapCity)?.stops ?? []);
-  const pins: RouteMapPin[] = mapStops.map((s) => ({
-    id: s.id,
-    name: s.name,
-    neighborhood: s.neighborhood,
-    lat: s.lat,
-    lng: s.lng,
-    dayNumber: dayNumberOf(trip, s.dayISO),
-    skipped: false,
-  }));
+  /*
+    Mapa da viagem (ajustes-94): um pino por LUGAR, com o número do dia; o popup mostra o lugar e as
+    fotos dele. Em ordem de visita (a linha tracejada liga os lugares nessa ordem). O RouteMap
+    enquadra os pinos da aba escolhida (fitBounds, com margem) a cada troca de aba.
+  */
+  const mapStops = (mapCity === 'todas' ? stops : (cities.find((c) => c.id === mapCity)?.stops ?? [])).filter(
+    (s) => Number.isFinite(s.lat) && Number.isFinite(s.lng),
+  );
+  const pins: RouteMapPin[] = [...mapStops]
+    .sort((a, b) => a.dayISO.localeCompare(b.dayISO))
+    .map((s) => {
+      const photos = photosOf(s).map((p) => p.url);
+      const day = dayNumberOf(trip, s.dayISO);
+      return {
+        id: s.id,
+        name: s.name,
+        neighborhood: s.neighborhood,
+        lat: s.lat,
+        lng: s.lng,
+        dayNumber: day,
+        skipped: false,
+        photos,
+        detail: `Dia ${day}${photos.length > 0 ? ` · ${photos.length} ${photos.length === 1 ? 'foto' : 'fotos'}` : ''}`,
+      };
+    });
 
   const personItems = [
     { value: 'todos', label: 'Todos' },
@@ -421,6 +437,9 @@ export function PastTrip() {
             {RATES_SOURCE_LABEL}). Não inclui passagens nem hospedagem.
           </p>
         </Card>
+
+        {/* créditos das fotos de exemplo no rodapé (ajustes-95; antes eram o último cartão da recordação) */}
+        <PhotoCreditsDialog photos={stops.flatMap((stop) => photosOfStop(stop.id).map((photo) => ({ placeName: stop.name, photo })))} />
       </div>
       <ExamplePhotoDialog
         items={viewer?.items ?? []}

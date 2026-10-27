@@ -115,6 +115,20 @@
   color: var(--muted);
 }
 
+/* "Buenos Aires · Dia 2 de 14" com a viagem acontecendo (ajustes-94): --accent-dark no branco, 9.67:1 */
+.heroToday {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--accent-dark);
+}
+
+/* cartão + "Ver o dia de hoje": dentro do grupo, 12px (mais perto que o 24px entre blocos da tela) */
+.heroGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .pastTrips {
   display: flex;
   flex-direction: column;
@@ -322,9 +336,21 @@
   font-size: 18px;
 }
 
+/*
+  "Nova viagem" fixo no rodapé (ajustes-95): barra branca com borda superior fina, presa embaixo
+  enquanto a tela rola. Sticky (e não fixed) pra ocupar o próprio espaço no fim da coluna — o último
+  item nunca fica escondido atrás dela. As margens negativas encostam a barra nas bordas da tela,
+  por cima do padding do .screen; embaixo, o respiro da área segura do iOS.
+*/
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-top: auto;
+  margin: auto calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+  padding: var(--space-3) var(--space-6) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--card-border);
 }

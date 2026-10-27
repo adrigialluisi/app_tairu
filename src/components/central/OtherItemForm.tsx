@@ -5,7 +5,6 @@ import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
 import { DateRangeField } from '../inputs/DateRangeField';
-import { AttachmentList } from './AttachmentList';
 import { VoucherUpload } from './VoucherUpload';
 import { readOtherFile } from '../../data/mockVouchers';
 import { useAutofill } from '../../hooks/useAutofill';
@@ -116,15 +115,26 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
   const af = useAutofill();
   const tripRange = { startISO: getTripStartISO(destinations), endISO: getTripEndISO(destinations) };
 
+  /** o arquivo mostrado no upload de cima (o mais recente); null = só o botão "Enviar arquivo" */
+  const attachedFile = attachments.length > 0 ? attachments[attachments.length - 1] : null;
+
+  /** só revoga a URL de arquivo enviado neste formulário — a do item salvo continua valendo se a pessoa cancelar */
+  function discardAttachments() {
+    const savedIds = new Set(initialItem?.attachments.map((a) => a.id) ?? []);
+    attachments.filter((a) => !savedIds.has(a.id)).forEach((a) => URL.revokeObjectURL(a.url));
+    setAttachments([]);
+  }
+
   /**
-   * Leitura simulada (ajustes-84): o arquivo entra na lista de anexos e preenche os
+   * Leitura simulada (ajustes-84): o arquivo vira o anexo do registro e preenche os
    * campos — com os dados do arquivo de exemplo, se for um deles e do tipo escolhido,
-   * ou com o preenchimento de exemplo do tipo. Sempre preenche.
+   * ou com o preenchimento de exemplo do tipo. Sempre preenche. Um upload só, como em
+   * Transporte e Hospedagem (ajustes-93): enviar outro arquivo substitui o anterior.
    */
   function handleReadFile(file: File) {
     if (!type) return;
-    setAttachments((prev) => [
-      ...prev,
+    discardAttachments();
+    setAttachments([
       {
         id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         fileName: file.name,
@@ -243,10 +253,12 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
 
       {type && (
         <VoucherUpload
-          fileName={null}
+          fileName={attachedFile?.fileName ?? null}
           reading={af.reading}
           filled={af.filled}
           onFileSelected={handleReadFile}
+          onRemove={discardAttachments}
+          fileNoun="arquivo"
           hint="Tem o ingresso, o voucher ou a apólice? Envie pra preencher os campos."
           buttonLabel="Enviar arquivo"
         />
@@ -387,9 +399,6 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
           </div>
         </>
       )}
-
-      {/* o arquivo enviado lá em cima também aparece aqui; dá pra anexar mais sem ler de novo */}
-      <AttachmentList attachments={attachments} onChange={setAttachments} />
       </fieldset>
 
       <div className={styles.actions}>

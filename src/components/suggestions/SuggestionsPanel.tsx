@@ -1,8 +1,11 @@
 import { CalendarDays, PencilLine, Users } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../shell/Button';
 import { EmptyState } from '../shell/EmptyState';
+import { ConflictDialog } from '../shell/ConflictDialog';
+import { activityConflict, firstTime } from '../../utils/activityConflicts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AddedPlaceCard } from './AddedPlaceCard';
 import { CategoryTags, type CategoryTag } from './CategoryTags';
@@ -80,6 +83,11 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     const sel = selectionByPlaceId.get(placeId);
     return sel ? wantersOf(sel, members) : [];
   };
+  /** convidado que escolheu primeiro (ajustes-94): a tag e a cor do cartão */
+  const suggestedByFor = (placeId: string) => {
+    const sel = selectionByPlaceId.get(placeId);
+    return sel && sel.addedBy !== YOU ? members.find((m) => m.id === sel.addedBy) : undefined;
+  };
   /** você escolheu (adicionou ou tocou "Eu também") — o ✓ bordô do cartão */
   const isMine = (placeId: string) => {
     const sel = selectionByPlaceId.get(placeId);
@@ -103,7 +111,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     (decisão da Adriana, ajuste 73b): Pontos turísticos / Fora do circuito primeiro,
     depois os interesses. O que não cabe em nenhuma seção ativa não aparece.
     Exceção (ajustes-87): o escolhido por convidado fica na categoria dele E na lista
-    compacta "Escolhas dos convidados" (só atalho, sem botão de marcar); e, se não
+    compacta "Escolhas dos convidados" (com o "+" / ✓ dela); e, se não
     couber em nenhuma seção ativa, entra na seção da sua `popularity` mesmo assim —
     a linha da lista sempre tem um cartão pra onde levar.
   */
@@ -216,28 +224,34 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     document.getElementById(sectionId(key))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  /** "Voltou a ser plano da Marina" — o lugar sai do seu roteiro e fica só como plano do grupo (ajustes-95b) */
+  const backToPlanToast = (placeId: string) => {
+    const guests = wantersFor(placeId).filter((m) => m.id !== YOU);
+    return `Saiu do seu roteiro. Continua como plano ${guests.length === 1 ? 'da' : 'de'} ${joinPt(guests.map((m) => m.shortName))}.`;
+  };
+
   /*
-    ✓ / + do cartão. Lugar que um convidado também quer: tirar o ✓ só tira VOCÊ — ele volta a
-    "Selecionado pelo grupo" e continua no roteiro (é plano do grupo). Sem convidado, sai do roteiro.
+    ✓ / + do cartão. Lugar que um convidado também quer: tirar o ✓ só tira VOCÊ — ele sai do seu
+    roteiro e volta a ser plano provisório do convidado (ajustes-95b). Sem convidado, sai de vez.
   */
   function handleTogglePlace(place: PlaceEntry) {
     const sel = selectionByPlaceId.get(place.id);
     const guests = wantersFor(place.id).filter((m) => m.id !== YOU);
     if (sel && guests.length > 0) {
       trip.toggleMyInterest(sel.id);
-      onToast(`Continua no roteiro: ${joinPt(guests.map((m) => m.shortName))} ${guests.length === 1 ? 'quer' : 'querem'} ir.`);
+      onToast(backToPlanToast(place.id));
       return;
     }
     trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
     if (!sel) onToast('Lugar adicionado');
   }
 
-  /** "Eu também" num lugar que só convidados escolheram */
+  /** "+" num plano do grupo: o lugar entra no SEU roteiro (ajustes-95b) */
   function handleJoinPlace(place: PlaceEntry) {
     const sel = selectionByPlaceId.get(place.id);
     if (!sel) return;
     trip.toggleMyInterest(sel.id);
-    onToast('Lugar adicionado');
+    onToast('Lugar adicionado ao seu roteiro');
   }
 
   const placeCard = (place: PlaceEntry) => (
@@ -246,6 +260,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
       place={place}
       selected={isMine(place.id)}
       wanters={wantersFor(place.id)}
+      suggestedBy={suggestedByFor(place.id)}
       onToggle={() => handleTogglePlace(place)}
       onJoin={() => handleJoinPlace(place)}
       isNew={(() => {
@@ -260,12 +275,35 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     wanters: wantersFor(place.id),
     mine: isMine(place.id),
     cardId: placeCardId(destination.id, place.id),
+    suggestedBy: suggestedByFor(place.id),
   }));
 
-  function handleToggleEvent(event: EventEntry) {
-    const wasSelected = trip.selectedEventIds.includes(event.id);
+  /** "+" / ✓ direto na lista (ajustes-94): mesmo estado do cartão na categoria */
+  function handleToggleMineFromList(choice: GuestChoice) {
+    const sel = selectionByPlaceId.get(choice.place.id);
+    if (!sel) return;
+    trip.toggleMyInterest(sel.id);
+    onToast(choice.mine ? backToPlanToast(choice.place.id) : 'Lugar adicionado ao seu roteiro');
+  }
+
+  /** evento num horário em que o grupo está viajando (ajustes-94): selo no cartão e confirmação ao adicionar */
+  const eventConflict = (event: EventEntry) =>
+    activityConflict(trip, { cityId: event.cityId, dateISO: event.date, time: firstTime(event.time) });
+  const [pendingEvent, setPendingEvent] = useState<{ event: EventEntry; message: string } | null>(null);
+
+  function addEvent(event: EventEntry) {
     trip.toggleEvent(event.id);
-    if (!wasSelected) onToast(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`);
+    onToast(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`);
+  }
+
+  function handleToggleEvent(event: EventEntry) {
+    if (trip.selectedEventIds.includes(event.id)) {
+      trip.toggleEvent(event.id);
+      return;
+    }
+    const conflict = eventConflict(event);
+    if (conflict) setPendingEvent({ event, message: conflict.message });
+    else addEvent(event);
   }
 
   return (
@@ -323,7 +361,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
             countLabel={countLabel(groupPlaces.length, 'lugar', 'lugares')}
             description={`O que quem você convidou quer fazer em ${destination.city}.`}
           >
-            <GuestChoicesList choices={guestChoices} onOpen={focusCard} />
+            <GuestChoicesList choices={guestChoices} onOpen={focusCard} onToggleMine={handleToggleMineFromList} />
           </SuggestionSection>
         )}
 
@@ -370,6 +408,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
                       event={event}
                       selected={trip.selectedEventIds.includes(event.id)}
                       onToggle={() => handleToggleEvent(event)}
+                      conflictBadge={eventConflict(event)?.eventBadge}
                     />
                   </li>
                 );
@@ -416,6 +455,14 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
           ))
         )}
       </div>
+      <ConflictDialog
+        message={pendingEvent?.message ?? null}
+        onCancel={() => setPendingEvent(null)}
+        onConfirm={() => {
+          if (pendingEvent) addEvent(pendingEvent.event);
+          setPendingEvent(null);
+        }}
+      />
     </>
   );
 }

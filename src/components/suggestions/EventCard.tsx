@@ -1,4 +1,4 @@
-import { Check, Clock, MapPin, Ticket } from 'lucide-react';
+import { Check, Clock, MapPin, Ticket, TriangleAlert } from 'lucide-react';
 import { Button } from '../shell/Button';
 import { EVENT_KIND_ICONS } from '../../utils/categoryVisuals';
 import { formatISOToDayPill, formatISOToDisplay, formatISOToShortDay, formatISOToWeekdayAbbrev } from '../../utils/dateMask';
@@ -11,10 +11,12 @@ interface EventCardProps {
   event: EventEntry;
   selected: boolean;
   onToggle: () => void;
+  /** "Depois do seu voo" (ajustes-94): o evento cai num horário em que o grupo está viajando */
+  conflictBadge?: string;
 }
 
 /** Card de evento local (data fixa) — visual próprio, com bloco de data, pra seção de eventos se destacar. */
-export function EventCard({ event, selected, onToggle }: EventCardProps) {
+export function EventCard({ event, selected, onToggle, conflictBadge }: EventCardProps) {
   const { monthAbbrev, day } = formatISOToDayPill(event.date);
   const shortDate = formatISOToDisplay(event.date).slice(0, 5);
 
@@ -43,6 +45,12 @@ export function EventCard({ event, selected, onToggle }: EventCardProps) {
             {event.name}
           </h4>
           {event.recurring && <span className={styles.recurring}>{event.recurring}</span>}
+          {conflictBadge && (
+            // --warning no branco: 5.89:1, sempre com o ícone
+            <span className="inline-flex items-center gap-1 self-start rounded-full border border-solid border-warning px-2 py-0.5 text-(length:--text-sm) font-medium text-warning">
+              <Icon icon={TriangleAlert} /> {conflictBadge}
+            </span>
+          )}
           <p className={styles.meta}>
             <Icon icon={Clock} /> {event.time}
           </p>

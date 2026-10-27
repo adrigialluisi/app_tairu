@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Tabs as UiTabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlatform } from '../../context/PlatformContext';
@@ -6,6 +7,8 @@ import { usePlatform } from '../../context/PlatformContext';
 export interface TabItem {
   value: string;
   label: string;
+  /** nome completo pro leitor de tela quando `label` é um rótulo curto ("San Pedro", ajustes-95b) */
+  ariaLabel?: string;
   /** ícone lucide opcional — só usado quando iconOnly */
   icon?: LucideIcon;
   /** só usado com variant="pill-date": linha de cima do pill (ex.: mês abreviado) */
@@ -30,6 +33,11 @@ interface TabsProps {
    * O pai precisa envolver todo o conteúdo que as abas trocam — o sticky só vale dentro dele.
    */
   sticky?: boolean;
+  /**
+   * abas que podem não caber na largura (cidades do Roteiro, ajustes-95b): rolagem horizontal sem
+   * barra, como as pílulas de data, cada aba do tamanho do texto. Vale também pro pill-date.
+   */
+  scrollable?: boolean;
 }
 
 /*
@@ -37,8 +45,10 @@ interface TabsProps {
   16px do ScreenShell) pra nada aparecer por trás; -my-2/py-2 dá 8px de respiro sob a AppBar quando
   presa, sem mudar o espaçamento da tela parada. `-top-6`: o sticky conta a partir do padding do
   miolo (24px); sem isso a faixa prendia 24px abaixo da AppBar, com conteúdo passando no vão.
+  `z-20` (ajustes-93): o chip do shadcn (ToggleGroupItem) é `relative` e ganha `z-10` com foco — o
+  tipo recém-escolhido em Outros passava por cima das abas, que também eram z-10 e vêm antes no DOM.
 */
-const stickyBar = 'sticky -top-6 z-10 -mx-4 -my-2 bg-(--page) px-4 py-2';
+const stickyBar = 'sticky -top-6 z-20 -mx-4 -my-2 bg-(--page) px-4 py-2';
 
 /*
   Miolo do shadcn (ui/tabs.tsx = Radix Tabs, ver docs/ajustes-69-...md): o
@@ -74,6 +84,10 @@ const listByLook: Record<Look, string> = {
   pillDate: '-m-1 no-scrollbar gap-2 overflow-x-auto bg-transparent p-1',
 };
 
+/* rolável (ajustes-95b): cada aba do tamanho do texto; o trilho do iOS rola junto */
+const scrollList = 'no-scrollbar overflow-x-auto overflow-y-hidden';
+const scrollTrigger = 'flex-none';
+
 const segmentActive =
   'data-active:bg-background data-active:font-semibold data-active:text-foreground data-active:hover:text-foreground';
 
@@ -91,9 +105,59 @@ const triggerByLook: Record<Look, string> = {
   ),
 };
 
-export function Tabs({ name, items, value, onChange, label, iconOnly = false, variant = 'segmented', sticky = false }: TabsProps) {
+/**
+ * Faixa rolável (pílulas de data e abas `scrollable`, ajustes-95b): a aba ativa rola sozinha pra
+ * dentro da faixa ao abrir e ao trocar, sem mexer na rolagem vertical da tela; e, enquanto houver
+ * aba escondida à direita, um degradê suave na cor do miolo (--page) avisa que tem mais.
+ */
+function useScrollStrip(enabled: boolean, activeId: string, itemsKey: string) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [moreRight, setMoreRight] = useState(false);
+
+  useEffect(() => {
+    const list = wrapRef.current?.querySelector<HTMLElement>('[role="tablist"]');
+    if (!enabled || !list) return;
+    const update = () => setMoreRight(list.scrollLeft + list.clientWidth < list.scrollWidth - 1);
+    update();
+    list.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(list);
+    return () => {
+      list.removeEventListener('scroll', update);
+      observer.disconnect();
+    };
+    // itemsKey: as pílulas mudam com a cidade sem a faixa mudar de largura
+  }, [enabled, itemsKey]);
+
+  useEffect(() => {
+    const list = wrapRef.current?.querySelector<HTMLElement>('[role="tablist"]');
+    const tab = document.getElementById(activeId);
+    if (!enabled || !list || !tab || !list.contains(tab)) return;
+    const listBox = list.getBoundingClientRect();
+    const tabBox = tab.getBoundingClientRect();
+    const margin = 16;
+    if (tabBox.right > listBox.right - margin) list.scrollLeft += tabBox.right - listBox.right + margin;
+    else if (tabBox.left < listBox.left) list.scrollLeft -= listBox.left - tabBox.left + margin;
+  }, [enabled, activeId]);
+
+  return { wrapRef, moreRight };
+}
+
+export function Tabs({
+  name,
+  items,
+  value,
+  onChange,
+  label,
+  iconOnly = false,
+  variant = 'segmented',
+  sticky = false,
+  scrollable = false,
+}: TabsProps) {
   const { platform } = usePlatform();
   const look: Look = variant === 'pill-date' ? 'pillDate' : iconOnly ? 'icon' : platform;
+  const strip = scrollable || variant === 'pill-date';
+  const { wrapRef, moreRight } = useScrollStrip(strip, `${name}-tab-${value}`, items.map((i) => i.value).join('|'));
 
   const tabs = (
     // `contents`: o Root do Radix só dá o contexto, sem caixa própria — o
@@ -102,7 +166,7 @@ export function Tabs({ name, items, value, onChange, label, iconOnly = false, va
       <TabsList
         variant={look === 'android' ? 'line' : 'default'}
         aria-label={label}
-        className={cn(listBase, listByLook[look])}
+        className={cn(listBase, listByLook[look], scrollable && scrollList, scrollable && look === 'android' && 'pb-px')}
       >
         {items.map((item) => (
           <TabsTrigger
@@ -111,9 +175,11 @@ export function Tabs({ name, items, value, onChange, label, iconOnly = false, va
             id={`${name}-tab-${item.value}`}
             aria-controls={`${name}-panel-${item.value}`}
             title={iconOnly && item.icon ? item.label : undefined}
+            aria-label={item.ariaLabel}
             className={cn(
               triggerBase,
               triggerByLook[look],
+              scrollable && scrollTrigger,
             )}
           >
             {variant === 'pill-date' && item.pillTop && item.pillBottom ? (
@@ -146,5 +212,20 @@ export function Tabs({ name, items, value, onChange, label, iconOnly = false, va
     </UiTabs>
   );
 
-  return sticky ? <div className={stickyBar}>{tabs}</div> : tabs;
+  const content = strip ? (
+    // min-w-0: dentro de uma linha flex (pílulas + Lista/Mapa) a faixa encolhe e rola, sem empurrar a tela
+    <div ref={wrapRef} className="relative min-w-0">
+      {tabs}
+      {moreRight && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-r from-transparent to-(--page)"
+        />
+      )}
+    </div>
+  ) : (
+    tabs
+  );
+
+  return sticky ? <div className={stickyBar}>{content}</div> : content;
 }

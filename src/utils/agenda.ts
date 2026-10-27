@@ -42,9 +42,14 @@ export interface AgendaItem {
   title: string;
   subtitle: string;
   link: AgendaLink;
+  /** cidade da atividade (evento, passeio, ingresso) — pro aviso de conflito com voo/ônibus/trem (ajustes-94); null no resto */
+  cityId: string | null;
 }
 
-type TripForAgenda = Pick<TripContextValue, 'transportItems' | 'stayItems' | 'otherItems' | 'selectedEventIds'>;
+type TripForAgenda = Pick<
+  TripContextValue,
+  'transportItems' | 'stayItems' | 'otherItems' | 'selectedEventIds' | 'destinations'
+>;
 
 const TIME_RE = /^(\d{1,2}):(\d{2})$/;
 
@@ -86,6 +91,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
           title: 'Retirada do carro',
           subtitle: place(t.pickupLocation),
           link: { path: '/central', tab: 'transporte' },
+          cityId: null,
         });
       }
       const dropoff = parseDisplayDateTime(t.dropoffAt);
@@ -99,6 +105,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
           title: 'Devolução do carro',
           subtitle: place(t.dropoffLocation),
           link: { path: '/central', tab: 'transporte' },
+          cityId: null,
         });
       }
       continue;
@@ -117,6 +124,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
       title: transportItemTitle(t),
       subtitle: [route, arrival?.time ? `chega ${arrival.time}` : ''].filter(Boolean).join(' · '),
       link: { path: '/central', tab: 'transporte' },
+      cityId: null,
     });
   }
 
@@ -134,6 +142,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
         title: `Check-in: ${name}`,
         subtitle,
         link: { path: '/central', tab: 'estadia' },
+        cityId: null,
       });
     }
     if (s.checkOutDate && ISO_RE.test(s.checkOutDate)) {
@@ -147,6 +156,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
         title: `Check-out: ${name}`,
         subtitle,
         link: { path: '/central', tab: 'estadia' },
+        cityId: null,
       });
     }
   }
@@ -164,6 +174,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
       title: otherItemTitle(o),
       subtitle: o.location,
       link: { path: '/central', tab: 'outros' },
+      cityId: trip.destinations.find((d) => d.id === o.destinationId)?.cityId ?? null,
     });
   }
 
@@ -184,6 +195,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
       title: e.name,
       subtitle: [e.venue, e.time.trim() !== time ? e.time : ''].filter(Boolean).join(' · '),
       link: { path: '/roteiro', tab: 'lugares' },
+      cityId: e.cityId,
     });
   }
 

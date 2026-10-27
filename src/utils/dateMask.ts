@@ -137,6 +137,22 @@ export function formatISOToWeekdayAbbrev(iso: string): string {
 const MONTHS_ABBREV_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
 /** Mês abreviado (3 letras, PT) + número do dia — usado nos pills de data do Roteiro. */
+const MONTHS_SHORT_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+/**
+ * Mês e ano de uma viagem, pela data de início e de fim (ajustes-95, tag das viagens passadas):
+ * "Mai 2026"; "Mai – Jun 2026"; "Dez 2025 – Jan 2026".
+ */
+export function formatMonthYearRange(startISO: string, endISO: string): string {
+  const [startYear, startMonth] = startISO.split('-').map(Number);
+  const [endYear, endMonth] = endISO.split('-').map(Number);
+  const start = MONTHS_SHORT_PT[startMonth - 1];
+  const end = MONTHS_SHORT_PT[endMonth - 1];
+  if (startYear !== endYear) return `${start} ${startYear} – ${end} ${endYear}`;
+  if (startMonth !== endMonth) return `${start} – ${end} ${endYear}`;
+  return `${start} ${endYear}`;
+}
+
 export function formatISOToDayPill(iso: string): { monthAbbrev: string; day: string } {
   const { day, month } = fromISODate(iso);
   return { monthAbbrev: MONTHS_ABBREV_PT[month - 1], day: String(day) };

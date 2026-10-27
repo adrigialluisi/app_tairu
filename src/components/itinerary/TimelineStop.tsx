@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { memberTint } from '../../utils/memberColors';
 import type { LucideIcon } from 'lucide-react';
 import { Icon } from '../shell/Icon';
 import { NewBadge } from '../shell/NewBadge';
@@ -27,8 +28,12 @@ interface TimelineStopProps {
   titleAction?: ReactNode;
   /** conteúdo extra antes das ações (ex.: gasto lançado pela parada, formulário de gasto aberto) */
   extra?: ReactNode;
-  /** sugerida por convidado na simulação "2 dias depois" e ainda não vista (ajustes-89) */
+  /** sugerida por convidado na simulação "uma semana antes da viagem" e ainda não vista (ajustes-89) */
   isNew?: boolean;
+  /** tag do convidado que sugeriu (MemberTag), no canto superior direito (ajustes-94) */
+  guestTag?: ReactNode;
+  /** cor de quem sugeriu: fundo bem suave (~8%) e borda nessa cor — só enquanto você não escolheu também */
+  tintColor?: string;
 }
 
 /*
@@ -52,6 +57,8 @@ export function TimelineStop({
   titleAction,
   extra,
   isNew = false,
+  guestTag,
+  tintColor,
 }: TimelineStopProps) {
   // com photoUrl, nem busca na Wikipedia (título vazio = o hook não faz nada)
   const wikiUrl = usePlaceThumbnail(photoUrl ? '' : (photoSearchTitle ?? ''));
@@ -60,8 +67,18 @@ export function TimelineStop({
   return (
     <li className={`${styles.stop} ${isLast ? styles.stopLast : ''}`}>
       <span className={styles.dot} aria-hidden="true" />
-      <div className={styles.content}>
-        <span className={styles.orderLabel}>{orderLabel}</span>
+      <div
+        className={`${styles.content} ${tintColor && !skipped ? styles.tinted : ''}`}
+        style={
+          tintColor && !skipped
+            ? ({ '--stop-color': tintColor, '--stop-tint': memberTint(tintColor) } as CSSProperties)
+            : undefined
+        }
+      >
+        <div className={styles.topRow}>
+          <span className={styles.orderLabel}>{orderLabel}</span>
+          {guestTag && !skipped && guestTag}
+        </div>
         <div className={styles.titleRow}>
           <p className={`${styles.title} ${skipped ? styles.titleSkipped : ''}`}>
             {title}

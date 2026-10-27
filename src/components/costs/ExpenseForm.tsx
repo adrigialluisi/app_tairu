@@ -1,21 +1,18 @@
 import { CircleAlert } from 'lucide-react';
 import { useId, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { OptionChipGroup } from '../quiz/OptionChipGroup';
 import { Button } from '../shell/Button';
 import { TextField } from '../inputs/TextField';
 import { CurrencySelect } from '../inputs/CurrencySelect';
-import { AttachmentList } from '../central/AttachmentList';
 import { VoucherUpload } from '../central/VoucherUpload';
 import { Icon } from '../shell/Icon';
 import { useAutofill } from '../../hooks/useAutofill';
 import { readReceiptFile } from '../../data/mockReceipts';
-import { PaidSplitFields } from './PaidSplitFields';
+import { PaidByField, SplitWithField, usePaidSplit } from './PaidSplitFields';
 import type {
   Attachment,
   Expense,
   ExpenseCategory,
-  MemberId,
   TripDestination,
 } from '../../context/TripContext';
 import { CATEGORY_META, EXPENSE_CATEGORIES, YOU, resolveSplit, type Member } from '../../utils/costs';
@@ -76,8 +73,6 @@ function currentDestinationCurrency(destinations: TripDestination[]): string {
 
 export function ExpenseForm({ destinations, members, initialExpense, onSave, onCancel, onRemove, prefill }: ExpenseFormProps) {
   const baseId = useId();
-  const navigate = useNavigate();
-  const hasCompanions = members.length > 1;
 
   const initialPrefill = initialExpense ? undefined : prefill;
   const [description, setDescription] = useState(initialExpense?.description ?? initialPrefill?.description ?? '');
@@ -92,29 +87,44 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
   const [category, setCategory] = useState<ExpenseCategory | null>(
     initialExpense?.category ?? initialPrefill?.category ?? null,
   );
-  const [paidBy, setPaidBy] = useState<MemberId>(initialExpense?.paidBy ?? YOU);
-  const [splitWith, setSplitWith] = useState<MemberId[]>(() =>
-    resolveSplit(initialExpense?.splitWith ?? null, members),
-  );
+  const paidSplit = usePaidSplit({
+    paidBy: initialExpense?.paidBy ?? YOU,
+    paidByName: initialExpense?.paidByName,
+    splitWith: resolveSplit(initialExpense?.splitWith ?? null, members),
+    splitCount: initialExpense?.splitCount,
+  });
   const [dateISO, setDateISO] = useState<string | null>(initialExpense?.date ?? initialPrefill?.date ?? null);
   const [dateInvalid, setDateInvalid] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>(initialExpense?.attachments ?? []);
   // foto da nota (ajustes-90): leitura simulada pelo nome do arquivo; a foto vira o comprovante
   const af = useAutofill();
-  const [receipt, setReceipt] = useState<Attachment | null>(null);
   const [amountUnread, setAmountUnread] = useState(false);
   const amountId = `${baseId}-amount`;
 
+  /*
+    Um upload só (ajustes-95b, mesma regra do ajustes-93 em Central → Outros): o "Enviar foto da
+    nota" de cima é o comprovante. Saiu o segundo botão de anexar (AttachmentList) — o arquivo
+    continua aparecendo como anexado no próprio bloco, e enviar outro substitui o anterior.
+  */
+  const receipt = attachments.length > 0 ? attachments[attachments.length - 1] : null;
+
+  /** só revoga a URL de arquivo enviado neste formulário — a do gasto salvo continua valendo se a pessoa cancelar */
+  function discardAttachments() {
+    const savedIds = new Set(initialExpense?.attachments.map((a) => a.id) ?? []);
+    attachments.filter((a) => !savedIds.has(a.id)).forEach((a) => URL.revokeObjectURL(a.url));
+    setAttachments([]);
+  }
+
   function handleReceipt(file: File) {
-    const attachment: Attachment = {
-      id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      fileName: file.name,
-      url: URL.createObjectURL(file),
-      mimeType: file.type,
-    };
-    // trocar a nota tira a anterior do comprovante
-    setAttachments((prev) => [...prev.filter((a) => a.id !== receipt?.id), attachment]);
-    setReceipt(attachment);
+    discardAttachments();
+    setAttachments([
+      {
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        fileName: file.name,
+        url: URL.createObjectURL(file),
+        mimeType: file.type,
+      },
+    ]);
     const read = readReceiptFile(file);
     af.read(() => {
       if (read) {
@@ -142,11 +152,7 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
   }
 
   function removeReceipt() {
-    if (receipt) {
-      URL.revokeObjectURL(receipt.url);
-      setAttachments((prev) => prev.filter((a) => a.id !== receipt.id));
-    }
-    setReceipt(null);
+    discardAttachments();
     setAmountUnread(false);
     af.reset();
   }
@@ -172,10 +178,6 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
     setCurrencyHint(null);
   }
 
-  function toggleSplit(id: MemberId) {
-    setSplitWith((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }
-
   const parsedAmount = parseAmount(amount);
   const amountBRL = parsedAmount !== null ? toBRL(parsedAmount, currencyCode) : null;
   const amountError = amount.trim() !== '' && parsedAmount === null ? 'Valor inválido. Ex.: 450 ou 85,50' : null;
@@ -188,22 +190,21 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         : 'Sem conversão: não temos a cotação dessa moeda.';
   }
 
-  const effectiveSplit = hasCompanions ? splitWith : [YOU];
+  // total ÷ "Dividido entre quantas pessoas?" (ajustes-95b), não ÷ os chips marcados
   const perPersonLabel =
-    amountBRL !== null && effectiveSplit.length > 0
-      ? `Cada um: ${formatMoney(amountBRL / effectiveSplit.length, 'BRL')}`
+    amountBRL !== null && paidSplit.splitCount
+      ? `Cada um: ${formatMoney(amountBRL / paidSplit.splitCount, 'BRL')}`
       : null;
 
   const canSave =
     description.trim() !== '' &&
     parsedAmount !== null &&
     parsedAmount > 0 &&
-    effectiveSplit.length > 0 &&
+    paidSplit.valid &&
     !dateInvalid;
 
   function handleSave() {
     if (!canSave) return;
-    const allSelected = members.every((m) => splitWith.includes(m.id));
     onSave({
       id: initialExpense?.id ?? `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       description: description.trim(),
@@ -211,8 +212,10 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
       currencyCode,
       destinationId: place && place !== OTHER_PLACE ? place : null,
       category: category ?? 'outros',
-      paidBy: hasCompanions ? paidBy : YOU,
-      splitWith: !hasCompanions || allSelected ? null : splitWith,
+      paidBy: paidSplit.paidBy ?? YOU,
+      ...(paidSplit.paidByName ? { paidByName: paidSplit.paidByName } : {}),
+      splitWith: paidSplit.splitForSave(members),
+      ...(paidSplit.countForSave() ? { splitCount: paidSplit.countForSave() } : {}),
       date: dateISO,
       attachments,
       placeSelectionId: initialExpense?.placeSelectionId ?? initialPrefill?.placeSelectionId ?? null,
@@ -221,6 +224,9 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
 
   return (
     <div className={styles.form}>
+      {/* primeiro campo (ajustes-95): o organizador diz quem pagou antes de tudo, convidado aceito ou não */}
+      <PaidByField members={members} state={paidSplit} />
+
       {/* igual ao voucher da Central (ajustes-90): foto da nota preenche e vira o comprovante */}
       <VoucherUpload
         fileName={receipt?.fileName ?? null}
@@ -294,24 +300,7 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
 
       <OptionChipGroup legend="Categoria" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
 
-      {hasCompanions ? (
-        <PaidSplitFields
-          members={members}
-          paidBy={paidBy}
-          onPaidByChange={setPaidBy}
-          splitWith={splitWith}
-          onToggleSplit={toggleSplit}
-          perPersonLabel={perPersonLabel}
-        />
-      ) : (
-        <p className={styles.hint}>
-          Quer dividir os gastos? Convide alguém em{' '}
-          <button type="button" className={styles.inlineLink} onClick={() => navigate('/convidar')}>
-            Convidados
-          </button>
-          .
-        </p>
-      )}
+      <SplitWithField members={members} state={paidSplit} perPersonLabel={perPersonLabel} />
 
       <DateField
         id={`${baseId}-date`}
@@ -323,19 +312,6 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         tripRange={{ startISO: getTripStartISO(destinations), endISO: getTripEndISO(destinations) }}
       />
 
-      <AttachmentList
-        attachments={attachments}
-        onChange={(next) => {
-          setAttachments(next);
-          // nota tirada pela lista de comprovantes: o bloco da nota volta ao "Enviar foto da nota"
-          if (receipt && !next.some((a) => a.id === receipt.id)) {
-            setReceipt(null);
-            setAmountUnread(false);
-            af.reset();
-          }
-        }}
-        hint="Comprovante (opcional): anexe a nota ou o recibo (PDF ou foto)."
-      />
       </fieldset>
 
       <div className={styles.actions}>

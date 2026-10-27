@@ -1,6 +1,8 @@
 import { BedDouble, ClipboardList, ShoppingBag, Ticket, TrainFront, UtensilsCrossed, type LucideIcon } from 'lucide-react';
 import type { ExpenseCategory, MemberId, OtherItem, TripCompanion, TripContextValue } from '../context/TripContext';
 import { isValidCalendarDate, toISODate } from './dateMask';
+import { assignMemberColors } from './memberColors';
+import { externalMemberId, isExternalMemberId } from './settlement';
 import { parseAmount, toBRL } from './money';
 import { otherItemTitle } from './otherSummary';
 import { stayItemTitle } from './staySummary';
@@ -51,6 +53,17 @@ export interface Member {
    * rateio pelo que pagou, mas não aparece em "quem pagou/dividir com" nem no "todos" da divisão
    */
   former?: boolean;
+  /** e-mail do convite (convidados) — "Quem pagou?" e "Dividir com" mostram o e-mail de quem ainda não tem nome */
+  email?: string;
+  /** convite ainda não aceito — entra em "Quem pagou?", "Dividir com" e no rateio mesmo assim (ajustes-95, desfaz o 94b) */
+  pending?: boolean;
+  /**
+   * "Outro" de "Quem pagou?" (ajustes-94): pessoa de fora da viagem, pelo nome digitado. Entra no
+   * rateio, mas não no "todos" da divisão nem na lista de membros dos formulários.
+   */
+  external?: boolean;
+  /** cor fixa da pessoa (ajustes-94, src/utils/memberColors.ts) — CSS var; "Outro" não tem */
+  color?: string;
 }
 
 export interface CostEntry {
@@ -64,8 +77,12 @@ export interface CostEntry {
   destinationId: string | null;
   category: ExpenseCategory;
   paidBy: MemberId;
+  /** nome de quem pagou quando foi "Outro" (ajustes-94) */
+  paidByName?: string;
   /** já resolvido (null → todos os membros) */
   splitWith: MemberId[];
+  /** "Dividido entre quantas pessoas?" (ajustes-95b) — ver effectiveSplitCount */
+  splitCount?: number;
   date: string | null;
 }
 
@@ -76,35 +93,64 @@ function toMember(c: TripCompanion, former: boolean): Member {
     label: former ? `${label} (saiu da viagem)` : label,
     shortName: c.name ? c.name.split(' ')[0] : label,
     initials: c.initials ?? label.slice(0, 2).toUpperCase(),
+    email: c.email,
+    ...(c.status === 'convite-enviado' ? { pending: true } : {}),
     ...(former ? { former: true } : {}),
   };
 }
 
-/** Você + quem está na viagem + quem saiu (marcado `former`, ver Member.former). */
-export function getMembers(
-  trip: Pick<TripContextValue, 'companions'> & Partial<Pick<TripContextValue, 'formerCompanions'>>,
+/** quem pagou como "Outro" em algum gasto (ou custo da Central), uma vez por nome normalizado */
+function externalMembers(
+  trip: Partial<Pick<TripContextValue, 'expenses' | 'centralCostOverrides'>>,
 ): Member[] {
-  return [
+  const byId = new Map<MemberId, Member>();
+  for (const e of [...(trip.expenses ?? []), ...(trip.centralCostOverrides ?? [])]) {
+    const name = e.paidByName?.trim();
+    if (!name || !isExternalMemberId(e.paidBy)) continue;
+    const id = externalMemberId(name);
+    if (byId.has(id)) continue;
+    byId.set(id, {
+      id,
+      label: name,
+      shortName: name.split(' ')[0],
+      initials: name.slice(0, 2).toUpperCase(),
+      external: true,
+    });
+  }
+  return [...byId.values()];
+}
+
+/**
+ * Você + convidados (aceitos ou com convite pendente) + quem saiu (marcado `former`) + quem pagou
+ * como "Outro" (marcado `external`, ajustes-94). Cada um com a sua cor fixa (memberColors.ts).
+ */
+export function getMembers(
+  trip: Pick<TripContextValue, 'companions'> &
+    Partial<Pick<TripContextValue, 'formerCompanions' | 'expenses' | 'centralCostOverrides'>>,
+): Member[] {
+  const members: Member[] = [
     { id: YOU, label: 'Você', shortName: 'Você', initials: 'EU' },
     ...trip.companions.map((c) => toMember(c, false)),
     ...(trip.formerCompanions ?? []).map((c) => toMember(c, true)),
   ];
+  const colors = assignMemberColors(members, YOU);
+  return [...members.map((m) => ({ ...m, color: colors.get(m.id) })), ...externalMembers(trip)];
 }
 
-/** Só quem está na viagem agora — pra escolher quem pagou/divide e pro "todos" da divisão. */
+/** Só quem está na viagem agora (com convite pendente também) — pra escolher quem pagou/divide e pro "todos" da divisão. */
 export function activeMembers(members: Member[]): Member[] {
-  return members.filter((m) => !m.former);
+  return members.filter((m) => !m.former && !m.external);
 }
 
 export function memberLabel(members: Member[], id: MemberId): string {
   return members.find((m) => m.id === id)?.label ?? 'Alguém que saiu da viagem';
 }
 
-/** null → todos; ids de convidados removidos são ignorados; se sobrar ninguém, volta pra todos. */
+/** null → todos; ids de convidados removidos são ignorados ("Outro" fica); se sobrar ninguém, volta pra todos. */
 export function resolveSplit(splitWith: MemberId[] | null, members: Member[]): MemberId[] {
   const all = activeMembers(members).map((m) => m.id);
   if (!splitWith) return all;
-  const valid = splitWith.filter((id) => all.includes(id));
+  const valid = splitWith.filter((id) => all.includes(id) || isExternalMemberId(id));
   return valid.length > 0 ? valid : all;
 }
 
@@ -137,7 +183,9 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
       destinationId: e.destinationId,
       category: e.category,
       paidBy: e.paidBy,
+      paidByName: e.paidByName,
       splitWith: resolveSplit(e.splitWith, members),
+      splitCount: e.splitCount,
       date: e.date,
     });
   }
@@ -164,7 +212,9 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
       destinationId,
       category,
       paidBy: override && members.some((m) => m.id === override.paidBy) ? override.paidBy : YOU,
+      paidByName: override?.paidByName,
       splitWith: resolveSplit(override?.splitWith ?? null, members),
+      splitCount: override?.splitCount,
       date,
     });
   }
@@ -198,6 +248,7 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
 export {
   computeBalances,
   computeTransfers,
+  effectiveSplitCount,
   type MemberBalance,
   type Settlement,
   type Transfer,

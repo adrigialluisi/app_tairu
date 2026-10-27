@@ -4,9 +4,9 @@
  *
  * Desde o ajustes-89 (que substitui a entrada automática de 2,5 s do ajustes-67): todo convite
  * fica em "Convite enviado" e só estes dois e-mails "entram" quando o moderador aciona "Simular:
- * 2 dias depois" (toque longo no seletor iOS/Android). Aí trazem 1 lugar por cidade cada (ids
- * reais de places.json, nada inventado) e gastos que só existem se fizerem sentido na viagem
- * (`requires`). Os valores dos gastos são plausíveis e SIMULADOS. A visão do convidado é outro
+ * uma semana antes da viagem" (toque longo no seletor iOS/Android). Aí trazem 1 lugar por cidade
+ * cada (ids reais de places.json, nada inventado; sempre um que a participante ainda não escolheu,
+ * ajustes-95b) e gastos que só existem se fizerem sentido na viagem (`requires`). Os valores dos gastos são plausíveis e SIMULADOS. A visão do convidado é outro
  * protótipo.
  */
 import type { ExpenseCategory } from '../context/TripContext';
@@ -27,8 +27,13 @@ export interface MockCompanionProfile {
   email: string;
   name: string;
   initials: string;
-  /** placeIds de places.json; só entram os da cidade que existir na viagem */
-  places: string[];
+  /**
+   * 1 lugar por cidade (ids reais de places.json; só entram os da cidade que existir na viagem).
+   * O convidado sugere sempre algo que a participante AINDA NÃO escolheu (ajustes-95b): se o
+   * `placeId` já está no roteiro dela, vale o primeiro livre de `reserves` (mesma cidade, mesma
+   * categoria quando dá). Se todos já estiverem, ele não sugere nada nessa cidade.
+   */
+  places: { placeId: string; reserves: string[] }[];
   expenses: {
     /** estável, pra não duplicar (vira o id `mock-${key}`) */
     key: string;
@@ -50,7 +55,11 @@ export const MOCK_COMPANIONS: MockCompanionProfile[] = [
     email: 'marina.duarte@email.com',
     name: 'Marina Duarte',
     initials: 'MD',
-    places: ['ba-don-julio', 'sc-bocanariz', 'atc-laguna-cejar'],
+    places: [
+      { placeId: 'ba-don-julio', reserves: ['ba-la-cabrera', 'ba-la-brigada', 'ba-cabana-las-lilas'] },
+      { placeId: 'sc-bocanariz', reserves: ['sc-liguria', 'sc-la-cabrera-las-condes', 'sc-peumayen'] },
+      { placeId: 'atc-laguna-cejar', reserves: ['atc-laguna-chaxa', 'atc-ojos-del-salar', 'atc-valle-de-la-muerte'] },
+    ],
     expenses: [
       {
         key: 'marina-laguna-cejar',
@@ -69,7 +78,14 @@ export const MOCK_COMPANIONS: MockCompanionProfile[] = [
     email: 'rodrigo.antunes@email.com',
     name: 'Rodrigo Antunes',
     initials: 'RA',
-    places: ['ba-la-bombonera', 'sc-mercado-central', 'atc-valle-de-la-luna'],
+    places: [
+      { placeId: 'ba-la-bombonera', reserves: ['ba-monumental-river', 'ba-teatro-colon', 'ba-casa-rosada'] },
+      { placeId: 'sc-mercado-central', reserves: ['sc-confiteria-torres', 'sc-costanera-center', 'sc-liguria'] },
+      {
+        placeId: 'atc-valle-de-la-luna',
+        reserves: ['atc-geiseres-del-tatio', 'atc-valle-de-la-muerte', 'atc-lagunas-altiplanicas'],
+      },
+    ],
     expenses: [
       {
         key: 'rodrigo-transfer-eze',

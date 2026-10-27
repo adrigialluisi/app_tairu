@@ -114,3 +114,28 @@ test('distribuição por dia', () => {
   console.log('— Documento (5 dias, 19/11 de deslocamento):');
   print(docDays, ['Dom 15/11', 'Seg 16/11', 'Ter 17/11', 'Qua 18/11', 'Qui 19/11 (voo)']);
 });
+
+/*
+  Dia certo de funcionamento (ajustes-95): a Feria de Mataderos só acontece aos domingos. Buenos
+  Aires tem 5 dias, sáb 14 a qua 18/11 — o único domingo é o 15 (dia local 1). Antes ela caía no
+  sábado 14 junto com o resto do roteiro.
+*/
+const BA_WEEKDAYS = [6, 0, 1, 2, 3];
+
+test('Feria de Mataderos (só aos domingos) cai no domingo 15/11', () => {
+  const items = itemsOf([...SCENARIO, 'ba-feria-mataderos']).map((it) =>
+    it.id === 'ba-feria-mataderos' ? { ...it, openDays: [0] } : it,
+  );
+  const days = computeProximityDays(items, 5, { lightDays: [0], weekdays: BA_WEEKDAYS });
+  assert.equal(days.get('ba-feria-mataderos')?.day, 1);
+  // os outros continuam todos com dia
+  assert.equal(days.size, items.length);
+});
+
+test('sem nenhum domingo na cidade, a Feria de Mataderos vai pro primeiro dia (a tela avisa)', () => {
+  const items = itemsOf([...SCENARIO, 'ba-feria-mataderos']).map((it) =>
+    it.id === 'ba-feria-mataderos' ? { ...it, openDays: [0] } : it,
+  );
+  const days = computeProximityDays(items, 3, { weekdays: [1, 2, 3] });
+  assert.equal(days.get('ba-feria-mataderos')?.day, 0);
+});

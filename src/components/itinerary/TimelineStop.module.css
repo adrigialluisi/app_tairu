@@ -58,6 +58,27 @@
   gap: var(--space-1);
 }
 
+/* "Parada 1" à esquerda e a tag de quem sugeriu no canto direito (ajustes-94) */
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 20px;
+}
+
+/*
+  Escolhida por convidado (ajustes-94): o bloco da parada ganha o fundo bem suave na cor da pessoa
+  (8%) e a borda na mesma cor. --text no fundo tingido ≥ 15.36:1, --muted ≥ 6.70:1.
+*/
+.tinted,
+.stop:not(.stopLast) > .tinted {
+  padding: var(--space-3);
+  background: var(--stop-tint);
+  border: 1px solid var(--stop-color);
+  border-radius: var(--radius-card);
+}
+
 .orderLabel {
   font-size: 11px;
   font-weight: 600;

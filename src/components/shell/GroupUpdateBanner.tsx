@@ -7,23 +7,26 @@ const VISIBLE_MS = 5000;
 let lastShownSeq = 0;
 
 interface GroupUpdateBannerProps {
-  notice: { seq: number; message: string } | null;
+  notice: { seq: number; message: string; title: string } | null;
   /** tocar no banner: rola até o bloco "Novidades na viagem" */
   onOpen: () => void;
 }
 
 /**
- * Banner estilo notificação do celular (ajustes-89), no topo da Início, depois do "Simular: 2 dias
- * depois": ícone do Tairu + "Marina e Rodrigo entraram na viagem e adicionaram…". Some sozinho em
+ * Banner estilo notificação do celular (ajustes-89), no topo da Início, depois do "Simular: uma semana
+ * antes da viagem" (ajustes-94): ícone do Tairu, "Tairu · Faltam poucos dias pra viagem" e "Marina e
+ * Rodrigo entraram na viagem e adicionaram…". Some sozinho em
  * ~5 s; anunciado pro leitor de tela (role="status"). --text no branco: 17.49:1.
  */
 export function GroupUpdateBanner({ notice, onOpen }: GroupUpdateBannerProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
 
   useEffect(() => {
     if (!notice || notice.seq <= lastShownSeq) return;
     lastShownSeq = notice.seq;
     setMessage(notice.message);
+    setTitle(notice.title);
     const timer = setTimeout(() => setMessage(null), VISIBLE_MS);
     return () => clearTimeout(timer);
   }, [notice]);
@@ -41,7 +44,7 @@ export function GroupUpdateBanner({ notice, onOpen }: GroupUpdateBannerProps) {
         >
           <img src={`${import.meta.env.BASE_URL}logo/LogoTairu.svg`} alt="" className={styles.icon} />
           <span className={styles.text}>
-            <span className={styles.app}>Tairu · agora</span>
+            <span className={styles.app}>Tairu · {title}</span>
             <span className={styles.message}>{message}</span>
           </span>
         </button>

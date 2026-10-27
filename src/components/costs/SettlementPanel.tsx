@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, HandCoins, History, Users } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, HandCoins, History, Plus } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField } from '../inputs/TextField';
@@ -25,6 +25,8 @@ interface SettlementPanelProps {
   members: Member[];
   /** toast da tela ("Pagamento registrado") */
   onSaved?: (message: string) => void;
+  /** estado vazio: abre o "Lançar gasto" em Lançamentos (ajustes-95) */
+  onAddExpense: () => void;
 }
 
 function todayISO(): string {
@@ -101,31 +103,49 @@ function PaymentForm({
  * transferências mostram só o que FALTA, um gasto novo gera só a diferença e o histórico lista
  * quem pagou o quê, com "Desfazer".
  */
-export function SettlementPanel({ entries, members, onSaved }: SettlementPanelProps) {
+export function SettlementPanel({ entries, members, onSaved, onAddExpense }: SettlementPanelProps) {
   const trip = useTrip();
   const navigate = useNavigate();
   const [payingKey, setPayingKey] = useState<string | null>(null);
 
-  if (members.length < 2) {
+  /*
+    Sem bloqueio por convidado (ajustes-95): entra no rateio quem aparece em algum gasto ou acerto —
+    convidado aceito, com convite pendente ou "Outro". Vazio enquanto nenhum gasto envolve outra pessoa.
+  */
+  const involved = new Set<string>([YOU]);
+  for (const e of entries) {
+    if (e.amountBRL === null) continue;
+    involved.add(e.paidBy);
+    e.splitWith.forEach((id) => involved.add(id));
+  }
+  for (const st of trip.settlements) {
+    involved.add(st.from);
+    involved.add(st.to);
+  }
+
+  if (involved.size < 2) {
     return (
       <Card asChild className="px-4">
       <div className={styles.invite}>
-        <p className={styles.inviteText}>
-          <Icon icon={Users} /> Convide alguém pra dividir os gastos da viagem.
-        </p>
-        <Button variant="secondary" onClick={() => navigate('/convidar')}>
-          Convidar
+        <p className={styles.inviteText}>Lance um gasto e diga quem pagou pra ver quem deve pra quem.</p>
+        <Button onClick={onAddExpense}>
+          <Icon icon={Plus} /> Lançar gasto
         </Button>
+        <button type="button" className={styles.inviteLink} onClick={() => navigate('/convidar')}>
+          Convidar alguém pra viagem
+        </button>
       </div>
       </Card>
     );
   }
 
+  const rateioMembers = members.filter((m) => involved.has(m.id));
+
   // recalculado a cada render: qualquer mudança em gasto, Central, convidados ou acertos reflete aqui
-  const balances = computeBalances(entries, members, trip.settlements);
+  const balances = computeBalances(entries, rateioMembers, trip.settlements);
   const transfers = computeTransfers(balances);
   // "Pagou" e "Parte" do cartão são só dos gastos; o acerto aparece no saldo e no histórico
-  const spent = new Map(computeBalances(entries, members).map((b) => [b.memberId, b]));
+  const spent = new Map(computeBalances(entries, rateioMembers).map((b) => [b.memberId, b]));
   const history = [...trip.settlements].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -146,6 +166,12 @@ export function SettlementPanel({ entries, members, onSaved }: SettlementPanelPr
                 <span className={styles.memberMeta}>
                   {isYou ? 'Sua parte' : `Parte de ${name}`}: {formatMoney(b.shareBRL, 'BRL')}
                 </span>
+                {/* partes de quem não está marcado no gasto (ajustes-95b): pagas, mas fora do acerto */}
+                {b.outsideBRL > 0.005 && (
+                  <span className={styles.memberMeta}>
+                    Fora do acerto (quem não está no app): {formatMoney(b.outsideBRL, 'BRL')}
+                  </span>
+                )}
                 {b.balanceBRL > 0.005 ? (
                   <span className={`${styles.balance} ${styles.balanceReceive}`}>
                     <Icon icon={ArrowUp} /> vai receber {formatMoney(b.balanceBRL, 'BRL')}

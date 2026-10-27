@@ -31,6 +31,8 @@ export interface RouteMapPin {
   photoUrl?: string | null;
   /** linha de detalhe do popup, no lugar de "Dia 2 · Parada 3" (ex.: "Dia 2 · Evento às 21:30") */
   detail?: string;
+  /** fotos do lugar (viagem passada, ajustes-94): miniaturas no popup, no lugar da foto única */
+  photos?: string[];
 }
 
 interface RouteMapProps {
@@ -87,6 +89,14 @@ const PIN_W = 28;
 const PIN_H = 40;
 /** distância entre pinos abertos lado a lado */
 const PIN_GAP_PX = PIN_W + 4;
+/**
+ * Maior grupo que abre em leque (ajustes-94). Com o zoom aberto (a "Viagem toda" da viagem
+ * passada mostra Portugal inteiro), uma cidade inteira vira um grupo só: 16 pinos lado a lado
+ * davam uma fileira de ~500 px — centenas de km nesse zoom —, e os pinos de Lisboa e do Porto
+ * atravessavam o mapa do oceano até a Espanha. Grupo maior fica na coordenada real, empilhado,
+ * até a pessoa aproximar (aí ele se desfaz em grupos pequenos, que abrem).
+ */
+const MAX_FAN = 4;
 
 /**
  * Pinos sobrepostos abertos lado a lado (ajustes-88): lugares muito perto (Caminito e La
@@ -119,7 +129,7 @@ function spreadPositions(map: L.Map | null, pins: RouteMapPin[], zoom: number): 
     pins.forEach((_, i) => groups.set(root(i), [...(groups.get(root(i)) ?? []), i]));
     shown = original.map((pt) => pt.clone());
     for (const members of groups.values()) {
-      if (members.length < 2) continue;
+      if (members.length < 2 || members.length > MAX_FAN) continue;
       // da esquerda pra direita na ordem do lugar no mapa
       const sorted = [...members].sort((a, b) => original[a].x - original[b].x || a - b);
       const cx = sorted.reduce((acc, i) => acc + original[i].x, 0) / sorted.length;
@@ -213,20 +223,30 @@ function TileLayerWithTimeout({ onStatusChange }: { onStatusChange: (ok: boolean
 
 /** Popup no estilo do cartão do Google: foto pequena (quando tem), nome, bairro e "Dia 2 · Parada 3". */
 function PinCard({ pin }: { pin: RouteMapPin }) {
-  const photoUrl = usePlaceThumbnail(pin.photoTitle ?? '', pin.photoUrl);
+  const photoUrl = usePlaceThumbnail(pin.photos?.length ? '' : (pin.photoTitle ?? ''), pin.photos?.length ? null : pin.photoUrl);
   const detail =
     pin.detail ?? (pin.skipped ? `Dia ${pin.dayNumber} · Pulado` : `Dia ${pin.dayNumber}${pin.order ? ` · Parada ${pin.order}` : ''}`);
   return (
     <div className={styles.popup}>
-      {photoUrl && <img src={photoUrl} alt="" className={styles.popupPhoto} />}
+      {!pin.photos?.length && photoUrl && <img src={photoUrl} alt="" className={styles.popupPhoto} />}
       <div className={styles.popupText}>
         <span className={styles.popupName}>{pin.name}</span>
         <span className={styles.popupMeta}>{pin.neighborhood}</span>
         <span className={styles.popupMeta}>{detail}</span>
+        {pin.photos && pin.photos.length > 0 && (
+          <span className={styles.popupPhotos}>
+            {pin.photos.slice(0, 3).map((src) => (
+              <img key={src} src={src} alt="" className={styles.popupThumb} />
+            ))}
+          </span>
+        )}
       </div>
     </div>
   );
 }
+
+/** acima disso a legenda cobriria o mapa no celular */
+const MAX_LEGEND_DAYS = 6;
 
 export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, routeByDay = false }: RouteMapProps) {
   const [tilesOk, setTilesOk] = useState<boolean | null>(null);
@@ -328,8 +348,11 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
           ))}
         </MapContainer>
 
-        {/* legenda por cima do mapa, no canto superior esquerdo, com as datas das pílulas (ajustes-88) */}
-        {legend.length > 1 && (
+        {/*
+          legenda por cima do mapa, no canto superior esquerdo, com as datas das pílulas (ajustes-88);
+          com a viagem toda ("Todas", ajustes-95) seriam 14 linhas cobrindo o mapa — aí fica só o popup
+        */}
+        {legend.length > 1 && legend.length <= MAX_LEGEND_DAYS && (
           <ul className={styles.legend} aria-label="Cores dos dias no mapa">
             {legend.map((p) => (
               <li key={p.dayNumber} className={styles.legendItem}>

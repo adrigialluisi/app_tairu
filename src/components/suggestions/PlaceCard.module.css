@@ -9,6 +9,12 @@
   border-color: var(--accent);
 }
 
+/* só o grupo escolheu (ajustes-94): cartão tingido (8%) e borda na cor de quem sugeriu; --text ≥ 15.36:1 */
+.cardTinted.cardTinted {
+  background: var(--card-tint);
+  border-color: var(--card-color);
+}
+
 .photoArea {
   position: relative;
 }
@@ -36,11 +42,35 @@
   line-height: 1;
 }
 
-/* Redondo nas duas plataformas (o Button padrão segue o raio de input de cada uma). */
-.toggle.toggle {
+/*
+  Canto superior direito da foto (ajustes-94): a tag de quem sugeriu e, à direita dela, o + / ✓.
+  A tag pode encolher (nome com reticências); o botão nunca.
+*/
+.corner {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.corner > * {
+  pointer-events: auto;
+}
+
+.cornerTag {
+  min-width: 0;
+  flex: 0 1 auto;
+  box-shadow: var(--shadow-float);
+}
+
+/* Redondo nas duas plataformas (o Button padrão segue o raio de input de cada uma). */
+.toggle.toggle {
+  flex: none;
   border-radius: 999px;
   font-size: 22px;
   box-shadow: var(--shadow-float);
@@ -85,31 +115,4 @@
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--text);
-}
-
-/*
-  "Selecionado pelo grupo" (ajustes-87): selo branco no canto da foto, com os avatares de quem
-  escolheu — no lugar do botão, pra não parecer que você marcou. --text no branco: 17.49:1.
-*/
-.groupBadge {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
-  max-width: calc(100% - 2 * var(--space-2));
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
-  background: var(--card);
-  border-radius: 999px;
-  box-shadow: var(--shadow-float);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-  color: var(--text);
-}
-
-/* "Eu também" fica no pé do cartão, alinhado com os outros do carrossel */
-.join {
-  margin-top: auto;
 }

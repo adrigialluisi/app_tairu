@@ -83,13 +83,6 @@ export function CreateTrip() {
     <ScreenShell
       appBar={<AppBar title="Destinos e datas" onHome={() => navigate('/inicio')} />}
       bottomNav={<BottomNav />}
-      footer={
-        trip.perfilSaved && trip.companions.length === 0 ? (
-          <Button fullWidth onClick={() => navigate('/central')}>
-            Continuar
-          </Button>
-        ) : undefined
-      }
       toast={<SaveToast visible={visible} message={message} />}
     >
       <div className={styles.intro}>

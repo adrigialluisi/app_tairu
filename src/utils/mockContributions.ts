@@ -12,7 +12,7 @@ import type {
 /**
  * SIMULAÇÃO (docs/ajustes-89-convidados-em-dois-momentos.md, substitui a aplicação contínua do
  * ajustes-67): as contribuições dos convidados do cenário fixo entram UMA vez, quando o moderador
- * aciona "Simular: 2 dias depois". Nada é recriado depois: gasto cuja condição (`requires`) não
+ * aciona "Simular: uma semana antes da viagem". Nada é recriado depois: gasto cuja condição (`requires`) não
  * existia naquele momento não aparece mais tarde sozinho.
  */
 
@@ -34,7 +34,7 @@ interface ContributionState {
 export interface ContributionResult {
   selectedPlaces: TripPlaceSelection[];
   expenses: Expense[];
-  /** ids das seleções que ganharam um convidado (novas ou com "também quer") — selo "Novo" */
+  /** ids das seleções novas dos convidados (planos do grupo) — selo "Novo" */
   newPlaceSelectionIds: string[];
   newExpenseIds: string[];
 }
@@ -68,34 +68,39 @@ export function applyMockContributions(state: ContributionState): ContributionRe
   for (const companion of state.joined) {
     const profile = findMockCompanion(companion.email);
     if (!profile) continue;
-    for (const placeId of profile.places) {
-      const place = getPlaceById(placeId);
-      const destination = place && state.destinations.find((d) => d.cityId === place.cityId);
-      if (!place || !destination || dismissed.has(mockPlaceKey(companion.id, placeId))) continue;
-
-      const existing = selectedPlaces.find((s) => s.destinationId === destination.id && s.placeId === placeId);
-      if (existing) {
-        if (existing.addedBy === companion.id || existing.alsoWantedBy.includes(companion.id)) continue;
-        selectedPlaces = selectedPlaces.map((s) =>
-          s.id === existing.id ? { ...s, alsoWantedBy: [...s.alsoWantedBy, companion.id] } : s,
+    for (const { placeId: first, reserves } of profile.places) {
+      /*
+        Plano do grupo (ajustes-95b): o convidado sugere um lugar que ainda não está no roteiro —
+        nem da participante nem do outro convidado. Se o principal já está, o primeiro livre da
+        reserva (mesma cidade). Entra como plano provisório dele: addedBy = convidado, sem 'voce'.
+      */
+      const placeId = [first, ...reserves].find((id) => {
+        const candidate = getPlaceById(id);
+        const dest = candidate && state.destinations.find((d) => d.cityId === candidate.cityId);
+        return (
+          !!dest &&
+          !dismissed.has(mockPlaceKey(companion.id, id)) &&
+          !selectedPlaces.some((s) => s.destinationId === dest.id && s.placeId === id)
         );
-        newPlaceSelectionIds.push(existing.id);
-      } else {
-        const id = `mock-place-${companion.id}-${placeId}`;
-        selectedPlaces = [
-          ...selectedPlaces,
-          {
-            id,
-            destinationId: destination.id,
-            placeId,
-            customLabel: null,
-            categories: place.categories,
-            addedBy: companion.id,
-            alsoWantedBy: [],
-          },
-        ];
-        newPlaceSelectionIds.push(id);
-      }
+      });
+      const place = placeId ? getPlaceById(placeId) : undefined;
+      const destination = place && state.destinations.find((d) => d.cityId === place.cityId);
+      if (!placeId || !place || !destination) continue;
+
+      const id = `mock-place-${companion.id}-${placeId}`;
+      selectedPlaces = [
+        ...selectedPlaces,
+        {
+          id,
+          destinationId: destination.id,
+          placeId,
+          customLabel: null,
+          categories: place.categories,
+          addedBy: companion.id,
+          alsoWantedBy: [],
+        },
+      ];
+      newPlaceSelectionIds.push(id);
     }
   }
 

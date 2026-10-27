@@ -77,6 +77,11 @@ export function splitDaysByDestination(destinations: TripDestination[]): Destina
   }));
 }
 
+/** 0 = domingo … 6 = sábado */
+export function weekdayOfISO(iso: string): number {
+  return new Date(toMs(iso)).getDay();
+}
+
 /** Total de dias entre duas datas ISO, inclusive nas duas pontas. */
 export function daysBetween(startISO: string, endISO: string): number {
   return Math.round((toMs(endISO) - toMs(startISO)) / 86_400_000) + 1;
@@ -128,10 +133,33 @@ export function proximityOptionsFor(trip: TripForProximity, destinationId: strin
     .filter((st) => st.destinationId === destinationId && st.hotelId)
     .map((st) => getHotel(st.hotelId))
     .find((h) => typeof h?.lat === 'number' && typeof h?.lng === 'number');
-  return { lightDays, start: hotel ? { lat: hotel.lat!, lng: hotel.lng! } : null };
+  // dia da semana de cada dia do destino, pros lugares que só abrem em alguns dias (ajustes-95)
+  const weekdays =
+    range && tripStartISO ? range.globalDayIndexes.map((g) => weekdayOfISO(globalDayToISO(tripStartISO, g))) : undefined;
+  return { lightDays, start: hotel ? { lat: hotel.lat!, lng: hotel.lng! } : null, weekdays };
 }
 
-/** Itens sem override do destino, com a coordenada do lugar (lugar adicionado à mão não tem). */
+/**
+ * Parada da participante: ela adicionou ou tocou "+" / "Eu também" (ajustes-95b). Lugar escolhido
+ * SÓ por convidado é "plano do grupo": não entra na divisão de dias, no mapa, na Agenda nem na
+ * contagem dela — aparece no Roteiro só como referência (bloco "Planos do grupo", ver groupPlansByDay).
+ */
+export function isMyPlace(selection: TripPlaceSelection): boolean {
+  return selection.addedBy === 'voce' || selection.alsoWantedBy.includes('voce');
+}
+
+function toProximityItem(p: TripPlaceSelection) {
+  const place = p.placeId ? getPlaceById(p.placeId) : undefined;
+  return {
+    id: p.id,
+    lat: place?.lat,
+    lng: place?.lng,
+    meal: !!place?.categories.includes('gastronomia'),
+    openDays: place?.openDays,
+  };
+}
+
+/** Paradas da participante sem override no destino, com a coordenada do lugar (lugar adicionado à mão não tem). */
 function unpinnedProximityDays(
   destinationId: string,
   dayCount: number,
@@ -139,19 +167,42 @@ function unpinnedProximityDays(
   overrideIds: Set<string>,
   options: ProximityOptions,
 ): { unpinned: TripPlaceSelection[]; days: Map<string, { day: number; order: number }> } {
-  const unpinned = selectedPlaces.filter((p) => p.destinationId === destinationId && !overrideIds.has(p.id));
-  const days = computeProximityDays(
-    unpinned.map((p) => {
-      const place = p.placeId ? getPlaceById(p.placeId) : undefined;
-      return { id: p.id, lat: place?.lat, lng: place?.lng, meal: !!place?.categories.includes('gastronomia') };
-    }),
-    dayCount,
-    options,
+  const unpinned = selectedPlaces.filter(
+    (p) => p.destinationId === destinationId && !overrideIds.has(p.id) && isMyPlace(p),
   );
+  const days = computeProximityDays(unpinned.map(toProximityItem), dayCount, options);
   return { unpinned, days };
 }
 
 /**
+ * Planos do grupo de um destino (ajustes-95b), cada um no dia sugerido: o dia em que ele cairia pela
+ * proximidade se a participante tocasse "+" agora (as paradas dela sem override + ele). Sem dia
+ * calculável, o primeiro dia da cidade. Mapa dia local → planos, na ordem em que foram escolhidos.
+ */
+export function groupPlansByDay(
+  destinationId: string,
+  dayCount: number,
+  selectedPlaces: TripPlaceSelection[],
+  overrides: ItineraryOverride[],
+  options: ProximityOptions = {},
+): Map<number, TripPlaceSelection[]> {
+  const byDay = new Map<number, TripPlaceSelection[]>();
+  if (dayCount <= 0) return byDay;
+  const overrideIds = new Set(overrides.map((o) => o.placeSelectionId));
+  const mine = selectedPlaces.filter(
+    (p) => p.destinationId === destinationId && !overrideIds.has(p.id) && isMyPlace(p),
+  );
+  const plans = selectedPlaces.filter((p) => p.destinationId === destinationId && !isMyPlace(p));
+  for (const plan of plans) {
+    const days = computeProximityDays([...mine, plan].map(toProximityItem), dayCount, options);
+    const day = Math.min(Math.max(days.get(plan.id)?.day ?? 0, 0), dayCount - 1);
+    byDay.set(day, [...(byDay.get(day) ?? []), plan]);
+  }
+  return byDay;
+}
+
+/**
+ * Só as paradas da participante (isMyPlace, ajustes-95b): os planos do grupo ficam de fora.
  * Itens sem override (nunca movidos nem pulados) são distribuídos nos dias do
  * destino por PROXIMIDADE (`computeProximityDays`, ajustes-80, algoritmo trocado no ajustes-88 — substitui o
  * round-robin na ordem em que foram marcados): o que fica perto cai no mesmo
@@ -170,7 +221,7 @@ export function computeDestinationAssignments(
   /** dias de deslocamento e hotel (proximityOptionsFor) — o mesmo em todo lugar que calcula, senão o "pulei" congela o dia errado */
   options: ProximityOptions = {},
 ): ItineraryItemAssignment[] {
-  const items = selectedPlaces.filter((p) => p.destinationId === destinationId);
+  const items = selectedPlaces.filter((p) => p.destinationId === destinationId && isMyPlace(p));
   const overrideMap = new Map(overrides.map((o) => [o.placeSelectionId, o]));
   const { unpinned, days } = unpinnedProximityDays(
     destinationId,

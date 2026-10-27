@@ -166,6 +166,11 @@ export interface PlaceEntry {
   popularity: 'turistico' | 'fora-do-circuito';
   /** foto local do Wikimedia Commons (ajustes-87); sem ela, a busca ao vivo na Wikipedia fica de reserva */
   photo?: PlacePhoto;
+  /**
+   * dias da semana em que funciona (0 = domingo … 6 = sábado), só onde faz diferença no roteiro
+   * (ajustes-95): Feria de Mataderos [0]. A divisão dos dias respeita; o card e a parada dizem "Só aos domingos".
+   */
+  openDays?: number[];
 }
 
 /**
