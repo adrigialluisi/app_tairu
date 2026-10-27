@@ -26,6 +26,7 @@ export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps
     paidByName: entry.paidByName,
     splitWith: entry.splitWith,
     splitCount: entry.splitCount,
+    splitNames: entry.splitNames,
   });
 
   // total ÷ "Dividido entre quantas pessoas?" (ajustes-95b)
@@ -40,8 +41,9 @@ export function CentralCostForm({ entry, members, onSave }: CentralCostFormProps
       sourceId: entry.id,
       paidBy: paidSplit.paidBy ?? YOU,
       ...(paidSplit.paidByName ? { paidByName: paidSplit.paidByName } : {}),
-      splitWith: paidSplit.splitForSave(members),
+      splitWith: paidSplit.splitForSave(),
       ...(paidSplit.countForSave() ? { splitCount: paidSplit.countForSave() } : {}),
+      ...(paidSplit.namesForSave() ? { splitNames: paidSplit.namesForSave() } : {}),
     });
   }
 

@@ -2,7 +2,7 @@ import { BedDouble, ClipboardList, ShoppingBag, Ticket, TrainFront, UtensilsCros
 import type { ExpenseCategory, MemberId, OtherItem, TripCompanion, TripContextValue } from '../context/TripContext';
 import { isValidCalendarDate, toISODate } from './dateMask';
 import { assignMemberColors } from './memberColors';
-import { externalMemberId, isExternalMemberId } from './settlement';
+import { externalMemberId, isExternalMemberId, unsplitCost } from './settlement';
 import { parseAmount, toBRL } from './money';
 import { otherItemTitle } from './otherSummary';
 import { stayItemTitle } from './staySummary';
@@ -83,6 +83,8 @@ export interface CostEntry {
   splitWith: MemberId[];
   /** "Dividido entre quantas pessoas?" (ajustes-95b) — ver effectiveSplitCount */
   splitCount?: number;
+  /** pessoas de fora marcadas no "Dividir com" (ajustes-95c) */
+  splitNames?: string[];
   date: string | null;
 }
 
@@ -99,14 +101,21 @@ function toMember(c: TripCompanion, former: boolean): Member {
   };
 }
 
-/** quem pagou como "Outro" em algum gasto (ou custo da Central), uma vez por nome normalizado */
+/**
+ * quem pagou como "Outro" ou entrou no "Dividir com" pelo "+ Outra pessoa" (ajustes-95c) em algum
+ * gasto (ou custo da Central), uma vez por nome normalizado
+ */
 function externalMembers(
   trip: Partial<Pick<TripContextValue, 'expenses' | 'centralCostOverrides'>>,
 ): Member[] {
   const byId = new Map<MemberId, Member>();
-  for (const e of [...(trip.expenses ?? []), ...(trip.centralCostOverrides ?? [])]) {
-    const name = e.paidByName?.trim();
-    if (!name || !isExternalMemberId(e.paidBy)) continue;
+  const names = [...(trip.expenses ?? []), ...(trip.centralCostOverrides ?? [])].flatMap((e) => [
+    ...(e.paidByName && isExternalMemberId(e.paidBy) ? [e.paidByName] : []),
+    ...(e.splitNames ?? []),
+  ]);
+  for (const raw of names) {
+    const name = raw.trim();
+    if (!name) continue;
     const id = externalMemberId(name);
     if (byId.has(id)) continue;
     byId.set(id, {
@@ -186,6 +195,7 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
       paidByName: e.paidByName,
       splitWith: resolveSplit(e.splitWith, members),
       splitCount: e.splitCount,
+      splitNames: e.splitNames,
       date: e.date,
     });
   }
@@ -213,8 +223,10 @@ export function buildCostEntries(trip: TripForCosts): CostEntry[] {
       category,
       paidBy: override && members.some((m) => m.id === override.paidBy) ? override.paidBy : YOU,
       paidByName: override?.paidByName,
-      splitWith: resolveSplit(override?.splitWith ?? null, members),
+      // sem divisão editada, só você (ajustes-95c): o custo da Central não vira dívida sozinho
+      splitWith: override ? resolveSplit(override.splitWith, members) : unsplitCost().splitWith,
       splitCount: override?.splitCount,
+      splitNames: override?.splitNames,
       date,
     });
   }
@@ -249,6 +261,7 @@ export {
   computeBalances,
   computeTransfers,
   effectiveSplitCount,
+  unsplitCost,
   type MemberBalance,
   type Settlement,
   type Transfer,

@@ -214,10 +214,18 @@ export interface Expense {
   paidBy: MemberId;
   /** nome digitado quando quem pagou foi "Outro", de fora da viagem (paidBy = externalMemberId, ajustes-94) */
   paidByName?: string;
-  /** null = dividir entre todos os membros atuais (inclui quem for convidado depois) */
+  /**
+   * null = dividir entre todos os membros atuais (inclui quem for convidado depois) — só nos gastos
+   * simulados dos convidados; desde o ajustes-95c o formulário sempre salva a lista (começa só com Você)
+   */
   splitWith: MemberId[] | null;
   /** "Dividido entre quantas pessoas?" (ajustes-95b), só quando passa dos marcados; sem ele, o número de marcados */
   splitCount?: number;
+  /**
+   * "+ Outra pessoa" no "Dividir com" (ajustes-95c): nomes de quem não está na viagem e entra só
+   * nesse gasto (no splitWith pelo externalMemberId do nome, como o "Outro" de quem pagou)
+   */
+  splitNames?: string[];
   /** ISO yyyy-mm-dd ou null */
   date: string | null;
   attachments: Attachment[];
@@ -235,6 +243,8 @@ export interface CentralCostOverride {
   splitWith: MemberId[] | null;
   /** como em Expense (ajustes-95b) */
   splitCount?: number;
+  /** como em Expense (ajustes-95c) */
+  splitNames?: string[];
 }
 
 /** Foto da viagem (Memórias, ajustes-64) — em memória via URL.createObjectURL, como os anexos. */
@@ -665,7 +675,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
         const withoutMember = (list: MemberId[] | null) => {
           if (!list) return null;
           const next = list.filter((m) => m !== id);
-          return next.length > 0 ? next : null;
+          // sem ninguém na divisão, fica só com você (ajustes-95c), nunca vira "todos"
+          return next.length > 0 ? next : ['voce'];
         };
         setExpenses((prev) =>
           prev.filter((e) => e.paidBy !== id).map((e) => ({ ...e, splitWith: withoutMember(e.splitWith) })),

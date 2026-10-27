@@ -11,6 +11,7 @@ import {
   externalMemberId,
   type BalanceEntry,
   type Settlement,
+  unsplitCost,
 } from './settlement.ts';
 
 const MEMBERS = [{ id: 'voce' }, { id: 'marina' }, { id: 'rodrigo' }];
@@ -113,4 +114,29 @@ test('dividido entre 4: R$ 300 pago pela Paula, Eu e Marina marcadas → cada um
 test('dividido entre: número menor que os marcados conta os marcados', () => {
   const taxi: BalanceEntry = { amountBRL: 90, paidBy: 'voce', splitWith: ['voce', 'marina', 'rodrigo'], splitCount: 2 };
   assert.equal(marinaOwes([taxi], []), 30);
+});
+
+/*
+  Gasto começa só com quem lançou (ajustes-95c): o hotel de R$ 1.200 que veio da Central, sem a
+  divisão editada, é só seu — ninguém deve nada a ninguém.
+*/
+test('custo da Central sem edição não gera dívida', () => {
+  const hotel: BalanceEntry = { amountBRL: 1200, ...unsplitCost() };
+  const balances = computeBalances([hotel], MEMBERS);
+  assert.deepEqual(computeTransfers(balances), []);
+  assert.ok(balances.every((b) => Math.abs(b.balanceBRL) < 0.005));
+});
+
+/*
+  "+ Outra pessoa" no "Dividir com" (ajustes-95c): a Paula não está na viagem, só nesse gasto. Você
+  paga R$ 200, dividido entre você e ela (2 pessoas) → a Paula deve R$ 100 pra você. O nome vale
+  sem diferenciar maiúscula, acento e espaços.
+*/
+test('Eu + "Paula" (pessoa de fora) dividido entre 2 → Paula deve metade pra mim', () => {
+  const dinner2: BalanceEntry = { amountBRL: 200, paidBy: 'voce', splitWith: ['voce', externalMemberId(' paula ')], splitCount: 2 };
+  const transfers = computeTransfers(computeBalances([dinner2], [{ id: 'voce' }, { id: externalMemberId('Paula') }]));
+  assert.deepEqual(
+    transfers.map((t) => [t.from, t.to, t.amountBRL]),
+    [[externalMemberId('Paula'), 'voce', 100]],
+  );
 });

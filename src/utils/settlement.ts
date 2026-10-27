@@ -28,6 +28,15 @@ export function isExternalMemberId(id: MemberId): boolean {
   return id.startsWith(EXTERNAL_MEMBER_PREFIX);
 }
 
+/**
+ * Divisão de um gasto que ninguém dividiu ainda (ajustes-95c): pago por você, só você. É o padrão
+ * dos custos que vêm da Central (voo, hotel, ingresso…) até a pessoa editar a divisão — não entram
+ * no "quem deve pra quem" sozinhos — e o ponto de partida do "Lançar gasto".
+ */
+export function unsplitCost(): { paidBy: MemberId; splitWith: MemberId[] } {
+  return { paidBy: 'voce', splitWith: ['voce'] };
+}
+
 /** o mínimo de um lançamento que o rateio precisa (CostEntry de utils/costs.ts encaixa aqui) */
 export interface BalanceEntry {
   /** null = moeda sem cotação: fica de fora do rateio (a tela conta à parte) */

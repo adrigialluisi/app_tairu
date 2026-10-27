@@ -1,5 +1,6 @@
-import { useId } from 'react';
-import { Check } from 'lucide-react';
+import { useId, type ReactNode } from 'react';
+import { Check, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { FieldLegend, FieldSet } from '@/components/ui/field';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { ChipOption } from './OptionChipGroup';
@@ -12,6 +13,11 @@ interface MultiOptionChipGroupProps<T extends string> {
   onToggle: (value: T) => void;
   /** texto auxiliar logo abaixo do legend (ex.: pra que serve a pergunta) */
   hint?: string;
+  /** chips com "×" pra tirar da lista (ex.: pessoa de fora no "Dividir com", ajustes-95c) */
+  removableValues?: T[];
+  onRemove?: (value: T) => void;
+  /** algo no fim da fileira de chips, depois do último (ex.: "+ Outra pessoa") */
+  trailing?: ReactNode;
 }
 
 /**
@@ -26,6 +32,9 @@ export function MultiOptionChipGroup<T extends string>({
   values,
   onToggle,
   hint,
+  removableValues = [],
+  onRemove,
+  trailing,
 }: MultiOptionChipGroupProps<T>) {
   const hintId = useId();
 
@@ -59,8 +68,13 @@ export function MultiOptionChipGroup<T extends string>({
       >
         {options.map((option) => {
           const selected = values.includes(option.value);
-          return (
-            <ToggleGroupItem key={option.value} value={option.value} className={chipItemClass}>
+          const removable = !!onRemove && removableValues.includes(option.value);
+          const chip = (
+            <ToggleGroupItem
+              key={option.value}
+              value={option.value}
+              className={cn(chipItemClass, removable && 'pr-10')}
+            >
               {selected ? (
                 <Check className="size-4" aria-hidden="true" />
               ) : (
@@ -69,7 +83,26 @@ export function MultiOptionChipGroup<T extends string>({
               {option.label}
             </ToggleGroupItem>
           );
+          if (!removable) return chip;
+          /*
+            "×" por cima da ponta direita do chip (irmão, não filho: botão dentro de botão não vale).
+            28px visíveis + ::before até 44px de toque; texto stone-900 no branco e no --accent-soft.
+          */
+          return (
+            <span key={option.value} className="relative inline-flex">
+              {chip}
+              <button
+                type="button"
+                className="absolute top-1/2 right-1.5 z-10 inline-flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-foreground before:absolute before:-inset-2 before:content-[''] hover:bg-muted"
+                aria-label={`Remover ${option.label}`}
+                onClick={() => onRemove(option.value)}
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            </span>
+          );
         })}
+        {trailing}
       </ToggleGroup>
     </FieldSet>
   );

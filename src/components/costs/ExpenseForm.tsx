@@ -15,7 +15,7 @@ import type {
   ExpenseCategory,
   TripDestination,
 } from '../../context/TripContext';
-import { CATEGORY_META, EXPENSE_CATEGORIES, YOU, resolveSplit, type Member } from '../../utils/costs';
+import { CATEGORY_META, EXPENSE_CATEGORIES, YOU, resolveSplit, unsplitCost, type Member } from '../../utils/costs';
 import { RATES_AS_OF, formatMoney, parseAmount, toBRL } from '../../utils/money';
 import { DateField } from '../inputs/DateField';
 import { getTripEndISO, getTripStartISO } from '../../utils/itinerary';
@@ -90,8 +90,10 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
   const paidSplit = usePaidSplit({
     paidBy: initialExpense?.paidBy ?? YOU,
     paidByName: initialExpense?.paidByName,
-    splitWith: resolveSplit(initialExpense?.splitWith ?? null, members),
+    // gasto novo começa só com quem lançou (ajustes-95c): Eu pagou, só Eu marcado, 1 pessoa
+    splitWith: initialExpense ? resolveSplit(initialExpense.splitWith, members) : unsplitCost().splitWith,
     splitCount: initialExpense?.splitCount,
+    splitNames: initialExpense?.splitNames,
   });
   const [dateISO, setDateISO] = useState<string | null>(initialExpense?.date ?? initialPrefill?.date ?? null);
   const [dateInvalid, setDateInvalid] = useState(false);
@@ -214,8 +216,9 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
       category: category ?? 'outros',
       paidBy: paidSplit.paidBy ?? YOU,
       ...(paidSplit.paidByName ? { paidByName: paidSplit.paidByName } : {}),
-      splitWith: paidSplit.splitForSave(members),
+      splitWith: paidSplit.splitForSave(),
       ...(paidSplit.countForSave() ? { splitCount: paidSplit.countForSave() } : {}),
+      ...(paidSplit.namesForSave() ? { splitNames: paidSplit.namesForSave() } : {}),
       date: dateISO,
       attachments,
       placeSelectionId: initialExpense?.placeSelectionId ?? initialPrefill?.placeSelectionId ?? null,

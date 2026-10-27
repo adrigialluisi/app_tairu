@@ -1,5 +1,5 @@
 import { Receipt, Users } from 'lucide-react';
-import { CATEGORY_META, effectiveSplitCount, memberLabel, type CostEntry, type Member } from '../../utils/costs';
+import { CATEGORY_META, YOU, effectiveSplitCount, memberLabel, type CostEntry, type Member } from '../../utils/costs';
 import { formatMoney } from '../../utils/money';
 import { MOCK_EXPENSE_PREFIX } from '../../utils/mockContributions';
 import { Badge } from '@/components/ui/badge';
@@ -29,10 +29,10 @@ export function ExpenseCard({ entry, members, onEdit, isNew = false, attachments
   const payer = memberLabel(members, entry.paidBy);
   // "Dividido entre N pessoas" conta também quem não está no app (ajustes-95b)
   const splitCount = effectiveSplitCount(entry);
-  const paidLine =
-    members.length > 1 || splitCount > 1
-      ? `Pago por ${payer} · dividido entre ${splitCount} ${splitCount === 1 ? 'pessoa' : 'pessoas'}`
-      : `Pago por ${payer}`;
+  // só você na divisão (ajustes-95c: o padrão de todo gasto) → "Só você", não "dividido entre 1 pessoa"
+  const onlyYou = splitCount === 1 && entry.splitWith[0] === YOU;
+  const splitText = onlyYou ? 'só você' : `dividido entre ${splitCount} ${splitCount === 1 ? 'pessoa' : 'pessoas'}`;
+  const paidLine = members.length > 1 || splitCount > 1 ? `Pago por ${payer} · ${splitText}` : `Pago por ${payer}`;
 
   return (
     <Card asChild className="px-4">
