@@ -1,9 +1,9 @@
 import { Bell, CalendarDays, FileText, Luggage, TriangleAlert, User } from 'lucide-react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
 import { PlatformSwitcher } from '../components/shell/PlatformSwitcher';
-import { GroupUpdateBanner } from '../components/shell/GroupUpdateBanner';
 import { MemberAvatars } from '../components/shell/MemberAvatars';
 import { getMembers, type Member } from '../utils/costs';
 import { joinPt } from '../utils/retrospective';
@@ -175,9 +175,8 @@ function destinationsByDate(trip: ReturnType<typeof useTrip>) {
 }
 
 /**
- * Banner da simulação (ajustes-101f): abre o Roteiro → Sugestões na primeira cidade (na ordem das
- * datas) com plano de convidado, já no bloco "Sugestões dos convidados". Sem plano, rola até as
- * Novidades, como antes.
+ * Destino do card "Convidados adicionaram itens no roteiro" (ajustes-101g; era o do banner do 101f):
+ * a primeira cidade, na ordem das datas, com plano de convidado. null = nenhum plano pendente.
  */
 function firstCityWithGuestPlan(trip: ReturnType<typeof useTrip>): string | null {
   const plans = trip.selectedPlaces.filter((s) => !isMyPlace(s));
@@ -190,12 +189,14 @@ function firstCityWithGuestPlan(trip: ReturnType<typeof useTrip>): string | null
  * Antunes entraram na viagem" (avatares só de quem fez aquilo, barra colorida, texto em negrito, "›"):
  * quem entrou → Convidados; "Convidados adicionaram itens no roteiro" → Roteiro → Sugestões na 1ª
  * cidade com plano de convidado, no bloco "Sugestões dos convidados"; "Convidados lançaram gastos" →
- * Custos. Substitui as linhas por pessoa e por lugar do 101f. Cada card some quando a pessoa passa
- * pela seção (unseenUpdates); sem nenhum, o bloco some.
+ * Custos. Substitui as linhas por pessoa e por lugar do 101f. Desde o ajustes-101h, cada card só
+ * some quando a pessoa TOCA nele (homeUpdates/dismissHomeUpdate) — passar pela seção por outro
+ * caminho apaga o selo "Novo" e o número do menu (unseenUpdates), mas não o card. Sem nenhum, o
+ * bloco some.
  */
 function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
   const navigate = useNavigate();
-  const { roteiro, custos, convidados } = trip.unseenUpdates;
+  const { roteiro, custos, convidados } = trip.homeUpdates;
   if (roteiro.length + custos.length + convidados.length === 0) return null;
 
   const members = getMembers(trip);
@@ -217,6 +218,7 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
   );
 
   function openGuestSuggestions() {
+    trip.dismissHomeUpdate('roteiro');
     const destinationId = firstCityWithGuestPlan(trip) ?? undefined;
     navigate('/roteiro', {
       state: { part: 'sugestoes', destinationId, section: 'convidados' } satisfies ItineraryNavState,
@@ -233,22 +235,44 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
           'convidados',
           joined,
           `${joinPt(joined.map((m) => m.label))} ${joined.length === 1 ? 'entrou' : 'entraram'} na viagem`,
-          () => navigate('/convidar'),
+          () => {
+            trip.dismissHomeUpdate('convidados');
+            navigate('/convidar');
+          },
         )}
       {roteiro.length > 0 &&
         addedPlaces.length > 0 &&
         row('roteiro', addedPlaces, 'Convidados adicionaram itens no roteiro', openGuestSuggestions)}
       {custos.length > 0 &&
         spent.length > 0 &&
-        row('custos', spent, 'Convidados lançaram gastos', () => navigate('/custos'))}
+        row('custos', spent, 'Convidados lançaram gastos', () => {
+          trip.dismissHomeUpdate('custos');
+          navigate('/custos');
+        })}
     </section>
   );
 }
+
+/** última simulação pra qual a Início já rolou até as Novidades — voltar pra Início não rola de novo */
+let lastScrolledSeq = 0;
 
 export function Home() {
   const trip = useTrip();
   const docs = useDocuments();
   const navigate = useNavigate();
+  /*
+    Ao simular ("uma semana antes" ou "durante a viagem"), o app volta pra Início e rola até
+    "Novidades na viagem" (ajustes-101h: o aviso do topo, GroupUpdateBanner, saiu — as novidades
+    ficam só nos cards). Uma vez por simulação (seq).
+  */
+  const noticeSeq = trip.groupUpdateNotice?.seq ?? 0;
+  useEffect(() => {
+    if (noticeSeq <= lastScrolledSeq) return;
+    lastScrolledSeq = noticeSeq;
+    requestAnimationFrame(() =>
+      document.getElementById(GROUP_UPDATES_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
+  }, [noticeSeq]);
   const hasActiveTrip = trip.name.trim().length > 0 || trip.destinations.length > 0;
 
   function handleNewTrip() {
@@ -280,20 +304,6 @@ export function Home() {
         <h1 className={styles.greetingTitle}>Olá! 👋</h1>
         <p className={styles.greetingSubtitle}>Pra onde vamos dessa vez?</p>
       </div>
-
-      <GroupUpdateBanner
-        notice={trip.groupUpdateNotice}
-        onOpen={() => {
-          const destinationId = firstCityWithGuestPlan(trip);
-          if (destinationId) {
-            navigate('/roteiro', {
-              state: { part: 'sugestoes', destinationId, section: 'convidados' } satisfies ItineraryNavState,
-            });
-            return;
-          }
-          document.getElementById(GROUP_UPDATES_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }}
-      />
 
       <GroupUpdates trip={trip} />
 

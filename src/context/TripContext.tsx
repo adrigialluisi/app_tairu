@@ -400,9 +400,18 @@ interface TripState {
    */
   roteiroPart: RoteiroPart | null;
   setRoteiroPart: (part: RoteiroPart) => void;
-  /** o que chegou na simulação e a pessoa ainda não viu, por seção do menu (ids dos itens) */
+  /** o que chegou na simulação e a pessoa ainda não viu, por seção do menu (ids dos itens) — selo "Novo" e número do menu */
   unseenUpdates: UnseenUpdates;
-  /** banner "Marina e Rodrigo entraram…" na Início (seq muda a cada simulação, pra tela mostrar uma vez) */
+  /**
+   * Cards de "Novidades na viagem" da Início (ajustes-101h): o mesmo que chegou na simulação, mas
+   * cada seção só sai daqui quando a pessoa TOCA no card dela (dismissHomeUpdate) — passar pela
+   * seção por outro caminho não apaga o card (o unseenUpdates, sim).
+   */
+  homeUpdates: UnseenUpdates;
+  /**
+   * Última simulação (seq muda a cada uma): a Início rola até "Novidades na viagem" uma vez por seq
+   * (ajustes-101h; era o banner do topo, que saiu). `message` é o texto que o banner mostrava.
+   */
   groupUpdateNotice: { seq: number; message: string; title: string } | null;
 }
 
@@ -495,6 +504,8 @@ export interface TripContextValue extends TripState {
   simulateDuringTrip: () => { ok: boolean; message: string };
   /** a pessoa saiu da seção: o que era novidade dela deixa de ser (número do menu e selo "Novo") */
   markSectionSeen: (section: UpdateSection) => void;
+  /** tocou no card dessa seção em "Novidades na viagem" (ajustes-101h): o card some */
+  dismissHomeUpdate: (section: UpdateSection) => void;
   resetTrip: () => void;
 }
 
@@ -532,6 +543,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [dismissedMockKeys, setDismissedMockKeys] = useState<string[]>([]);
   const [groupUpdateSimulated, setGroupUpdateSimulated] = useState(false);
   const [unseenUpdates, setUnseenUpdates] = useState<UnseenUpdates>(NO_UPDATES);
+  const [homeUpdates, setHomeUpdates] = useState<UnseenUpdates>(NO_UPDATES);
   const [groupUpdateNotice, setGroupUpdateNotice] = useState<{ seq: number; message: string; title: string } | null>(null);
   const [simulatedTodayISO, setSimulatedTodayISO] = useState<string | null>(null);
   const [roteiroPart, setRoteiroPart] = useState<RoteiroPart | null>(null);
@@ -592,11 +604,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
     setSelectedPlaces(result.selectedPlaces);
     setExpenses(result.expenses);
     setGroupUpdateSimulated(true);
-    setUnseenUpdates({
+    const updates: UnseenUpdates = {
       roteiro: result.newPlaceSelectionIds,
       custos: result.newExpenseIds,
       convidados: joined.map((c) => c.id),
-    });
+    };
+    setUnseenUpdates(updates);
+    setHomeUpdates(updates);
     const names = joinPt(joined.map((c) => (c.name ?? c.email).split(' ')[0]));
     const plural = joined.length > 1;
     const places = result.newPlaceSelectionIds.length;
@@ -678,6 +692,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       dismissedMockKeys,
       groupUpdateSimulated,
       unseenUpdates,
+      homeUpdates,
       groupUpdateNotice,
       simulatedTodayISO,
       roteiroPart,
@@ -686,6 +701,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       simulateDuringTrip,
       markSectionSeen: (section) =>
         setUnseenUpdates((prev) => (prev[section].length === 0 ? prev : { ...prev, [section]: [] })),
+      dismissHomeUpdate: (section) =>
+        setHomeUpdates((prev) => (prev[section].length === 0 ? prev : { ...prev, [section]: [] })),
       setName,
       addDestination: (destination) =>
         setDestinations((prev) => [
@@ -980,6 +997,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setDismissedMockKeys([]);
         setGroupUpdateSimulated(false);
         setUnseenUpdates(NO_UPDATES);
+        setHomeUpdates(NO_UPDATES);
         setGroupUpdateNotice(null);
         setSimulatedTodayISO(null);
         setRoteiroPart(null);
@@ -1036,6 +1054,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       dismissedMockKeys,
       groupUpdateSimulated,
       unseenUpdates,
+      homeUpdates,
       groupUpdateNotice,
       simulatedTodayISO,
       roteiroPart,
