@@ -1,8 +1,8 @@
 /*
   Faixa presa no topo, como a do Tabs sticky (ajustes-85): fundo do miolo de ponta a ponta, -24px
   porque o sticky conta a partir do padding do miolo. O pai (.viewPanel) envolve todo o conteúdo.
-  Desde o ajustes-100: select de cidade + "Dicas" numa linha e o Lista | Mapa de largura total; as
-  pílulas de data rolam com a página.
+  Desde o ajustes-101: "Sugestões | Agenda" e a linha select de cidade + "Dicas"; o Lista | Mapa
+  (compacto) e as pílulas de data rolam com a página.
 */
 .stickyBar {
   position: sticky;
@@ -124,13 +124,26 @@
   margin-top: var(--space-3);
 }
 
-/* dia vazio (ajustes-100): "Ainda nada por aqui" + "Ver sugestões pra {cidade}" */
-.emptyDay {
+/* parte Sugestões (ajustes-101): convidados, busca e seções — 24px entre blocos */
+.partPanel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-6);
+}
+
+/* dia sem nada (ajustes-101): uma linha discreta, --muted 7.63:1 no branco */
+.freeDay {
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--muted);
+}
+
+/* "A agenda de {cidade} ainda está vazia" (ajustes-101): o único estado vazio da Agenda */
+.emptyAgendaTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* "Sugestões dos convidados · N" (ajustes-100): título de seção, 18px, ícone + texto */
@@ -222,4 +235,13 @@
   gap: var(--space-2);
   margin-left: auto;
   padding: var(--space-1) var(--space-1) var(--space-1) 0;
+}
+
+/* evento na Agenda do dia (ajustes-101b): a mesma faixa [Foto] [Gasto] [Alterar] da parada */
+.eventActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }

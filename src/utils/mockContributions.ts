@@ -57,6 +57,15 @@ function requirementMet(req: MockRequirement, state: ContributionState, selected
   return state.transportItems.some((t) => arrivesIn(t, req.cityId, cityName));
 }
 
+/**
+ * Destino da cidade onde o plano do convidado entra (ajustes-101f): o primeiro COM datas — com a
+ * cidade repetida (um destino a mais, sem data), o plano caía no sem data e não tinha dia no Roteiro.
+ */
+function destinationFor(destinations: TripDestination[], cityId: string): TripDestination | undefined {
+  const ofCity = destinations.filter((d) => d.cityId === cityId);
+  return ofCity.find((d) => d.dateStart && d.dateEnd) ?? ofCity[0];
+}
+
 export function applyMockContributions(state: ContributionState): ContributionResult {
   let selectedPlaces = state.selectedPlaces;
   let expenses = state.expenses;
@@ -76,7 +85,7 @@ export function applyMockContributions(state: ContributionState): ContributionRe
       */
       const placeId = [first, ...reserves].find((id) => {
         const candidate = getPlaceById(id);
-        const dest = candidate && state.destinations.find((d) => d.cityId === candidate.cityId);
+        const dest = candidate && destinationFor(state.destinations, candidate.cityId);
         return (
           !!dest &&
           !dismissed.has(mockPlaceKey(companion.id, id)) &&
@@ -84,7 +93,7 @@ export function applyMockContributions(state: ContributionState): ContributionRe
         );
       });
       const place = placeId ? getPlaceById(placeId) : undefined;
-      const destination = place && state.destinations.find((d) => d.cityId === place.cityId);
+      const destination = place && destinationFor(state.destinations, place.cityId);
       if (!placeId || !place || !destination) continue;
 
       const id = `mock-place-${companion.id}-${placeId}`;

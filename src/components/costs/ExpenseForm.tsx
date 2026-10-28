@@ -49,6 +49,8 @@ export interface ExpensePrefill {
   date?: string | null;
   category?: ExpenseCategory | null;
   placeSelectionId?: string;
+  /** gasto aberto pelo evento da Agenda do dia (ajustes-101b) */
+  eventId?: string;
 }
 
 const OTHER_PLACE = 'outro';
@@ -130,7 +132,12 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
     // pelo nome ou, foto/PDF qualquer, pelo contexto do cenário (ajustes-96); pela parada, só pelo nome
     const read = readReceiptFile(file, {
       cityId: destinations.find((d) => d.id === place)?.cityId ?? null,
-      fromStop: !!(initialExpense?.placeSelectionId ?? initialPrefill?.placeSelectionId),
+      fromStop: !!(
+        initialExpense?.placeSelectionId ??
+        initialPrefill?.placeSelectionId ??
+        initialExpense?.eventId ??
+        initialPrefill?.eventId
+      ),
     });
     af.read(() => {
       if (read) {
@@ -227,6 +234,7 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
       date: dateISO,
       attachments,
       placeSelectionId: initialExpense?.placeSelectionId ?? initialPrefill?.placeSelectionId ?? null,
+      eventId: initialExpense?.eventId ?? initialPrefill?.eventId ?? null,
     });
   }
 

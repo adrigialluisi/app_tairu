@@ -1,5 +1,5 @@
-import { Check, Clock, MapPin, Ticket, TriangleAlert } from 'lucide-react';
-import { Button } from '../shell/Button';
+import { Clock, MapPin, Ticket, TriangleAlert } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { EVENT_KIND_ICONS } from '../../utils/categoryVisuals';
 import { formatISOToDayPill, formatISOToDisplay, formatISOToShortDay, formatISOToWeekdayAbbrev } from '../../utils/dateMask';
 import type { EventEntry } from '../../data';
@@ -10,15 +10,15 @@ import styles from './EventCard.module.css';
 interface EventCardProps {
   event: EventEntry;
   selected: boolean;
-  onToggle: () => void;
+  /** rodapé "Adicionar à agenda" / "✓ Na agenda · dom 15" (AgendaAction, ajustes-101) */
+  action: ReactNode;
   /** "Depois do seu voo" (ajustes-94): o evento cai num horário em que o grupo está viajando */
   conflictBadge?: string;
 }
 
 /** Card de evento local (data fixa) — visual próprio, com bloco de data, pra seção de eventos se destacar. */
-export function EventCard({ event, selected, onToggle, conflictBadge }: EventCardProps) {
+export function EventCard({ event, selected, action, conflictBadge }: EventCardProps) {
   const { monthAbbrev, day } = formatISOToDayPill(event.date);
-  const shortDate = formatISOToDisplay(event.date).slice(0, 5);
 
   return (
     <Card asChild className="px-4">
@@ -72,21 +72,7 @@ export function EventCard({ event, selected, onToggle, conflictBadge }: EventCar
       )}
       {event.note && <p className={styles.note}>{event.note}</p>}
 
-      <Button
-        variant={selected ? 'primary' : 'secondary'}
-        fullWidth
-        className={styles.action}
-        aria-pressed={selected}
-        onClick={onToggle}
-      >
-        {selected ? (
-          <>
-            <Icon icon={Check} /> No roteiro, {shortDate}
-          </>
-        ) : (
-          'Adicionar ao roteiro'
-        )}
-      </Button>
+      {action}
     </article>
     </Card>
   );

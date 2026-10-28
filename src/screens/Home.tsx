@@ -1,18 +1,17 @@
-import { Bell, CalendarDays, Compass, FileText, Luggage, TriangleAlert, User, Wallet } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Bell, CalendarDays, FileText, Luggage, TriangleAlert, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
 import { PlatformSwitcher } from '../components/shell/PlatformSwitcher';
 import { GroupUpdateBanner } from '../components/shell/GroupUpdateBanner';
 import { MemberAvatars } from '../components/shell/MemberAvatars';
-import { getMembers } from '../utils/costs';
+import { getMembers, type Member } from '../utils/costs';
 import { joinPt } from '../utils/retrospective';
 import { useTrip } from '../context/TripContext';
 import { useDocuments, type PersonalDocument } from '../context/DocumentsContext';
 import { usePlaceThumbnail } from '../hooks/usePlaceThumbnail';
 import { formatCompanionsLabel, formatDatesLabel, formatDestinationsLabel } from '../utils/tripSummary';
-import { getTripEndISO } from '../utils/itinerary';
+import { getTripEndISO, isMyPlace } from '../utils/itinerary';
 import { formatMonthYearRange } from '../utils/dateMask';
 import { getTripToday, type TripToday } from '../utils/tripToday';
 import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
@@ -168,10 +167,31 @@ function DocumentAlerts({ documents, tripEndISO }: { documents: PersonalDocument
 
 const GROUP_UPDATES_ID = 'novidades-na-viagem';
 
+/** destinos na ordem das datas (sem data, no fim) */
+function destinationsByDate(trip: ReturnType<typeof useTrip>) {
+  return [...trip.destinations].sort((a, b) =>
+    a.dateStart && b.dateStart ? a.dateStart.localeCompare(b.dateStart) : a.dateStart ? -1 : b.dateStart ? 1 : 0,
+  );
+}
+
+/**
+ * Banner da simulação (ajustes-101f): abre o Roteiro → Sugestões na primeira cidade (na ordem das
+ * datas) com plano de convidado, já no bloco "Sugestões dos convidados". Sem plano, rola até as
+ * Novidades, como antes.
+ */
+function firstCityWithGuestPlan(trip: ReturnType<typeof useTrip>): string | null {
+  const plans = trip.selectedPlaces.filter((s) => !isMyPlace(s));
+  return destinationsByDate(trip).find((d) => plans.some((s) => s.destinationId === d.id))?.id ?? null;
+}
+
 /**
  * "Novidades na viagem" (ajustes-89), acima de Avisos: o que chegou no "Simular: uma semana antes da viagem".
- * Cada linha leva à seção e some quando a pessoa passa por ela (unseenUpdates); sem nenhuma, o
- * bloco some.
+ * Desde o ajustes-101g, no máximo 3 cards resumidos, todos no formato do "Marina Duarte e Rodrigo
+ * Antunes entraram na viagem" (avatares só de quem fez aquilo, barra colorida, texto em negrito, "›"):
+ * quem entrou → Convidados; "Convidados adicionaram itens no roteiro" → Roteiro → Sugestões na 1ª
+ * cidade com plano de convidado, no bloco "Sugestões dos convidados"; "Convidados lançaram gastos" →
+ * Custos. Substitui as linhas por pessoa e por lugar do 101f. Cada card some quando a pessoa passa
+ * pela seção (unseenUpdates); sem nenhum, o bloco some.
  */
 function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
   const navigate = useNavigate();
@@ -179,29 +199,29 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
   if (roteiro.length + custos.length + convidados.length === 0) return null;
 
   const members = getMembers(trip);
+  const guests = members.filter((m) => m.id !== 'voce' && !m.external);
   const joined = members.filter((m) => convidados.includes(m.id));
-  /*
-    Lugares sugeridos, uma linha por cidade (ajustes-94: no teste a participante só percebeu que os
-    amigos entraram): "2 lugares sugeridos em Buenos Aires", com os avatares de quem sugeriu, que
-    abre as Sugestões da cidade já em "Escolhas dos convidados". Na ordem dos destinos.
-  */
-  const placeRows = trip.destinations
-    .map((d) => {
-      const fresh = trip.selectedPlaces.filter((sel) => sel.destinationId === d.id && roteiro.includes(sel.id));
-      const who = members.filter((m) => fresh.some((sel) => sel.addedBy === m.id || sel.alsoWantedBy.includes(m.id)) && m.id !== 'voce');
-      return { destination: d, count: fresh.length, who };
-    })
-    .filter((r) => r.count > 0);
+  const addedPlaces = guests.filter((m) => trip.selectedPlaces.some((sel) => roteiro.includes(sel.id) && sel.addedBy === m.id));
+  const spent = guests.filter((m) => trip.expenses.some((e) => custos.includes(e.id) && e.paidBy === m.id));
 
-  const row = (key: string, icon: ReactNode, text: ReactNode, onClick: () => void) => (
+  const row = (key: string, who: Member[], text: string, onClick: () => void) => (
     <button key={key} type="button" className={`${styles.alertRow} ${styles.alertRowSoon}`} onClick={onClick}>
-      <span className={styles.alertIcon} aria-hidden="true">{icon}</span>
+      <span className={styles.alertIcon} aria-hidden="true">
+        <MemberAvatars members={who} />
+      </span>
       <span className={styles.alertText}>
         <span className={styles.alertTitle}>{text}</span>
       </span>
       <span className={styles.documentsRowChevron} aria-hidden="true">›</span>
     </button>
   );
+
+  function openGuestSuggestions() {
+    const destinationId = firstCityWithGuestPlan(trip) ?? undefined;
+    navigate('/roteiro', {
+      state: { part: 'sugestoes', destinationId, section: 'convidados' } satisfies ItineraryNavState,
+    });
+  }
 
   return (
     <section id={GROUP_UPDATES_ID} className={styles.alerts} aria-labelledby="home-updates-title">
@@ -211,26 +231,16 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
       {joined.length > 0 &&
         row(
           'convidados',
-          <MemberAvatars members={joined} />,
+          joined,
           `${joinPt(joined.map((m) => m.label))} ${joined.length === 1 ? 'entrou' : 'entraram'} na viagem`,
           () => navigate('/convidar'),
         )}
-      {placeRows.map(({ destination, count, who }) =>
-        row(
-          `roteiro-${destination.id}`,
-          who.length > 0 ? <MemberAvatars members={who} /> : <Icon icon={Compass} />,
-          `${count} ${count === 1 ? 'lugar sugerido' : 'lugares sugeridos'} em ${destination.city}`,
-          // Roteiro na cidade, já no bloco "Sugestões dos convidados" (ajustes-100)
-          () => navigate('/roteiro', { state: { destinationId: destination.id, section: 'convidados' } satisfies ItineraryNavState }),
-        ),
-      )}
+      {roteiro.length > 0 &&
+        addedPlaces.length > 0 &&
+        row('roteiro', addedPlaces, 'Convidados adicionaram itens no roteiro', openGuestSuggestions)}
       {custos.length > 0 &&
-        row(
-          'custos',
-          <Icon icon={Wallet} />,
-          `${custos.length} ${custos.length === 1 ? 'gasto lançado' : 'gastos lançados'}`,
-          () => navigate('/custos'),
-        )}
+        spent.length > 0 &&
+        row('custos', spent, 'Convidados lançaram gastos', () => navigate('/custos'))}
     </section>
   );
 }
@@ -273,9 +283,16 @@ export function Home() {
 
       <GroupUpdateBanner
         notice={trip.groupUpdateNotice}
-        onOpen={() =>
-          document.getElementById(GROUP_UPDATES_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
+        onOpen={() => {
+          const destinationId = firstCityWithGuestPlan(trip);
+          if (destinationId) {
+            navigate('/roteiro', {
+              state: { part: 'sugestoes', destinationId, section: 'convidados' } satisfies ItineraryNavState,
+            });
+            return;
+          }
+          document.getElementById(GROUP_UPDATES_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
       />
 
       <GroupUpdates trip={trip} />
@@ -291,7 +308,7 @@ export function Home() {
               fullWidth
               onClick={() =>
                 navigate('/roteiro', {
-                  state: { destinationId: today.destinationId, dayISO: today.dateISO } satisfies ItineraryNavState,
+                  state: { part: 'agenda', destinationId: today.destinationId, dayISO: today.dateISO } satisfies ItineraryNavState,
                 })
               }
             >

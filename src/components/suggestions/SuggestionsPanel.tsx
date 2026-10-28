@@ -1,5 +1,5 @@
 import { CalendarDays } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../shell/Button';
@@ -9,6 +9,7 @@ import { activityConflict, firstTime } from '../../utils/activityConflicts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CategoryTags, type CategoryTag } from './CategoryTags';
 import { EventCard } from './EventCard';
+import { AgendaAction } from './AgendaAction';
 import { PlaceCard } from './PlaceCard';
 import { SuggestionCarousel, SuggestionSection } from './SuggestionSection';
 import { placeCardId } from '../../utils/focusCard';
@@ -22,7 +23,8 @@ import {
 } from '../../data';
 import { useTrip, type QuizInterest, type TripDestination } from '../../context/TripContext';
 import { EQUILIBRADO_ICON, SECTION_ICONS } from '../../utils/categoryVisuals';
-import { formatISOToDisplay, formatISOToWeekdayShortDate } from '../../utils/dateMask';
+import { formatISOToWeekdayShortDate } from '../../utils/dateMask';
+import type { ToastAction } from '../../hooks/useSaveToast';
 import { YOU, getMembers } from '../../utils/costs';
 import { joinPt } from '../../utils/retrospective';
 import { wantersOf } from '../../utils/members';
@@ -47,23 +49,25 @@ function countLabel(n: number, singular: string, plural: string): string {
 
 interface SuggestionsPanelProps {
   destination: TripDestination;
-  /** dispara o toast "Salvo"/mensagem da tela (useSaveToast do Itinerary) */
-  onToast: (message: string) => void;
-  /**
-   * "+" num lugar que ainda não é seu (ninguém escolheu, ou só convidados): quem abriu decide o dia
-   * — a folha "Adicionar" adiciona no dia de "Em qual dia?" ou abre a prévia pedindo o dia.
-   */
-  onAddPlace: (place: PlaceEntry) => void;
+  /** toast da tela (useSaveToast do Itinerary), com ação opcional ("Ver na agenda") */
+  onToast: (message: string, action?: ToastAction) => void;
+  /** dia (yyyy-mm-dd) da seleção na agenda — só pro "Ver" levar ao dia certo; o cartão não mostra data (ajustes-101c) */
+  dayOfSelection: (selectionId: string) => string | null;
+  /** "Ver na agenda": a tela troca pra Agenda nesse dia; com `selectionId`, a parada pisca */
+  onViewInAgenda: (dayISO: string, selectionId?: string) => void;
 }
 
 /**
- * Sugestões do app de uma cidade, por seções do perfil da viagem + eventos nas datas do destino
- * (docs/ajustes-60-sugestoes-por-categoria-e-eventos.md). Era a sub-aba "Sugestões do app" do
- * Roteiro; desde o ajustes-100 aparece dentro da folha "Adicionar", com o campo de busca vazio. As
- * "Escolhas dos convidados" saíram daqui e viraram o bloco "Sugestões dos convidados" no topo do
- * Roteiro.
+ * Parte "Sugestões" do Roteiro (ajustes-101; era a sub-aba "Sugestões do app", e no ajustes-100
+ * morou dentro da folha "Adicionar"): sugestões do app de uma cidade, por seções do perfil da viagem
+ * + eventos nas datas do destino (docs/ajustes-60-sugestoes-por-categoria-e-eventos.md). Cada
+ * cartão tem no rodapé "Adicionar à agenda", que desde o ajustes-101b adiciona na hora, sem pedir o
+ * dia: o lugar entra SEM fixação e a divisão por proximidade escolhe o dia (o evento, no dia dele).
+ * Desde o ajustes-101c as Sugestões não mostram data nenhuma: o toast diz só "Adicionado à agenda ·
+ * Ver" e o rodapé vira "✓ Na agenda", com o menu "Ver na agenda" / "Tirar da agenda" — mudar de dia
+ * é na Agenda (lista ou mapa). As "Sugestões dos convidados" ficam acima, no Itinerary.
  */
-export function SuggestionsPanel({ destination, onToast, onAddPlace }: SuggestionsPanelProps) {
+export function SuggestionsPanel({ destination, onToast, dayOfSelection, onViewInAgenda }: SuggestionsPanelProps) {
   const trip = useTrip();
   const navigate = useNavigate();
 
@@ -227,41 +231,73 @@ export function SuggestionsPanel({ destination, onToast, onAddPlace }: Suggestio
     return `Saiu do seu roteiro. Continua como plano ${guests.length === 1 ? 'da' : 'de'} ${joinPt(guests.map((m) => m.shortName))}.`;
   };
 
+  const viewAction = (dayISO: string, selectionId?: string): ToastAction => ({
+    label: 'Ver',
+    onClick: () => onViewInAgenda(dayISO, selectionId),
+  });
+
   /*
-    ✓ / + do cartão. "+" (lugar ainda não seu, inclusive plano de convidado): quem abriu escolhe o
-    dia (onAddPlace, ajustes-100). ✓ num lugar que um convidado também quer só tira VOCÊ — ele sai
-    do seu roteiro e volta a ser plano provisório do convidado (ajustes-95b). Sem convidado, sai de vez.
+    "Adicionar à agenda" (ajustes-101b): na hora, sem fixação — plano de convidado vira seu
+    (alsoWantedBy). O dia só existe depois de a divisão por proximidade rodar com o lugar novo, então
+    o toast espera o próximo desenho (`justAdded`) pra o "Ver" levar ao dia calculado (o texto não
+    diz a data desde o ajustes-101c).
   */
-  function handleTogglePlace(place: PlaceEntry) {
-    if (!isMine(place.id)) {
-      onAddPlace(place);
-      return;
-    }
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  function addPlace(place: PlaceEntry) {
+    trip.addPlaceToItinerary(destination.id, { kind: 'app', placeId: place.id, categories: place.categories }, null);
+    setJustAdded(place.id);
+  }
+  useEffect(() => {
+    if (!justAdded) return;
+    const sel = selectionByPlaceId.get(justAdded);
+    if (!sel || !isMine(justAdded)) return;
+    setJustAdded(null);
+    const dayISO = dayOfSelection(sel.id);
+    // cidade ainda sem datas: entra na agenda, mas não tem dia pra onde o "Ver" levar
+    onToast('Adicionado à agenda', dayISO ? viewAction(dayISO, sel.id) : undefined);
+  });
+
+  /*
+    "Tirar da agenda". Lugar que um convidado também quer: só tira VOCÊ — ele sai da sua agenda e
+    volta a ser plano provisório do convidado (ajustes-95b). Sem convidado, sai de vez.
+  */
+  function removePlace(place: PlaceEntry) {
     const sel = selectionByPlaceId.get(place.id);
+    if (!sel) return;
     const guests = wantersFor(place.id).filter((m) => m.id !== YOU);
-    if (sel && guests.length > 0) {
+    if (guests.length > 0) {
       trip.toggleMyInterest(sel.id);
       onToast(backToPlanToast(place.id));
       return;
     }
     trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
+    onToast('Saiu da agenda');
   }
 
-  const placeCard = (place: PlaceEntry) => (
-    <PlaceCard
-      id={placeCardId(destination.id, place.id)}
-      place={place}
-      selected={isMine(place.id)}
-      wanters={wantersFor(place.id)}
-      suggestedBy={suggestedByFor(place.id)}
-      onToggle={() => handleTogglePlace(place)}
-      onJoin={() => onAddPlace(place)}
-      isNew={(() => {
-        const sel = selectionByPlaceId.get(place.id);
-        return !!sel && trip.unseenUpdates.roteiro.includes(sel.id);
-      })()}
-    />
-  );
+  const placeCard = (place: PlaceEntry) => {
+    const sel = selectionByPlaceId.get(place.id);
+    const mine = isMine(place.id);
+    const dayISO = mine && sel ? dayOfSelection(sel.id) : null;
+    return (
+      <PlaceCard
+        id={placeCardId(destination.id, place.id)}
+        place={place}
+        selected={mine}
+        wanters={wantersFor(place.id)}
+        suggestedBy={suggestedByFor(place.id)}
+        isNew={!!sel && trip.unseenUpdates.roteiro.includes(sel.id)}
+        action={
+          <AgendaAction
+            name={place.name}
+            inAgenda={mine}
+            onAdd={() => addPlace(place)}
+            onView={() => dayISO && sel && onViewInAgenda(dayISO, sel.id)}
+            onRemove={() => removePlace(place)}
+          />
+        }
+      />
+    );
+  };
 
   /** evento num horário em que o grupo está viajando (ajustes-94): selo no cartão e confirmação ao adicionar */
   const eventConflict = (event: EventEntry) =>
@@ -270,14 +306,11 @@ export function SuggestionsPanel({ destination, onToast, onAddPlace }: Suggestio
 
   function addEvent(event: EventEntry) {
     trip.toggleEvent(event.id);
-    onToast(`Evento adicionado ao dia ${formatISOToDisplay(event.date).slice(0, 5)}`);
+    onToast('Adicionado à agenda', viewAction(event.date));
   }
 
-  function handleToggleEvent(event: EventEntry) {
-    if (trip.selectedEventIds.includes(event.id)) {
-      trip.toggleEvent(event.id);
-      return;
-    }
+  /** evento entra direto no dia e horário dele (ajustes-101b); se o grupo estiver viajando nessa hora, pergunta antes (ajustes-94) */
+  function startAddEvent(event: EventEntry) {
     const conflict = eventConflict(event);
     if (conflict) setPendingEvent({ event, message: conflict.message });
     else addEvent(event);
@@ -355,8 +388,19 @@ export function SuggestionsPanel({ destination, onToast, onAddPlace }: Suggestio
                     <EventCard
                       event={event}
                       selected={trip.selectedEventIds.includes(event.id)}
-                      onToggle={() => handleToggleEvent(event)}
                       conflictBadge={eventConflict(event)?.eventBadge}
+                      action={
+                        <AgendaAction
+                          name={event.name}
+                          inAgenda={trip.selectedEventIds.includes(event.id)}
+                          onAdd={() => startAddEvent(event)}
+                          onView={() => onViewInAgenda(event.date)}
+                          onRemove={() => {
+                            trip.toggleEvent(event.id);
+                            onToast('Saiu da agenda');
+                          }}
+                        />
+                      }
                     />
                   </li>
                 );
@@ -380,8 +424,7 @@ export function SuggestionsPanel({ destination, onToast, onAddPlace }: Suggestio
 
         {cityPlaces.length === 0 ? (
           <p className={styles.noData}>
-            Sugestões de lugares ainda não disponíveis pra {destination.city}. Você pode adicionar lugares por conta
-            própria na busca acima.
+            Sugestões de lugares ainda não disponíveis pra {destination.city}. Você pode buscar um lugar no campo acima.
           </p>
         ) : (
           visibleSections.map((section) => (

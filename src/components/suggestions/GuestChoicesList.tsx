@@ -10,12 +10,15 @@ import { placeIllustrationIcon } from '../../utils/categoryVisuals';
 import styles from './GuestChoicesList.module.css';
 
 export interface GuestChoice {
-  place: PlaceEntry;
+  /** lugar do app; undefined = escrito à mão pelo convidado (sem foto) — também aparece (ajustes-101f) */
+  place: PlaceEntry | undefined;
+  /** nome na linha (o do lugar do app ou o escrito) */
+  title: string;
   /** quem quer o lugar, "Você" primeiro (wantersOf) */
   wanters: Member[];
   /** você também escolheu — mesmo estado do cartão na categoria */
   mine: boolean;
-  /** id do cartão do lugar na categoria dele */
+  /** id da seleção (cardId histórico: no ajustes-87 era o id do cartão do lugar na categoria dele) */
   cardId: string;
   /** convidado que escolheu primeiro: avatar colorido e filete na cor dele (ajustes-94) */
   suggestedBy?: Member;
@@ -36,16 +39,19 @@ export function GuestChoicesList({
   choices,
   onOpen,
   onToggleMine,
+  rowId,
 }: {
   choices: GuestChoice[];
   onOpen: (cardId: string) => void;
   /** "+" / ✓ direto na linha */
   onToggleMine: (choice: GuestChoice) => void;
+  /** id da linha — a Novidade da Início ("Marina adicionou …") rola até ela e pisca (ajustes-101f) */
+  rowId?: (cardId: string) => string;
 }) {
   return (
     <ul className={styles.list}>
       {choices.map((c) => (
-        <li key={c.place.id}>
+        <li key={c.cardId} id={rowId?.(c.cardId)}>
           <GuestChoiceRow choice={c} onOpen={onOpen} onToggleMine={onToggleMine} />
         </li>
       ))}
@@ -62,8 +68,8 @@ function GuestChoiceRow({
   onOpen: (cardId: string) => void;
   onToggleMine: (choice: GuestChoice) => void;
 }) {
-  const { place, wanters, mine, cardId, suggestedBy } = choice;
-  const thumb = usePlaceThumbnail(place.wikiTitle ?? place.name, placePhotoUrl(place));
+  const { place, title, wanters, mine, cardId, suggestedBy } = choice;
+  const thumb = usePlaceThumbnail(place ? (place.wikiTitle ?? place.name) : '', placePhotoUrl(place));
   const guests = wanters.filter((m) => m.id !== YOU);
   // filete sempre: quem sugeriu ou, se você adicionou primeiro, o primeiro convidado que também quer
   const rowColor = (suggestedBy ?? guests[0])?.color;
@@ -73,10 +79,10 @@ function GuestChoiceRow({
     <div className={styles.rowWrap} style={rowColor ? ({ '--row-color': rowColor } as CSSProperties) : undefined}>
       <button type="button" className={styles.row} onClick={() => onOpen(cardId)}>
         <span className={styles.thumb} aria-hidden="true">
-          {thumb ? <img src={thumb} alt="" className={styles.thumbImg} /> : <Icon icon={placeIllustrationIcon(place.categories)} />}
+          {thumb ? <img src={thumb} alt="" className={styles.thumbImg} /> : <Icon icon={placeIllustrationIcon(place?.categories)} />}
         </span>
         <span className={styles.text}>
-          <span className={styles.name}>{place.name}</span>
+          <span className={styles.name}>{title}</span>
           <span className={styles.meta}>
             <MemberAvatars members={guests} />
             <span className={styles.metaText}>{metaText}</span>
@@ -85,7 +91,7 @@ function GuestChoiceRow({
       </button>
       <JoinButton
         joined={mine}
-        label={mine ? `Você também vai a ${place.name}. Tocar pra desfazer` : `Ir também a ${place.name}`}
+        label={mine ? `Você também vai a ${title}. Tocar pra desfazer` : `Ir também a ${title}`}
         onClick={() => onToggleMine(choice)}
       />
     </div>

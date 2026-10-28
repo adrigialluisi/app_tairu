@@ -68,17 +68,6 @@
   box-shadow: var(--shadow-float);
 }
 
-/* Redondo nas duas plataformas (o Button padrão segue o raio de input de cada uma). */
-.toggle.toggle {
-  flex: none;
-  border-radius: 999px;
-  font-size: 22px;
-  box-shadow: var(--shadow-float);
-}
-
-.toggle.toggle:focus-visible {
-  border-radius: 999px;
-}
 
 .body {
   flex: 1;

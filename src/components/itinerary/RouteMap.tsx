@@ -1,5 +1,5 @@
 import { LocateFixed, Minus, Plus, Wifi } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
@@ -44,6 +44,11 @@ interface RouteMapProps {
   showRoute?: boolean;
   /** liga as paradas de CADA dia na ordem, com a cor do dia, e mostra a legenda dos dias (ajustes-80) */
   routeByDay?: boolean;
+  /**
+   * ações no popup do pino (ajustes-101b: "Mudar de dia" / "Tirar da agenda" na Agenda → Mapa);
+   * `close` fecha o popup. Sem ela, o popup é só informativo (viagem passada).
+   */
+  pinActions?: (pin: RouteMapPin, close: () => void) => ReactNode;
 }
 
 const DAY_COLOR_COUNT = 4;
@@ -222,7 +227,7 @@ function TileLayerWithTimeout({ onStatusChange }: { onStatusChange: (ok: boolean
 }
 
 /** Popup no estilo do cartão do Google: foto pequena (quando tem), nome, bairro e "Dia 2 · Parada 3". */
-function PinCard({ pin }: { pin: RouteMapPin }) {
+function PinCard({ pin, actions }: { pin: RouteMapPin; actions?: ReactNode }) {
   const photoUrl = usePlaceThumbnail(pin.photos?.length ? '' : (pin.photoTitle ?? ''), pin.photos?.length ? null : pin.photoUrl);
   const detail =
     pin.detail ?? (pin.skipped ? `Dia ${pin.dayNumber} · Pulado` : `Dia ${pin.dayNumber}${pin.order ? ` · Parada ${pin.order}` : ''}`);
@@ -241,6 +246,7 @@ function PinCard({ pin }: { pin: RouteMapPin }) {
           </span>
         )}
       </div>
+      {actions && <div className={styles.popupActions}>{actions}</div>}
     </div>
   );
 }
@@ -248,7 +254,7 @@ function PinCard({ pin }: { pin: RouteMapPin }) {
 /** acima disso a legenda cobriria o mapa no celular */
 const MAX_LEGEND_DAYS = 6;
 
-export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, routeByDay = false }: RouteMapProps) {
+export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, routeByDay = false, pinActions }: RouteMapProps) {
   const [tilesOk, setTilesOk] = useState<boolean | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -341,8 +347,19 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
                 popupclose: () => setSelectedId((cur) => (cur === pin.id ? null : cur)),
               }}
             >
-              <Popup closeButton={false}>
-                <PinCard pin={pin} />
+              {/*
+                com ações (ajustes-101b): mais largo pros botões de 44px e as pílulas de dia, sem passar de
+                360px − margens; o autoPan deixa folga em cima (legenda) e embaixo à direita (zoom, e o
+                "+ Adicionar" flutuante da Agenda, quando o mapa chega no fim da tela)
+              */}
+              <Popup
+                closeButton={false}
+                maxWidth={pinActions ? 280 : 300}
+                minWidth={pinActions ? 240 : 50}
+                autoPanPaddingTopLeft={[16, 56]}
+                autoPanPaddingBottomRight={[64, 72]}
+              >
+                <PinCard pin={pin} actions={pinActions && map ? pinActions(pin, () => map.closePopup()) : undefined} />
               </Popup>
             </Marker>
           ))}

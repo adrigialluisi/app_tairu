@@ -239,6 +239,48 @@ export function groupPlansByDay(
   return byDay;
 }
 
+/** plano do grupo de uma cidade (ajustes-101f), com o dia sugerido */
+export interface CityGroupPlan {
+  selection: TripPlaceSelection;
+  /** dia da viagem (índice global) em que o plano aparece; null = o destino dele ainda não tem datas */
+  globalDay: number | null;
+}
+
+/**
+ * TODOS os planos do grupo de uma cidade (ajustes-101f) — o bloco "Sugestões dos convidados" monta
+ * as linhas daqui, não do mapa dia → planos, pra nenhum plano sumir: vale pela CIDADE (qualquer
+ * destino com ela, mesmo um repetido ou sem datas) e cada plano sempre tem um dia — o da proximidade
+ * (groupPlansByDay) ou, se não couber em nenhum, o 1º dia da cidade. Na ordem do dia, depois na
+ * ordem em que foram escolhidos.
+ */
+export function groupPlansOfCity(
+  cityId: string,
+  destinations: TripDestination[],
+  selectedPlaces: TripPlaceSelection[],
+  overrides: ItineraryOverride[],
+  optionsFor: (destinationId: string) => ItineraryOptions = () => ({}),
+): CityGroupPlan[] {
+  const ranges = splitDaysByDestination(destinations);
+  const out: CityGroupPlan[] = [];
+  for (const destination of destinations.filter((d) => d.cityId === cityId)) {
+    const plans = selectedPlaces.filter((p) => p.destinationId === destination.id && !isMyPlace(p));
+    if (plans.length === 0) continue;
+    const range = ranges.find((r) => r.destinationId === destination.id);
+    const dayOf = new Map<string, number>();
+    if (range) {
+      const byDay = groupPlansByDay(destination.id, range.globalDayIndexes.length, selectedPlaces, overrides, optionsFor(destination.id));
+      for (const [localDay, list] of byDay) for (const p of list) dayOf.set(p.id, range.globalDayIndexes[localDay]);
+    }
+    for (const selection of plans) {
+      out.push({ selection, globalDay: range ? (dayOf.get(selection.id) ?? range.globalDayIndexes[0]) : null });
+    }
+  }
+  return out
+    .map((plan, index) => ({ plan, index }))
+    .sort((a, b) => (a.plan.globalDay ?? Infinity) - (b.plan.globalDay ?? Infinity) || a.index - b.index)
+    .map(({ plan }) => plan);
+}
+
 /**
  * Só as paradas da participante (isMyPlace, ajustes-95b): os planos do grupo ficam de fora.
  * Distribuídas nos dias do destino por PROXIMIDADE (`computeProximityDays`, ajustes-80, algoritmo

@@ -190,3 +190,16 @@ test('cidade só com lugares sem coordenada (e um fixado): não quebra e todos t
   assert.notEqual(days.get('a')?.day, 0);
   assert.notEqual(days.get('b')?.day, 0);
 });
+
+/*
+  Ajuste 101b: "Adicionar à agenda" nas Sugestões não pede dia — o lugar entra sem fixação (sem
+  fixedDay) e a proximidade decide. 6 lugares de Buenos Aires adicionados assim não ficam todos no
+  mesmo dia dos 5 da cidade.
+*/
+test('ajustes-101b: 6 lugares de Buenos Aires sem dia fixo se espalham por mais de um dia', () => {
+  const six = itemsOf(SCENARIO.slice(0, 6));
+  const result = computeProximityDays(six, 5);
+  assert.equal(result.size, 6);
+  const days = new Set([...result.values()].map((r) => r.day));
+  assert.ok(days.size > 1, `todos caíram no dia ${[...days][0]}`);
+});

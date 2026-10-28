@@ -121,6 +121,11 @@ export function formatISOToShortDay(iso: string): string {
   return `${weekday}, ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
 }
 
+/** "dom, 15/11" — toast "Adicionado a dom, 15/11" das Sugestões (ajustes-101) */
+export function formatISOToAgendaDay(iso: string): string {
+  return formatISOToShortDay(iso).toLowerCase();
+}
+
 /** "Sexta, 20/11" — rótulo de dia antes dos eventos daquele dia no carrossel (ajustes-80). */
 export function formatISOToWeekdayShortDate(iso: string): string {
   const { day, month, year } = fromISODate(iso);

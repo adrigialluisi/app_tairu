@@ -28,6 +28,11 @@
   cursor: pointer;
 }
 
+/* evento já na agenda (ajustes-101b): a linha não leva a lugar nenhum, as ações ficam embaixo */
+.mainStatic {
+  cursor: default;
+}
+
 .time {
   flex: 0 0 48px;
   display: flex;
@@ -106,4 +111,10 @@
   align-items: flex-start;
   gap: var(--space-1);
   padding-left: calc(48px + 32px + var(--space-3) * 2);
+}
+
+/* ações do evento (ajustes-101b): largura toda da linha, sem o recuo do título */
+.below.belowFull {
+  align-items: stretch;
+  padding-left: 0;
 }

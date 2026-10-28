@@ -78,6 +78,9 @@ function withoutPin(selection: TripPlaceSelection): TripPlaceSelection {
 }
 
 /** o que o "Adicionar lugares" (ajustes-97) põe no roteiro */
+/** as duas partes do Roteiro (ajustes-101) */
+export type RoteiroPart = 'sugestoes' | 'agenda';
+
 export type NewItineraryPlace =
   | { kind: 'app'; placeId: string; categories: string[] }
   | { kind: 'osm'; name: string; lat: number; lng: number; address: string; category: string; osmId: string }
@@ -263,6 +266,8 @@ export interface Expense {
   attachments: Attachment[];
   /** lançado pela parada do Roteiro (ajustes-88): a parada mostra o valor e leva até aqui */
   placeSelectionId?: string | null;
+  /** lançado pelo evento na Agenda do dia (ajustes-101b): o evento mostra o valor, como a parada */
+  eventId?: string | null;
 }
 
 /** Só quem pagou/divide pode mudar nos custos que vêm da Central; valor e moeda continuam sendo editados lá. */
@@ -389,6 +394,12 @@ interface TripState {
    * "Acontecendo agora" e o Roteiro abre nesse dia. null = fora da viagem (o padrão).
    */
   simulatedTodayISO: string | null;
+  /**
+   * Última parte do Roteiro escolhida ("Sugestões | Agenda", ajustes-101), lembrada enquanto a pessoa
+   * navega pelo app (só em memória; "Nova viagem" e "Recomeçar teste" esquecem). null = ainda não escolheu.
+   */
+  roteiroPart: RoteiroPart | null;
+  setRoteiroPart: (part: RoteiroPart) => void;
   /** o que chegou na simulação e a pessoa ainda não viu, por seção do menu (ids dos itens) */
   unseenUpdates: UnseenUpdates;
   /** banner "Marina e Rodrigo entraram…" na Início (seq muda a cada simulação, pra tela mostrar uma vez) */
@@ -523,6 +534,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [unseenUpdates, setUnseenUpdates] = useState<UnseenUpdates>(NO_UPDATES);
   const [groupUpdateNotice, setGroupUpdateNotice] = useState<{ seq: number; message: string; title: string } | null>(null);
   const [simulatedTodayISO, setSimulatedTodayISO] = useState<string | null>(null);
+  const [roteiroPart, setRoteiroPart] = useState<RoteiroPart | null>(null);
 
   function dismissMockKeys(keys: string[]) {
     if (keys.length === 0) return;
@@ -586,15 +598,21 @@ export function TripProvider({ children }: { children: ReactNode }) {
       convidados: joined.map((c) => c.id),
     });
     const names = joinPt(joined.map((c) => (c.name ?? c.email).split(' ')[0]));
-    const parts = [
-      result.newPlaceSelectionIds.length > 0 ? countPt(result.newPlaceSelectionIds.length, 'lugar', 'lugares') : '',
-      result.newExpenseIds.length > 0 ? countPt(result.newExpenseIds.length, 'gasto', 'gastos') : '',
-    ].filter(Boolean);
-    const verb = joined.length === 1 ? 'entrou' : 'entraram';
-    const message =
-      parts.length > 0
-        ? `${names} ${verb} na viagem e ${joined.length === 1 ? 'adicionou' : 'adicionaram'} ${joinPt(parts)}`
-        : `${names} ${verb} na viagem`;
+    const plural = joined.length > 1;
+    const places = result.newPlaceSelectionIds.length;
+    const spent = result.newExpenseIds.length;
+    /*
+      "Marina e Rodrigo entraram na viagem e adicionaram 2 lugares ao roteiro" (ajustes-101f): o
+      banner fala dos lugares, que é onde ele leva (Roteiro → Sugestões); os gastos ficam nas
+      Novidades, uma linha por gasto. Sem lugar nenhum, aí sim o banner fala dos gastos.
+    */
+    const what =
+      places > 0
+        ? ` e ${plural ? 'adicionaram' : 'adicionou'} ${countPt(places, 'lugar', 'lugares')} ao roteiro`
+        : spent > 0
+          ? ` e ${plural ? 'lançaram' : 'lançou'} ${countPt(spent, 'gasto', 'gastos')}`
+          : '';
+    const message = `${names} ${plural ? 'entraram' : 'entrou'} na viagem${what}`;
     // seq pelo relógio: depois de "Recomeçar teste" a próxima simulação também mostra o banner
     setGroupUpdateNotice({ seq: Date.now(), message, title });
     return { ok: true, message };
@@ -662,6 +680,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       unseenUpdates,
       groupUpdateNotice,
       simulatedTodayISO,
+      roteiroPart,
+      setRoteiroPart,
       simulateGroupUpdate: () => simulateGroupUpdate(),
       simulateDuringTrip,
       markSectionSeen: (section) =>
@@ -962,6 +982,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         setUnseenUpdates(NO_UPDATES);
         setGroupUpdateNotice(null);
         setSimulatedTodayISO(null);
+        setRoteiroPart(null);
         setName('');
         setDestinations([]);
         setCompanions([]);
@@ -1017,6 +1038,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       unseenUpdates,
       groupUpdateNotice,
       simulatedTodayISO,
+      roteiroPart,
     ],
   );
 

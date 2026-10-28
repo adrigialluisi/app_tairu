@@ -1,6 +1,5 @@
-import { CalendarDays, Check, MapPin, Plus } from 'lucide-react';
-import type { CSSProperties } from 'react';
-import { Button } from '../shell/Button';
+import { CalendarDays, MapPin } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { MemberAvatars } from '../shell/MemberAvatars';
 import { MemberTag } from '../shell/MemberTag';
 import { memberTint } from '../../utils/memberColors';
@@ -19,13 +18,12 @@ import styles from './PlaceCard.module.css';
 
 interface PlaceCardProps {
   place: PlaceEntry;
-  /** você escolheu (adicionou, ou tocou "Eu também") — ✓ bordô */
+  /** está na sua agenda — borda bordô */
   selected: boolean;
-  onToggle: () => void;
+  /** rodapé "Adicionar à agenda" / "✓ Na agenda · dom 15" (AgendaAction, ajustes-101) */
+  action: ReactNode;
   /** quem do grupo quer esse lugar (ajustes-67) — só mostra se tiver alguém além de você */
   wanters?: Member[];
-  /** "+" num lugar que só convidados escolheram (plano do grupo): você passa a ir também (ajustes-87/95b) */
-  onJoin?: () => void;
   /** id do cartão, pra busca do topo e lista de convidados rolarem até ele */
   id?: string;
   /** sugerido por convidado na simulação "uma semana antes da viagem" e ainda não visto (ajustes-89) */
@@ -44,13 +42,14 @@ interface PlaceCardProps {
  * Desde o ajustes-95b (planos do grupo provisórios) o plano de convidado começa com o mesmo "+" do
  * canto — saíram o botão "Eu também" e o "Selecionado pelo grupo" — e o texto diz "Marina vai ·
  * toque + pra ir também"; depois do toque, ✓ e "Você e Marina vão".
+ * Desde o ajustes-101 o "+" / ✓ do canto saiu: a ação é o rodapé "Adicionar à agenda" (`action`),
+ * que pede o dia; no canto fica só a tag de quem sugeriu, e o texto é só "Marina vai".
  */
 export function PlaceCard({
   place,
   selected,
-  onToggle,
+  action,
   wanters = [],
-  onJoin,
   id,
   isNew = false,
   suggestedBy,
@@ -83,23 +82,11 @@ export function PlaceCard({
             </span>
           )}
         </div>
-        <div className={styles.corner}>
-          {tagMember && <MemberTag member={tagMember} className={styles.cornerTag} />}
-          <Button
-            variant={selected ? 'primary' : 'secondary'}
-            iconOnly
-            className={styles.toggle}
-            aria-pressed={selected}
-            aria-label={
-              byGroupOnly
-                ? `Ir também a ${place.name}`
-                : `${selected ? 'Remover' : 'Adicionar'} ${place.name} ${selected ? 'do' : 'ao'} roteiro`
-            }
-            onClick={byGroupOnly && onJoin ? onJoin : onToggle}
-          >
-            <Icon icon={selected ? Check : Plus} />
-          </Button>
-        </div>
+        {tagMember && (
+          <div className={styles.corner}>
+            <MemberTag member={tagMember} className={styles.cornerTag} />
+          </div>
+        )}
       </div>
       <div className={styles.body}>
         {isNew && <NewBadge className="self-start" />}
@@ -115,13 +102,14 @@ export function PlaceCard({
             <Icon icon={CalendarDays} /> {openDaysLabel(place.openDays)}
           </p>
         )}
-        {goersText(wanters) && (
+        {goersText(wanters, { hint: false }) && (
           <p className={styles.wanters}>
             <MemberAvatars members={wanters} />
-            <span>{goersText(wanters)}</span>
+            <span>{goersText(wanters, { hint: false })}</span>
           </p>
         )}
         <CategoryTags tags={tags} />
+        {action}
       </div>
     </article>
     </Card>

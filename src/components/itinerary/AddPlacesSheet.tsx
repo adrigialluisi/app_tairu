@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, MapPin, PencilLine, Plus, type LucideIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, PencilLine, Plus, Sparkles, type LucideIcon } from 'lucide-react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { OptionChipGroup } from '../quiz/OptionChipGroup';
@@ -6,7 +6,6 @@ import { TextField } from '../inputs/TextField';
 import { Button } from '../shell/Button';
 import { Icon } from '../shell/Icon';
 import { MiniMap } from './MiniMap';
-import { SuggestionsPanel } from '../suggestions/SuggestionsPanel';
 import { usePlaceThumbnail } from '../../hooks/usePlaceThumbnail';
 import {
   INTEREST_LABELS,
@@ -39,18 +38,33 @@ interface AddPlacesSheetProps {
   cityId: string | null;
   /** cidade sugerida quando a aba é "Todas" (a do dia selecionado, ou a primeira) */
   fallbackDestinationId: string;
-  /** dia selecionado nas pílulas da tela (yyyy-mm-dd); null = "Todos os dias" → nenhum dia marcado (ajustes-99) */
+  /** dia selecionado nas pílulas da tela (yyyy-mm-dd); null = "Todos os dias" → "App escolhe" marcado (ajustes-101d) */
   selectedDayISO: string | null;
   /** dia em que a parada está hoje no roteiro (pra "Já no seu roteiro") */
   dayOfSelection: (selectionId: string) => string | null;
   onAdded: (selectionId: string, destinationId: string, dayISO: string | null) => void;
   onGoTo: (selectionId: string, destinationId: string) => void;
-  /** toast da tela (evento escolhido nas sugestões, lugar que volta a ser plano do convidado) */
-  onToast: (message: string) => void;
+  /**
+   * link "Ver sugestões pra {cidade}" no fim da folha (ajustes-101): fecha e troca pra parte
+   * Sugestões. Sem ele (folha aberta pela própria parte Sugestões), o link não aparece.
+   */
+  onShowSuggestions?: (destinationId: string) => void;
+  /**
+   * false = aberta pela busca das Sugestões (ajustes-101b): sem "Em qual dia?" e o lugar entra sem
+   * fixação, no dia que a divisão por proximidade escolher. Padrão (o "+ Adicionar" da Agenda): pede
+   * o dia e fixa o lugar nele.
+   */
+  askDay?: boolean;
 }
 
 /** resultado aberto na prévia + a cidade dele (pode ser outra da viagem, "Em outras cidades da viagem", ajustes-99) */
 type Preview = ({ kind: 'app'; place: PlaceEntry } | { kind: 'osm'; place: OsmPlace }) & { destinationId: string };
+
+/**
+ * "App escolhe" (ajustes-101d): 1ª opção do "Em qual dia?" — o lugar entra sem fixação e a divisão
+ * por proximidade escolhe o dia, como o "Adicionar à agenda" das Sugestões.
+ */
+const AUTO = 'auto';
 
 /** "Qua 18/11" — mesmas datas das pílulas e da legenda do mapa */
 const dayLabel = (iso: string) => formatISOToShortDay(iso).replace(',', '');
@@ -128,13 +142,13 @@ function PreviewPhoto({ title, localUrl, category }: { title: string; localUrl: 
 }
 
 /**
- * "Adicionar" (ajustes-97, revisto no 99 e no 100): folha de baixo pra cima, 90% da altura, aberta
- * pelo botão flutuante "+ Adicionar" do Roteiro — o único caminho pra pôr algo no roteiro. Com o
- * campo de busca vazio, mostra as sugestões do app pra cidade (SuggestionsPanel: seções do perfil
- * em carrossel e "Eventos nas suas datas"; o "+" do cartão adiciona no dia escolhido ou, sem dia,
- * abre a prévia pedindo o dia); digitando, os resultados da busca tomam o lugar delas. Cidade (só quando a aba é "Todas"), "Em qual dia?" (só os dias
- * da cidade, obrigatório: começa no dia das pílulas da tela; em "Todos os dias", nenhum — e o botão
- * diz "Escolha um dia") e a busca em tempo real em 4 grupos — "Já no seu roteiro", "Sugestões do
+ * "Adicionar" (ajustes-97, revisto no 99, 100 e 101): folha de baixo pra cima, 90% da altura, aberta
+ * pelo botão flutuante "+ Adicionar" da Agenda e pelo campo "Buscar um lugar em {cidade}" das
+ * Sugestões. Desde o ajustes-101 não mostra mais as seções de sugestões (moram na parte Sugestões):
+ * no fim, o link "Ver sugestões pra {cidade}" fecha a folha e troca pra lá. Cidade (só quando a
+ * aba é "Todas"), "Em qual dia?" ("App escolhe" + os dias da cidade desde o ajustes-101d: começa no
+ * dia das pílulas da tela; em "Todos os dias", em "App escolhe" — sempre há uma opção marcada, o
+ * botão nunca fica desabilitado) e a busca em tempo real em 4 grupos — "Já no seu roteiro", "Sugestões do
  * app", "Em outras cidades da viagem" (o MALBA buscado na folha de Santiago; a prévia avisa a
  * cidade e troca as pílulas pelas dela) e "Outros lugares em {cidade}" (Photon/OpenStreetMap, ao
  * vivo, só nomes que batem com o texto; se falhar, o grupo some) —, com "+ Adicionar '{texto}' como
@@ -153,7 +167,8 @@ export function AddPlacesSheet({
   dayOfSelection,
   onAdded,
   onGoTo,
-  onToast,
+  onShowSuggestions,
+  askDay = true,
 }: AddPlacesSheetProps) {
   const trip = useTrip();
   const baseId = useId();
@@ -163,13 +178,18 @@ export function AddPlacesSheet({
   /** dias (yyyy-mm-dd) de um destino no roteiro */
   const daysOf = (id: string) =>
     (dayRanges.find((r) => r.destinationId === id)?.globalDayIndexes ?? []).map((g) => globalDayToISO(tripStartISO, g));
-  /** o dia das pílulas da tela, se ele for desse destino; senão nenhum */
-  const startDayFor = (id: string) => (selectedDayISO && daysOf(id).includes(selectedDayISO) ? selectedDayISO : null);
+  /** o dia das pílulas da tela, se ele for desse destino; senão (ex.: "Todos os dias") "App escolhe" */
+  const startDayFor = (id: string) => (selectedDayISO && daysOf(id).includes(selectedDayISO) ? selectedDayISO : AUTO);
+  /** "Em qual dia?": "App escolhe" + os dias da cidade (ajustes-101d; no 99 o dia era obrigatório) */
+  const dayChoices = (id: string) => [
+    { value: AUTO, label: 'App escolhe', icon: Sparkles },
+    ...daysOf(id).map((iso) => ({ value: iso, label: dayLabel(iso) })),
+  ];
   const dayISOs = daysOf(destinationId);
-  // sem "Deixar o app escolher" (ajustes-99): o dia é obrigatório; começa no dia das pílulas, se for desta cidade
-  const [day, setDay] = useState<string | null>(() => startDayFor(destinationId));
+  // sempre há uma opção marcada: o dia das pílulas, se for desta cidade, ou "App escolhe"
+  const [day, setDay] = useState<string>(() => startDayFor(destinationId));
   // dia da prévia de um lugar de OUTRA cidade (as pílulas passam a ser as dela)
-  const [otherCityDay, setOtherCityDay] = useState<string | null>(null);
+  const [otherCityDay, setOtherCityDay] = useState<string>(AUTO);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [osm, setOsm] = useState<{ text: string; places: OsmPlace[] }>({ text: '', places: [] });
@@ -250,7 +270,7 @@ export function AddPlacesSheet({
 
   function changeCity(id: string) {
     setDestinationId(id);
-    setDay(null);
+    setDay(AUTO);
     setPreview(null);
   }
 
@@ -261,16 +281,19 @@ export function AddPlacesSheet({
   /** a prévia é de outra cidade? então o dia é o dela */
   const previewElsewhere = !!preview && preview.destinationId !== destinationId;
   const chosenDay = previewElsewhere ? otherCityDay : day;
-  // sem dia, o próprio botão desabilitado explica (ajustes-99)
-  const addLabel = chosenDay ? `Adicionar ao dia ${dayLabel(chosenDay).split(' ')[1]}` : 'Escolha um dia';
+  // sem dia (busca das Sugestões, 101b, ou "App escolhe", 101d), entra pela proximidade; o botão
+  // nunca fica desabilitado, porque sempre há uma opção marcada
+  const addLabel =
+    !askDay || chosenDay === AUTO ? 'Adicionar à agenda' : `Adicionar ao dia ${dayLabel(chosenDay).split(' ')[1]}`;
 
   function openPreview(next: Preview) {
     if (next.destinationId !== destinationId) setOtherCityDay(startDayFor(next.destinationId));
     setPreview(next);
   }
 
-  function add(place: Parameters<typeof trip.addPlaceToItinerary>[1], targetId: string, dayISO: string | null) {
-    if (!dayISO) return;
+  /** `choice`: um dia (fixa nele) ou "App escolhe" (sem fixação, a proximidade decide) */
+  function add(place: Parameters<typeof trip.addPlaceToItinerary>[1], targetId: string, choice: string) {
+    const dayISO = !askDay || choice === AUTO ? null : choice;
     const id = trip.addPlaceToItinerary(targetId, place, dayISO);
     onAdded(id, targetId, dayISO);
   }
@@ -283,15 +306,18 @@ export function AddPlacesSheet({
       <SheetContent
         className="h-[90dvh]"
         onOpenAutoFocus={(e) => {
-          // foco na própria folha, não na busca (ajustes-100): no celular o teclado subiria por cima
-          // das sugestões, que agora são o conteúdo principal com o campo vazio
+          // foco direto na busca (o 1º foco do Radix seria o 1º chip); as sugestões saíram daqui no ajustes-101
           e.preventDefault();
-          (e.currentTarget as HTMLElement | null)?.focus();
+          focusSearch();
         }}
       >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Escolha o dia e toque + numa sugestão, ou busque um restaurante, museu, bar ou endereço.</SheetDescription>
+          <SheetDescription>
+            {askDay
+              ? 'Busque um restaurante, museu, bar ou endereço e escolha o dia.'
+              : 'Busque um restaurante, museu, bar ou endereço. O app coloca no dia em que ele fica perto dos outros lugares.'}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
@@ -299,17 +325,18 @@ export function AddPlacesSheet({
             <PreviewPanel
               preview={preview}
               addLabel={addLabel}
-              canAdd={!!chosenDay}
               elsewhere={
                 previewElsewhere ? destinations.find((d) => d.id === preview.destinationId)?.city ?? null : null
               }
               dayPicker={
-                <OptionChipGroup
-                  legend="Em qual dia?"
-                  options={daysOf(preview.destinationId).map((iso) => ({ value: iso, label: dayLabel(iso) }))}
-                  value={chosenDay}
-                  onChange={previewElsewhere ? setOtherCityDay : setDay}
-                />
+                askDay && (
+                  <OptionChipGroup
+                    legend="Em qual dia?"
+                    options={dayChoices(preview.destinationId)}
+                    value={chosenDay}
+                    onChange={previewElsewhere ? setOtherCityDay : setDay}
+                  />
+                )
               }
               onBack={() => {
                 setPreview(null);
@@ -336,10 +363,10 @@ export function AddPlacesSheet({
                 />
               )}
 
-              {dayISOs.length > 0 && (
+              {askDay && dayISOs.length > 0 && (
                 <OptionChipGroup
                   legend="Em qual dia?"
-                  options={dayISOs.map((iso) => ({ value: iso, label: dayLabel(iso) }))}
+                  options={dayChoices(destinationId)}
                   value={day}
                   onChange={setDay}
                 />
@@ -456,21 +483,6 @@ export function AddPlacesSheet({
                   </div>
                 )}
 
-                {/* campo vazio: as sugestões do app pra essa cidade (ajustes-100) */}
-                {!typed && destination && (
-                  <div className="flex flex-col gap-6">
-                    <SuggestionsPanel
-                      destination={destination}
-                      onToast={onToast}
-                      onAddPlace={(p) =>
-                        day
-                          ? add({ kind: 'app', placeId: p.id, categories: p.categories }, destinationId, day)
-                          : openPreview({ kind: 'app', place: p, destinationId })
-                      }
-                    />
-                  </div>
-                )}
-
                 {typed && (
                   <ul className="m-0 list-none p-0">
                     <ResultRow
@@ -479,11 +491,16 @@ export function AddPlacesSheet({
                       meta="Sem endereço"
                       trailing={<Plus className="size-4 flex-none text-(--accent-dark)" aria-hidden="true" />}
                       onClick={() => add({ kind: 'custom', label: typed }, destinationId, day)}
-                      disabled={!day}
                     />
                   </ul>
                 )}
               </div>
+
+              {onShowSuggestions && destination && (
+                <Button variant="link" className="self-start" onClick={() => onShowSuggestions(destination.id)}>
+                  Ver sugestões pra {destination.city}
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -495,7 +512,6 @@ export function AddPlacesSheet({
 function PreviewPanel({
   preview,
   addLabel,
-  canAdd,
   elsewhere,
   dayPicker,
   onBack,
@@ -503,7 +519,6 @@ function PreviewPanel({
 }: {
   preview: Preview;
   addLabel: string;
-  canAdd: boolean;
   /** cidade do lugar, quando não é a da folha ("Esse lugar fica em Buenos Aires") */
   elsewhere: string | null;
   /** "Em qual dia?" com os dias da cidade do lugar */
@@ -539,7 +554,7 @@ function PreviewPanel({
       )}
       <MiniMap lat={preview.place.lat} lng={preview.place.lng} label={name} />
       {dayPicker}
-      <Button fullWidth disabled={!canAdd} onClick={onAdd}>
+      <Button fullWidth onClick={onAdd}>
         <Icon icon={Plus} /> {addLabel}
       </Button>
     </div>
