@@ -1,35 +1,8 @@
-.intro {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.title {
-  font-size: var(--text-2xl);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0;
-}
-
-/* entre blocos da tela: 24px (ajustes-72, seção 3) */
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
 /*
   Faixa presa no topo, como a do Tabs sticky (ajustes-85): fundo do miolo de ponta a ponta, -24px
-  porque o sticky conta a partir do padding do miolo. O pai (o painel da aba) envolve todo o conteúdo.
-  Sugestões do app: abas de cidade (a busca saiu no ajustes-97). Roteiro (ajustes-97): abas de
-  cidade + Lista | Mapa de largura total; as pílulas de data rolam com a página.
+  porque o sticky conta a partir do padding do miolo. O pai (.viewPanel) envolve todo o conteúdo.
+  Desde o ajustes-100: select de cidade + "Dicas" numa linha e o Lista | Mapa de largura total; as
+  pílulas de data rolam com a página.
 */
 .stickyBar {
   position: sticky;
@@ -52,16 +25,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-}
-
-.noData {
-  font-size: 14px;
-  color: var(--muted);
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  padding: var(--space-4);
-  margin: 0;
 }
 
 .dayList {
@@ -161,91 +124,24 @@
   margin-top: var(--space-3);
 }
 
+/* dia vazio (ajustes-100): "Ainda nada por aqui" + "Ver sugestões pra {cidade}" */
 .emptyDay {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.tipsCategory {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.tipsCategoryTitle {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-}
-
-.tipsList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.tipsItem {
-  display: flex;
-  gap: var(--space-2);
-  font-size: var(--text-base);
-  color: var(--text);
-  line-height: var(--line-height-normal);
-}
-
-.bullet {
-  flex: 0 0 auto;
-  color: var(--accent-dark);
-  font-weight: 600;
-}
-
-.alsoVisit {
-  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.alsoVisitTitle {
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text);
-  margin: 0;
-}
-
-.alsoVisitItem {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.alsoVisitName {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.alsoVisitMeta {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
-/* Atalho "💱 Abrir conversor" em Dicas locais → Dinheiro e câmbio */
-.converterLink {
-  align-self: flex-start;
-  display: inline-flex;
+/* "Sugestões dos convidados · N" (ajustes-100): título de seção, 18px, ícone + texto */
+.guestTitle {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--touch-target);
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--accent-dark);
-  font-size: 14px;
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
-  cursor: pointer;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* Roteiro → Lista: dois blocos por dia, "Agenda do dia" e "Lugares pra visitar" (docs/ajustes-63) */
@@ -296,23 +192,6 @@
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-/* Link dentro de texto corrido — área de toque de 44px sem empurrar a linha */
-.inlineLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-target);
-  margin-block: calc(var(--space-3) * -1);
-  vertical-align: middle;
-  padding: 0;
-  background: none;
-  border: none;
-  font: inherit;
-  font-weight: 600;
-  color: var(--accent-dark);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /* Parada sugerida/querida por convidado (ajustes-67) */

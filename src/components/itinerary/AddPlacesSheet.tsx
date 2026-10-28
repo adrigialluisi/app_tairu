@@ -6,6 +6,7 @@ import { TextField } from '../inputs/TextField';
 import { Button } from '../shell/Button';
 import { Icon } from '../shell/Icon';
 import { MiniMap } from './MiniMap';
+import { SuggestionsPanel } from '../suggestions/SuggestionsPanel';
 import { usePlaceThumbnail } from '../../hooks/usePlaceThumbnail';
 import {
   INTEREST_LABELS,
@@ -44,6 +45,8 @@ interface AddPlacesSheetProps {
   dayOfSelection: (selectionId: string) => string | null;
   onAdded: (selectionId: string, destinationId: string, dayISO: string | null) => void;
   onGoTo: (selectionId: string, destinationId: string) => void;
+  /** toast da tela (evento escolhido nas sugestões, lugar que volta a ser plano do convidado) */
+  onToast: (message: string) => void;
 }
 
 /** resultado aberto na prévia + a cidade dele (pode ser outra da viagem, "Em outras cidades da viagem", ajustes-99) */
@@ -125,8 +128,11 @@ function PreviewPhoto({ title, localUrl, category }: { title: string; localUrl: 
 }
 
 /**
- * "Adicionar lugares" (ajustes-97, revisto no 99): folha de baixo pra cima, 90% da altura, aberta
- * pelo botão flutuante da aba Roteiro. Cidade (só quando a aba é "Todas"), "Em qual dia?" (só os dias
+ * "Adicionar" (ajustes-97, revisto no 99 e no 100): folha de baixo pra cima, 90% da altura, aberta
+ * pelo botão flutuante "+ Adicionar" do Roteiro — o único caminho pra pôr algo no roteiro. Com o
+ * campo de busca vazio, mostra as sugestões do app pra cidade (SuggestionsPanel: seções do perfil
+ * em carrossel e "Eventos nas suas datas"; o "+" do cartão adiciona no dia escolhido ou, sem dia,
+ * abre a prévia pedindo o dia); digitando, os resultados da busca tomam o lugar delas. Cidade (só quando a aba é "Todas"), "Em qual dia?" (só os dias
  * da cidade, obrigatório: começa no dia das pílulas da tela; em "Todos os dias", nenhum — e o botão
  * diz "Escolha um dia") e a busca em tempo real em 4 grupos — "Já no seu roteiro", "Sugestões do
  * app", "Em outras cidades da viagem" (o MALBA buscado na folha de Santiago; a prévia avisa a
@@ -147,6 +153,7 @@ export function AddPlacesSheet({
   dayOfSelection,
   onAdded,
   onGoTo,
+  onToast,
 }: AddPlacesSheetProps) {
   const trip = useTrip();
   const baseId = useId();
@@ -276,14 +283,15 @@ export function AddPlacesSheet({
       <SheetContent
         className="h-[90dvh]"
         onOpenAutoFocus={(e) => {
-          // foco direto na busca (o 1º foco do Radix seria o 1º chip)
+          // foco na própria folha, não na busca (ajustes-100): no celular o teclado subiria por cima
+          // das sugestões, que agora são o conteúdo principal com o campo vazio
           e.preventDefault();
-          focusSearch();
+          (e.currentTarget as HTMLElement | null)?.focus();
         }}
       >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Busque um restaurante, museu, bar ou endereço e escolha o dia.</SheetDescription>
+          <SheetDescription>Escolha o dia e toque + numa sugestão, ou busque um restaurante, museu, bar ou endereço.</SheetDescription>
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
@@ -445,6 +453,21 @@ export function AddPlacesSheet({
                         ))}
                       </Group>
                     )}
+                  </div>
+                )}
+
+                {/* campo vazio: as sugestões do app pra essa cidade (ajustes-100) */}
+                {!typed && destination && (
+                  <div className="flex flex-col gap-6">
+                    <SuggestionsPanel
+                      destination={destination}
+                      onToast={onToast}
+                      onAddPlace={(p) =>
+                        day
+                          ? add({ kind: 'app', placeId: p.id, categories: p.categories }, destinationId, day)
+                          : openPreview({ kind: 'app', place: p, destinationId })
+                      }
+                    />
                   </div>
                 )}
 

@@ -4,7 +4,6 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { usePlatform, type Platform } from '../../context/PlatformContext';
 import { useTrip } from '../../context/TripContext';
 import { useDocuments } from '../../context/DocumentsContext';
-import { findMockCompanion } from '../../data/mockCompanions';
 import { AppleIcon, AndroidIcon } from './PlatformIcons';
 import styles from './PlatformSwitcher.module.css';
 
@@ -63,16 +62,11 @@ function ToggleButton() {
     }, LONG_PRESS_MS);
   }
 
-  const scenarioInvited = trip.companions.some((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
-  const simulateHint = trip.groupUpdateSimulated
-    ? 'Já simulado. Recomece o teste pra simular de novo.'
-    : scenarioInvited
-      ? null
-      : 'Convide a Marina e o Rodrigo primeiro';
-
   const duringHint = trip.destinations.some((d) => d.dateStart && d.dateEnd)
     ? null
     : 'Cadastre os destinos e as datas primeiro';
+  // sem depender do convite (ajustes-100): quem do cenário faltar é convidado na hora
+  const simulateHint = trip.groupUpdateSimulated ? 'Já simulado. Recomece o teste pra simular de novo.' : duringHint;
 
   function simulateDuringTrip() {
     const result = trip.simulateDuringTrip();

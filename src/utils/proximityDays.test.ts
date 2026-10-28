@@ -165,3 +165,28 @@ test('lugar fixado num dia em que não abre continua onde a pessoa pôs', () => 
   const days = computeProximityDays([...itemsOf(SCENARIO), fixedSunday], 5, { weekdays: BA_WEEKDAYS });
   assert.equal(days.get('ba-feria-mataderos')?.day, 2);
 });
+
+/*
+  Cidade só com lugares fixados (fix do crash "reading 'blocks'"): sem nenhum lugar livre, não
+  sobra grupo pros dias normais e o equilíbrio pegava um dia que não existe. O mesmo valia pra
+  cidade só com lugares escritos à mão (sem coordenada).
+*/
+test('cidade de 4 dias só com 1 restaurante fixado no dia 2: não quebra e ele fica no dia 2', () => {
+  const restaurant: ProximityItem = { ...ANGELITOS, fixedDay: 1 };
+  const days = computeProximityDays([restaurant], 4, { lightDays: [0], weekdays: [1, 2, 3, 4] });
+  assert.deepEqual(days.get(restaurant.id), { day: 1, order: 0 });
+  assert.equal(days.size, 1);
+});
+
+test('cidade só com lugares sem coordenada (e um fixado): não quebra e todos têm dia', () => {
+  const days = computeProximityDays(
+    [{ id: 'a' }, { id: 'b' }, { id: 'c', fixedDay: 3 }],
+    4,
+    { lightDays: [0] },
+  );
+  assert.equal(days.size, 3);
+  assert.equal(days.get('c')?.day, 3);
+  // os soltos vão pros dias normais vazios, não pro dia de deslocamento
+  assert.notEqual(days.get('a')?.day, 0);
+  assert.notEqual(days.get('b')?.day, 0);
+});

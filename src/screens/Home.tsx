@@ -19,6 +19,7 @@ import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '
 import { Icon } from '../components/shell/Icon';
 import { Card } from '@/components/ui/card';
 import { EXAMPLE_PAST_TRIPS, type ExamplePastTrip } from '../data/examplePastTrips';
+import type { ItineraryNavState } from './Itinerary';
 import styles from './Home.module.css';
 
 function TripHeroCard({
@@ -219,8 +220,8 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
           `roteiro-${destination.id}`,
           who.length > 0 ? <MemberAvatars members={who} /> : <Icon icon={Compass} />,
           `${count} ${count === 1 ? 'lugar sugerido' : 'lugares sugeridos'} em ${destination.city}`,
-          () =>
-            navigate('/roteiro', { state: { tab: 'lugares', destinationId: destination.id, section: 'grupo' } }),
+          // Roteiro na cidade, já no bloco "Sugestões dos convidados" (ajustes-100)
+          () => navigate('/roteiro', { state: { destinationId: destination.id, section: 'convidados' } satisfies ItineraryNavState }),
         ),
       )}
       {custos.length > 0 &&
@@ -288,7 +289,11 @@ export function Home() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => navigate('/roteiro', { state: { tab: 'roteiro', destinationId: today.destinationId } })}
+              onClick={() =>
+                navigate('/roteiro', {
+                  state: { destinationId: today.destinationId, dayISO: today.dateISO } satisfies ItineraryNavState,
+                })
+              }
             >
               <Icon icon={CalendarDays} /> Ver o dia de hoje
             </Button>

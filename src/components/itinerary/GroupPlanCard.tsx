@@ -16,6 +16,8 @@ interface GroupPlanCardProps {
   /** quem vai (wantersOf) — aqui só convidados, você ainda não */
   wanters: Member[];
   onJoin: () => void;
+  /** o bloco "Sugestões dos convidados" rola até aqui (ajustes-100) */
+  id?: string;
 }
 
 /**
@@ -23,13 +25,13 @@ interface GroupPlanCardProps {
  * fora da divisão de dias, do mapa e da Agenda. "Marina vai" com o avatar e o "+" (o mesmo botão
  * circular de "Escolhas dos convidados"); tocar no "+" faz o lugar virar parada sua.
  */
-export function GroupPlanCard({ place, title, wanters, onJoin }: GroupPlanCardProps) {
+export function GroupPlanCard({ place, title, wanters, onJoin, id }: GroupPlanCardProps) {
   const thumb = usePlaceThumbnail(place ? (place.wikiTitle ?? place.name) : '', placePhotoUrl(place));
   const guests = wanters.filter((m) => m.id !== YOU);
   const color = guests[0]?.color;
 
   return (
-    <li className={styles.card} style={color ? ({ '--plan-color': color } as CSSProperties) : undefined}>
+    <li id={id} className={styles.card} style={color ? ({ '--plan-color': color } as CSSProperties) : undefined}>
       <span className={styles.thumb} aria-hidden="true">
         {thumb ? <img src={thumb} alt="" className={styles.thumbImg} /> : <Icon icon={placeIllustrationIcon(place?.categories)} />}
       </span>

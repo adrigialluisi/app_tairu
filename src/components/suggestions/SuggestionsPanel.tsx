@@ -1,4 +1,4 @@
-import { CalendarDays, Users } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -9,10 +9,9 @@ import { activityConflict, firstTime } from '../../utils/activityConflicts';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CategoryTags, type CategoryTag } from './CategoryTags';
 import { EventCard } from './EventCard';
-import { GuestChoicesList, type GuestChoice } from './GuestChoicesList';
 import { PlaceCard } from './PlaceCard';
 import { SuggestionCarousel, SuggestionSection } from './SuggestionSection';
-import { focusCard, placeCardId } from '../../utils/focusCard';
+import { placeCardId } from '../../utils/focusCard';
 import {
   INTEREST_LABELS,
   getEventsForDestination,
@@ -50,14 +49,21 @@ interface SuggestionsPanelProps {
   destination: TripDestination;
   /** dispara o toast "Salvo"/mensagem da tela (useSaveToast do Itinerary) */
   onToast: (message: string) => void;
+  /**
+   * "+" num lugar que ainda não é seu (ninguém escolheu, ou só convidados): quem abriu decide o dia
+   * — a folha "Adicionar" adiciona no dia de "Em qual dia?" ou abre a prévia pedindo o dia.
+   */
+  onAddPlace: (place: PlaceEntry) => void;
 }
 
 /**
- * Aba "Sugestões" do Roteiro, por seções do perfil da viagem + eventos
- * locais reais nas datas do destino. Ver
- * docs/ajustes-60-sugestoes-por-categoria-e-eventos.md.
+ * Sugestões do app de uma cidade, por seções do perfil da viagem + eventos nas datas do destino
+ * (docs/ajustes-60-sugestoes-por-categoria-e-eventos.md). Era a sub-aba "Sugestões do app" do
+ * Roteiro; desde o ajustes-100 aparece dentro da folha "Adicionar", com o campo de busca vazio. As
+ * "Escolhas dos convidados" saíram daqui e viraram o bloco "Sugestões dos convidados" no topo do
+ * Roteiro.
  */
-export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps) {
+export function SuggestionsPanel({ destination, onToast, onAddPlace }: SuggestionsPanelProps) {
   const trip = useTrip();
   const navigate = useNavigate();
 
@@ -90,7 +96,7 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
     const sel = selectionByPlaceId.get(placeId);
     return !!sel && (sel.addedBy === YOU || sel.alsoWantedBy.includes(YOU));
   };
-  // escolhidos por algum convidado (ajustes-87: lista compacta "Escolhas dos convidados")
+  // escolhidos por algum convidado (ficam também na categoria deles, exceção do ajustes-87)
   const groupPlaces = cityPlaces.filter((p) => wantersFor(p.id).some((m) => m.id !== YOU));
 
   // --- quais seções de lugar entram (perfil vazio → todas, nunca tela vazia) ---
@@ -197,9 +203,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   ];
 
   const shortcuts = [
-    ...(groupPlaces.length > 0
-      ? [{ key: 'grupo', icon: Users, label: 'Convidados', count: groupPlaces.length }]
-      : []),
     {
       key: 'eventos',
       icon: SECTION_ICONS.eventos,
@@ -225,10 +228,15 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
   };
 
   /*
-    ✓ / + do cartão. Lugar que um convidado também quer: tirar o ✓ só tira VOCÊ — ele sai do seu
-    roteiro e volta a ser plano provisório do convidado (ajustes-95b). Sem convidado, sai de vez.
+    ✓ / + do cartão. "+" (lugar ainda não seu, inclusive plano de convidado): quem abriu escolhe o
+    dia (onAddPlace, ajustes-100). ✓ num lugar que um convidado também quer só tira VOCÊ — ele sai
+    do seu roteiro e volta a ser plano provisório do convidado (ajustes-95b). Sem convidado, sai de vez.
   */
   function handleTogglePlace(place: PlaceEntry) {
+    if (!isMine(place.id)) {
+      onAddPlace(place);
+      return;
+    }
     const sel = selectionByPlaceId.get(place.id);
     const guests = wantersFor(place.id).filter((m) => m.id !== YOU);
     if (sel && guests.length > 0) {
@@ -237,15 +245,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
       return;
     }
     trip.togglePlace(destination.id, { placeId: place.id, categories: place.categories });
-    if (!sel) onToast('Lugar adicionado');
-  }
-
-  /** "+" num plano do grupo: o lugar entra no SEU roteiro (ajustes-95b) */
-  function handleJoinPlace(place: PlaceEntry) {
-    const sel = selectionByPlaceId.get(place.id);
-    if (!sel) return;
-    trip.toggleMyInterest(sel.id);
-    onToast('Lugar adicionado ao seu roteiro');
   }
 
   const placeCard = (place: PlaceEntry) => (
@@ -256,29 +255,13 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
       wanters={wantersFor(place.id)}
       suggestedBy={suggestedByFor(place.id)}
       onToggle={() => handleTogglePlace(place)}
-      onJoin={() => handleJoinPlace(place)}
+      onJoin={() => onAddPlace(place)}
       isNew={(() => {
         const sel = selectionByPlaceId.get(place.id);
         return !!sel && trip.unseenUpdates.roteiro.includes(sel.id);
       })()}
     />
   );
-
-  const guestChoices: GuestChoice[] = groupPlaces.map((place) => ({
-    place,
-    wanters: wantersFor(place.id),
-    mine: isMine(place.id),
-    cardId: placeCardId(destination.id, place.id),
-    suggestedBy: suggestedByFor(place.id),
-  }));
-
-  /** "+" / ✓ direto na lista (ajustes-94): mesmo estado do cartão na categoria */
-  function handleToggleMineFromList(choice: GuestChoice) {
-    const sel = selectionByPlaceId.get(choice.place.id);
-    if (!sel) return;
-    trip.toggleMyInterest(sel.id);
-    onToast(choice.mine ? backToPlanToast(choice.place.id) : 'Lugar adicionado ao seu roteiro');
-  }
 
   /** evento num horário em que o grupo está viajando (ajustes-94): selo no cartão e confirmação ao adicionar */
   const eventConflict = (event: EventEntry) =>
@@ -347,18 +330,6 @@ export function SuggestionsPanel({ destination, onToast }: SuggestionsPanelProps
 
       {/* 4. Seções */}
       <div className={styles.sections}>
-        {groupPlaces.length > 0 && (
-          <SuggestionSection
-            id={sectionId('grupo')}
-            icon={Users}
-            title="Escolhas dos convidados"
-            countLabel={countLabel(groupPlaces.length, 'lugar', 'lugares')}
-            description={`O que quem você convidou quer fazer em ${destination.city}.`}
-          >
-            <GuestChoicesList choices={guestChoices} onOpen={focusCard} onToggleMine={handleToggleMineFromList} />
-          </SuggestionSection>
-        )}
-
         {/* "Adicionados" saiu no ajustes-97: o que a pessoa traz por conta própria entra direto no roteiro, pelo "Adicionar lugares" */}
         <SuggestionSection
           id={sectionId('eventos')}

@@ -470,9 +470,10 @@ export interface TripContextValue extends TripState {
   setRetroShowCosts: (value: boolean) => void;
   setRetroDismissed: (value: boolean) => void;
   /**
-   * Moderador (ajustes-89): "dois dias depois" — os convidados do cenário que estão em "Convite
-   * enviado" entram e trazem as contribuições. `ok: false` quando nenhum deles foi convidado ou a
-   * simulação já foi usada; `message` é o texto do banner (ou o motivo).
+   * Moderador (ajustes-89/94): "uma semana antes da viagem" — os convidados do cenário entram e
+   * trazem as contribuições; quem não foi convidado com o e-mail exato é convidado na hora
+   * (ajustes-100). `ok: false` sem destino com datas ou com a simulação já usada; `message` é o
+   * texto do banner (ou o motivo).
    */
   simulateGroupUpdate: () => { ok: boolean; message: string };
   /**
@@ -539,14 +540,27 @@ export function TripProvider({ children }: { children: ReactNode }) {
     SIMULAÇÃO "uma semana antes da viagem" (era "dois dias depois", ajustes-89/94; substitui a entrada
     automática de 2,5 s do ajustes-67): só os convidados do cenário que estão em "Convite enviado"
     entram; as contribuições deles entram uma vez (applyMockContributions) e viram novidade nas
-    seções (unseenUpdates). `currentCompanions` deixa o "durante a viagem" simular com os convites
-    que ele acabou de criar.
+    seções (unseenUpdates). Desde o ajustes-100, quem do cenário não foi convidado com o e-mail
+    exato (erro de digitação ou nenhum convite) é convidado ali mesmo, como o "durante a viagem" já
+    fazia — o convite digitado errado continua na lista, em "Convite enviado".
   */
-  function simulateGroupUpdate(
-    currentCompanions: TripCompanion[] = companions,
-    title = 'Faltam poucos dias pra viagem',
-  ): { ok: boolean; message: string } {
+  function withScenarioInvites(current: TripCompanion[]): TripCompanion[] {
+    const missing = MOCK_COMPANIONS.filter(
+      (m) => !current.some((c) => c.email.trim().toLowerCase() === m.email.toLowerCase()),
+    ).map((m): TripCompanion => ({
+      id: `${m.email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      email: m.email,
+      status: 'convite-enviado',
+    }));
+    return [...current, ...missing];
+  }
+
+  function simulateGroupUpdate(title = 'Faltam poucos dias pra viagem'): { ok: boolean; message: string } {
     if (groupUpdateSimulated) return { ok: false, message: 'Já simulado. Use "Recomeçar teste" pra simular de novo.' };
+    if (!destinations.some((d) => d.dateStart && d.dateEnd)) {
+      return { ok: false, message: 'Cadastre os destinos e as datas primeiro' };
+    }
+    const currentCompanions = withScenarioInvites(companions);
     const joining = currentCompanions.filter((c) => c.status === 'convite-enviado' && findMockCompanion(c.email));
     if (joining.length === 0) return { ok: false, message: 'Convide a Marina e o Rodrigo primeiro' };
     const joined: TripCompanion[] = joining.map((c) => {
@@ -593,17 +607,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
     if (!destinations.some((d) => d.dateStart && d.dateEnd)) {
       return { ok: false, message: 'Cadastre os destinos e as datas primeiro' };
     }
-    if (!groupUpdateSimulated) {
-      // Parte 3 sem ter passado pela Parte 2: Marina e Rodrigo precisam estar na viagem
-      const missing = MOCK_COMPANIONS.filter(
-        (m) => !companions.some((c) => c.email.trim().toLowerCase() === m.email.toLowerCase()),
-      ).map((m): TripCompanion => ({
-        id: `${m.email}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        email: m.email,
-        status: 'convite-enviado',
-      }));
-      simulateGroupUpdate([...companions, ...missing], 'Sua viagem começou');
-    }
+    // Parte 3 sem ter passado pela Parte 2: Marina e Rodrigo entram (convidados ali, se faltar)
+    if (!groupUpdateSimulated) simulateGroupUpdate('Sua viagem começou');
     setSimulatedTodayISO(DURING_TRIP_TODAY);
     return { ok: true, message: 'Viagem acontecendo: 15/11' };
   }

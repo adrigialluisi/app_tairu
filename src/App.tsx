@@ -9,6 +9,7 @@ import { Home } from './screens/Home';
 import { CreateTrip } from './screens/CreateTrip';
 import { InviteCompanions } from './screens/InviteCompanions';
 import { Itinerary } from './screens/Itinerary';
+import { LocalTips } from './screens/LocalTips';
 import { Central } from './screens/Central';
 import { Documents } from './screens/Documents';
 import { PhotoCredits } from './screens/PhotoCredits';
@@ -58,6 +59,8 @@ export function App() {
                 <Route path="/central" element={<Central />} />
                 <Route path="/convidar" element={<InviteCompanions />} />
                 <Route path="/roteiro" element={<Itinerary />} />
+                {/* dicas locais de uma cidade (ajustes-100), sem menu fixo, aberta pelo botão "Dicas" do Roteiro */}
+                <Route path="/roteiro/dicas/:destinationId" element={<LocalTips />} />
                 <Route path="/custos" element={<Costs />} />
                 <Route path="/documentos" element={<Documents />} />
                 {/* créditos de todas as fotos (ajustes-99c), sem menu fixo, aberto pelo rodapé da Início */}

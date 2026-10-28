@@ -26,8 +26,8 @@ export type AgendaKind =
 
 export type AgendaLink =
   | { path: '/central'; tab: 'transporte' | 'estadia' | 'outros' }
-  /** aba Sugestões do próprio Roteiro (valor interno 'lugares') — troca de aba, sem navegar */
-  | { path: '/roteiro'; tab: 'lugares' };
+  /** evento escolhido: abre a folha "Adicionar" do próprio Roteiro no dia dele, onde ficam as sugestões (ajustes-100) */
+  | { path: '/roteiro' };
 
 export interface AgendaItem {
   /** `${kind}-${sourceId}` (carro e hospedagem geram 2 itens cada) */
@@ -194,7 +194,7 @@ export function buildAgenda(trip: TripForAgenda): AgendaItem[] {
       icon: EVENT_KIND_ICONS[e.kind],
       title: e.name,
       subtitle: [e.venue, e.time.trim() !== time ? e.time : ''].filter(Boolean).join(' · '),
-      link: { path: '/roteiro', tab: 'lugares' },
+      link: { path: '/roteiro' },
       cityId: e.cityId,
     });
   }

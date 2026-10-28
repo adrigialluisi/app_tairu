@@ -203,6 +203,8 @@ function mergeDownTo(groups: Group[], days: number, cap: number, mealCap: number
 
 /** 3. equilíbrio com folga: até BALANCE_SLACK lugares de diferença, só com desvio pequeno */
 function balance(groups: Group[]) {
+  // sem dia com lugar (ex.: cidade só com lugares fixados): nada a equilibrar
+  if (groups.length < 2) return;
   for (let guard = 0; guard < 100; guard++) {
     const sizes = groups.map(sizeOf);
     const big = groups[sizes.indexOf(Math.max(...sizes))];
@@ -257,6 +259,8 @@ function balance(groups: Group[]) {
  * mais perto de um dia com menos refeições — junto com os vizinhos dele.
  */
 function spreadMeals(groups: Group[]) {
+  // sem dia com lugar (ex.: cidade só com lugares fixados): nada a equilibrar
+  if (groups.length < 2) return;
   for (let guard = 0; guard < 100; guard++) {
     const counts = groups.map(mealsOf);
     const max = Math.max(...counts);

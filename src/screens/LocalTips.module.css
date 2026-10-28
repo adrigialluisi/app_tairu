@@ -1,0 +1,98 @@
+/* Dicas locais de uma cidade (ajustes-100) — estilos vindos da antiga aba Dicas do Itinerary */
+/* entre blocos da tela: 24px (ajustes-72, seção 3) */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.noData {
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin: 0;
+}
+
+.tipsCategory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tipsCategoryTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tipsItem {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text);
+  line-height: var(--line-height-normal);
+}
+
+.bullet {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.alsoVisit {
+  /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alsoVisitTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin: 0;
+}
+
+.alsoVisitItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.alsoVisitName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.alsoVisitMeta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Atalho "💱 Abrir conversor" em Dicas locais → Dinheiro e câmbio */
+.converterLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent-dark);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
