@@ -1,5 +1,5 @@
 import { Bell, CalendarDays, FileText, Luggage, TriangleAlert, User } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../components/shell/Button';
@@ -17,6 +17,16 @@ import { getTripToday, type TripToday } from '../utils/tripToday';
 import { attentionText, expiryStatus, needsAttention, type ExpiryStatus } from '../utils/documentSummary';
 import { Icon } from '../components/shell/Icon';
 import { Card } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { EXAMPLE_PAST_TRIPS, type ExamplePastTrip } from '../data/examplePastTrips';
 import type { ItineraryNavState } from './Itinerary';
 import styles from './Home.module.css';
@@ -253,6 +263,9 @@ function GroupUpdates({ trip }: { trip: ReturnType<typeof useTrip> }) {
   );
 }
 
+/** botões do AlertDialog no padrão do Tairu (os mesmos de Convidados, ajustes-83): 44px, texto 15px, foco pelo anel global */
+const DIALOG_BUTTON = 'h-auto min-h-11 rounded-md px-4 text-(length:--text-base) font-medium focus-visible:ring-0';
+
 /** última simulação pra qual a Início já rolou até as Novidades — voltar pra Início não rola de novo */
 let lastScrolledSeq = 0;
 
@@ -279,9 +292,25 @@ export function Home() {
     trip.resetTrip();
     navigate('/destinos');
   }
+  // "Nova viagem" com uma viagem montada (ajustes-101i): confirma antes de apagar tudo
+  const [confirmingNewTrip, setConfirmingNewTrip] = useState(false);
+  const tripName = trip.name.trim();
+
+  /** o mesmo destino do card da viagem */
+  function openTrip() {
+    navigate('/destinos');
+  }
 
   const tripEndISO = getTripEndISO(trip.destinations);
   const today = getTripToday(trip.destinations, trip.simulatedTodayISO);
+
+  /** "Ver o dia de hoje" (ajustes-94; botão principal desde o 101e): Agenda, na cidade e no dia de hoje */
+  function openToday() {
+    if (!today) return;
+    navigate('/roteiro', {
+      state: { part: 'agenda', destinationId: today.destinationId, dayISO: today.dateISO } satisfies ItineraryNavState,
+    });
+  }
   const alertCount = docs.documents.filter((d) => needsAttention(d, tripEndISO)).length;
   const documentsSubtitle =
     docs.documents.length === 0
@@ -301,8 +330,8 @@ export function Home() {
       </header>
 
       <div className={styles.greeting}>
+        {/* só a saudação (ajustes-101e: saiu o "Pra onde vamos dessa vez?") */}
         <h1 className={styles.greetingTitle}>Olá! 👋</h1>
-        <p className={styles.greetingSubtitle}>Pra onde vamos dessa vez?</p>
       </div>
 
       <GroupUpdates trip={trip} />
@@ -311,20 +340,7 @@ export function Home() {
 
       {hasActiveTrip && (
         <div className={styles.heroGroup}>
-          <TripHeroCard trip={trip} today={today} onClick={() => navigate('/destinos')} />
-          {today && (
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() =>
-                navigate('/roteiro', {
-                  state: { part: 'agenda', destinationId: today.destinationId, dayISO: today.dateISO } satisfies ItineraryNavState,
-                })
-              }
-            >
-              <Icon icon={CalendarDays} /> Ver o dia de hoje
-            </Button>
-          )}
+          <TripHeroCard trip={trip} today={today} onClick={openTrip} />
         </div>
       )}
 
@@ -362,20 +378,68 @@ export function Home() {
         </button>
       </div>
 
-      {/* fixo no rodapé (ajustes-95): sticky no fim da tela, sempre visível, sem esconder o último item */}
+      {/*
+        fixo no rodapé (ajustes-95): sticky no fim da tela, sempre visível, sem esconder o último item.
+        Desde o ajustes-101e: com viagem, o principal abre a viagem ("Abrir minha viagem", o mesmo
+        destino do card; "Em andamento": "Ver o dia de hoje", na Agenda no dia de hoje) e "Nova viagem"
+        vira link discreto embaixo (--muted no branco 7.63:1, 44px de toque); sem viagem, "Nova
+        viagem" continua o principal. "Créditos das fotos" foi pro menu do ícone do dispositivo.
+      */}
       <div className={styles.actions}>
-        <Button variant="primary" fullWidth onClick={handleNewTrip}>
-          Nova viagem
-        </Button>
-        {/* créditos das fotos num lugar só (ajustes-99c): link pequeno, abaixo de tudo, --muted no branco 7.63:1 */}
-        <button
-          type="button"
-          className="-my-2 inline-flex min-h-11 cursor-pointer items-center self-center border-0 bg-transparent p-0 text-(length:--text-sm) text-muted-foreground underline underline-offset-4"
-          onClick={() => navigate('/creditos')}
-        >
-          Créditos das fotos
-        </button>
+        {hasActiveTrip ? (
+          <>
+            {today ? (
+              <Button variant="primary" fullWidth onClick={openToday}>
+                <Icon icon={CalendarDays} /> Ver o dia de hoje
+              </Button>
+            ) : (
+              <Button variant="primary" fullWidth onClick={openTrip}>
+                Abrir minha viagem
+              </Button>
+            )}
+            <button
+              type="button"
+              className="-my-2 inline-flex min-h-11 cursor-pointer items-center self-center border-0 bg-transparent p-0 text-(length:--text-sm) text-muted-foreground underline underline-offset-4"
+              onClick={() => setConfirmingNewTrip(true)}
+            >
+              Nova viagem
+            </button>
+          </>
+        ) : (
+          <Button variant="primary" fullWidth onClick={handleNewTrip}>
+            Nova viagem
+          </Button>
+        )}
       </div>
+
+      {/*
+        Confirmação da "Nova viagem" (ajustes-101i): só com viagem ativa (o link só existe nesse caso;
+        sem viagem, o botão principal vai direto). "Cancelar" é o padrão — o Radix põe o foco nele ao
+        abrir; "Começar nova viagem" é o destrutivo (branco no --destructive 6.57:1, hover --accent-dark 9.67:1).
+      */}
+      <AlertDialog open={confirmingNewTrip} onOpenChange={setConfirmingNewTrip}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-(length:--text-lg) font-semibold">Começar uma nova viagem?</AlertDialogTitle>
+            <AlertDialogDescription className="text-(length:--text-base)">
+              {tripName ? `A viagem ${tripName}` : 'A viagem atual'} e tudo o que você montou nela vão ser apagados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={`${DIALOG_BUTTON} border-primary bg-background text-(--accent-dark) hover:bg-accent-soft`}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className={`${DIALOG_BUTTON} bg-destructive text-white hover:bg-(--accent-dark)`}
+              onClick={handleNewTrip}
+            >
+              Começar nova viagem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

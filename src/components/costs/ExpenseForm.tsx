@@ -61,18 +61,6 @@ const CATEGORY_OPTIONS: { value: ExpenseCategory; label: string }[] = EXPENSE_CA
   icon: CATEGORY_META[c].icon,
 }));
 
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** Moeda inicial sem destino escolhido: a do destino em que a pessoa está hoje (pelas datas); senão BRL. */
-function currentDestinationCurrency(destinations: TripDestination[]): string {
-  const today = todayISO();
-  const here = destinations.find((d) => d.dateStart && d.dateEnd && d.dateStart <= today && today <= d.dateEnd);
-  return here?.currencyCode ?? 'BRL';
-}
-
 export function ExpenseForm({ destinations, members, initialExpense, onSave, onCancel, onRemove, prefill }: ExpenseFormProps) {
   const baseId = useId();
 
@@ -82,10 +70,15 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
     initialExpense ? (initialExpense.destinationId ?? OTHER_PLACE) : (initialPrefill?.destinationId ?? null),
   );
   const [amount, setAmount] = useState(initialExpense?.amount ?? initialPrefill?.amount ?? '');
+  /*
+    Moeda (ajustes-101e, desfaz o "moeda da cidade" do ajustes-98): todo gasto começa em BRL, também
+    pela parada ou pelo evento do Roteiro, e o "Onde foi?" não troca mais a moeda. Muda pelo select,
+    pela nota lida (a moeda do documento, ex.: ARS 120.000 do Don Julio) ou pelo "Lançar como gasto"
+    do Conversor (a moeda que estava nele).
+  */
   const [currencyCode, setCurrencyCode] = useState(
-    initialExpense?.currencyCode ?? initialPrefill?.currencyCode ?? currentDestinationCurrency(destinations),
+    initialExpense?.currencyCode ?? initialPrefill?.currencyCode ?? 'BRL',
   );
-  const [currencyHint, setCurrencyHint] = useState<string | null>(null);
   const [category, setCategory] = useState<ExpenseCategory | null>(
     initialExpense?.category ?? initialPrefill?.category ?? null,
   );
@@ -147,7 +140,6 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
         if (dest) setPlace(dest.id);
         setAmount(read.amount);
         setCurrencyCode(read.currencyCode);
-        setCurrencyHint(null);
         setCategory(read.category);
         setDateISO(read.dateISO);
         return ['description', 'amount', 'currency', 'date'];
@@ -178,18 +170,10 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
 
   function handlePlaceChange(value: string) {
     setPlace(value);
-    const dest = destinations.find((d) => d.id === value);
-    if (dest) {
-      setCurrencyCode(dest.currencyCode);
-      setCurrencyHint(`Moeda ajustada pra ${dest.currencyCode} (${dest.city}).`);
-    } else {
-      setCurrencyHint(null);
-    }
   }
 
   function handleCurrencyChange(code: string) {
     setCurrencyCode(code);
-    setCurrencyHint(null);
   }
 
   const parsedAmount = parseAmount(amount);
@@ -269,11 +253,6 @@ export function ExpenseForm({ destinations, members, initialExpense, onSave, onC
 
       <div className={styles.fieldGroup}>
         <OptionChipGroup legend="Onde foi?" options={placeOptions} value={place} onChange={handlePlaceChange} />
-        {currencyHint && (
-          <p className={styles.hint} role="status">
-            {currencyHint}
-          </p>
-        )}
       </div>
 
       <div className={styles.fieldGroup}>

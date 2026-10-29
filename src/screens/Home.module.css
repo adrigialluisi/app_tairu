@@ -51,11 +51,6 @@
   color: var(--text);
 }
 
-.greetingSubtitle {
-  margin: 0;
-  font-size: var(--text-base);
-  color: var(--muted);
-}
 
 .heroCard {
   /* fundo, borda, raio, sombra e padding: Card do shadcn (docs/ajustes-74-...md) */

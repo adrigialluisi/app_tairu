@@ -110,20 +110,11 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
   const [notes, setNotes] = useState(initialItem?.notes ?? '');
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
   /*
-    Moeda do custo (ajustes-98): padrão = a do destino do "Vale para" (viagem toda: BRL) e acompanha
-    o "Vale para" até a pessoa escolher outra moeda (ou o arquivo lido trazer uma).
+    Moeda do custo (ajustes-101e, desfaz o "acompanha o Vale para" do ajustes-98): começa em BRL e
+    só muda pelo select ou pelo arquivo lido, que traz a moeda do documento.
   */
-  const currencyOf = (id: string | null) => destinations.find((d) => d.id === id)?.currencyCode ?? 'BRL';
-  const [costCurrencyCode, setCostCurrencyCode] = useState(
-    initialItem?.costCurrencyCode ?? currencyOf(initialItem?.destinationId ?? null),
-  );
-  const [currencyTouched, setCurrencyTouched] = useState(!!initialItem);
+  const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
 
-  /** troca o "Vale para" e, se a moeda ainda é a padrão, troca junto */
-  function chooseScope(id: string | null, keepCurrency = false) {
-    setDestinationId(id);
-    if (!currencyTouched && !keepCurrency) setCostCurrencyCode(currencyOf(id));
-  }
   const [attachments, setAttachments] = useState<Attachment[]>(initialItem?.attachments ?? []);
   const [datesKey, setDatesKey] = useState(0);
   const af = useAutofill();
@@ -177,18 +168,17 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
       set(fields.emergencyPhone, setEmergencyPhone, 'emergency-phone');
       set(fields.costAmount, setCostAmount, 'cost-amount');
       set(fields.costCurrencyCode, setCostCurrencyCode, 'cost-currency');
-      if (fields.costCurrencyCode !== undefined) setCurrencyTouched(true);
       if (fields.startDate !== undefined) {
         setStartDate(fields.startDate);
         setEndDate(fields.endDate ?? null);
         setDatesKey((k) => k + 1);
         keys.push('date');
       }
-      if (fields.scope === 'viagem') chooseScope(null, fields.costCurrencyCode !== undefined);
+      if (fields.scope === 'viagem') setDestinationId(null);
       else if (fields.scope) {
         const scope = fields.scope;
         const match = destinations.find((d) => d.cityId === scope.cityId);
-        if (match) chooseScope(match.id, fields.costCurrencyCode !== undefined);
+        if (match) setDestinationId(match.id);
       }
       return keys;
     });
@@ -287,7 +277,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
             legend="Vale para"
             options={scopeOptions}
             value={destinationId ?? 'viagem'}
-            onChange={(v) => chooseScope(v === 'viagem' ? null : v)}
+            onChange={(v) => setDestinationId(v === 'viagem' ? null : v)}
           />
 
           {cfg.providerLabel && (
@@ -409,10 +399,7 @@ export function OtherItemForm({ destinations, initialItem, onSave, onCancel, onR
               id={`${baseId}-cost-currency`}
               label="Moeda do custo"
               value={costCurrencyCode}
-              onChange={(code) => {
-                setCostCurrencyCode(code);
-                setCurrencyTouched(true);
-              }}
+              onChange={setCostCurrencyCode}
             />
           </div>
         </>

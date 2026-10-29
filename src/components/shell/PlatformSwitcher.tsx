@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { usePlatform, type Platform } from '../../context/PlatformContext';
 import { useTrip } from '../../context/TripContext';
 import { useDocuments } from '../../context/DocumentsContext';
@@ -81,6 +82,12 @@ function ToggleButton() {
     if (result.ok) navigate('/inicio');
   }
 
+  /** "Créditos das fotos" (ajustes-101e; era o link do rodapé da Início): a tela /creditos, sem mudança */
+  function openCredits() {
+    setMenuOpen(false);
+    navigate('/creditos');
+  }
+
   function restart() {
     setMenuOpen(false);
     trip.resetTrip();
@@ -132,6 +139,11 @@ function ToggleButton() {
         <button type="button" className={menuItemClass} onClick={restart}>
           Recomeçar teste
         </button>
+        {/* separado dos itens de moderador por uma linha fina (--card-border, decorativa) */}
+        <Separator className="my-1" />
+        <button type="button" className={menuItemClass} onClick={openCredits}>
+          Créditos das fotos
+        </button>
       </PopoverContent>
     </Popover>
   );
@@ -149,7 +161,9 @@ function ToggleButton() {
  * Toque longo (~800 ms, ajustes-89) abre o menu escondido do moderador, um atalho por parte do
  * teste (ajustes-94): "Simular: uma semana antes da viagem" (os convidados do cenário entram e
  * trazem as novidades), "Simular: durante a viagem" (o app vai pra 15/11/2026, com a viagem
- * acontecendo) e "Recomeçar teste" (zera a viagem, a data simulada e os documentos e volta pra Splash). O toque curto continua só alternando iOS/Android.
+ * acontecendo) e "Recomeçar teste" (zera a viagem, a data simulada e os documentos e volta pra Splash);
+ * abaixo de uma linha fina, "Créditos das fotos" (ajustes-101e, saiu do rodapé da Início). O toque
+ * curto continua só alternando iOS/Android.
  *
  * Por padrão fica fixo no canto superior direito de toda tela (`inline`
  * ausente) — é assim que Splash e as telas com `AppBar` continuam

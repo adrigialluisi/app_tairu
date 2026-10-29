@@ -49,6 +49,13 @@ interface RouteMapProps {
    * `close` fecha o popup. Sem ela, o popup é só informativo (viagem passada).
    */
   pinActions?: (pin: RouteMapPin, close: () => void) => ReactNode;
+  /**
+   * botões de zoom/centralizar à esquerda (ajustes-101e: na Agenda o "+ Adicionar" flutuante ocupa o
+   * canto inferior direito da tela); o autoPan do popup deixa a folga do lado deles
+   */
+  controlsSide?: 'right' | 'left';
+  /** pino recém-adicionado: o mapa vai até ele e ele pulsa (ajustes-101e); `seq` repete a mesma id */
+  flashPin?: { id: string; seq: number } | null;
 }
 
 const DAY_COLOR_COUNT = 4;
@@ -254,7 +261,16 @@ function PinCard({ pin, actions }: { pin: RouteMapPin; actions?: ReactNode }) {
 /** acima disso a legenda cobriria o mapa no celular */
 const MAX_LEGEND_DAYS = 6;
 
-export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, routeByDay = false, pinActions }: RouteMapProps) {
+export function RouteMap({
+  cityLabel,
+  pins,
+  missingCount,
+  showRoute = false,
+  routeByDay = false,
+  pinActions,
+  controlsSide = 'right',
+  flashPin = null,
+}: RouteMapProps) {
   const [tilesOk, setTilesOk] = useState<boolean | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -263,6 +279,22 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
     () => (zoom === null ? spreadPositions(null, pins, 0) : spreadPositions(map, pins, zoom)),
     [map, pins, zoom],
   );
+  // marcadores por id, pro pino recém-adicionado pulsar (ajustes-101e)
+  const markers = useRef(new Map<string, L.Marker>());
+  const flashPinId = flashPin && pins.some((p) => p.id === flashPin.id) ? flashPin.id : null;
+  useEffect(() => {
+    if (!map || !flashPinId) return;
+    const marker = markers.current.get(flashPinId);
+    if (!marker) return;
+    map.panTo(marker.getLatLng());
+    const el = marker.getElement();
+    el?.classList.remove('pin-flash');
+    // força o recomeço da animação quando o mesmo pino pisca de novo
+    void el?.getBoundingClientRect();
+    el?.classList.add('pin-flash');
+    const timer = setTimeout(() => el?.classList.remove('pin-flash'), 1400);
+    return () => clearTimeout(timer);
+  }, [map, flashPinId, flashPin?.seq]);
   const at = (p: RouteMapPin): [number, number] => {
     const ll = shown.get(p.id);
     return ll ? [ll.lat, ll.lng] : [p.lat, p.lng];
@@ -339,6 +371,10 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
           {pins.map((pin) => (
             <Marker
               key={pin.id}
+              ref={(marker) => {
+                if (marker) markers.current.set(pin.id, marker);
+                else markers.current.delete(pin.id);
+              }}
               position={at(pin)}
               icon={createPinIcon(pin, pin.id === selectedId)}
               zIndexOffset={pin.id === selectedId ? 1000 : 0}
@@ -356,8 +392,8 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
                 closeButton={false}
                 maxWidth={pinActions ? 280 : 300}
                 minWidth={pinActions ? 240 : 50}
-                autoPanPaddingTopLeft={[16, 56]}
-                autoPanPaddingBottomRight={[64, 72]}
+                autoPanPaddingTopLeft={[controlsSide === 'left' ? 64 : 16, 56]}
+                autoPanPaddingBottomRight={[controlsSide === 'left' ? 16 : 64, 72]}
               >
                 <PinCard pin={pin} actions={pinActions && map ? pinActions(pin, () => map.closePopup()) : undefined} />
               </Popup>
@@ -382,7 +418,7 @@ export function RouteMap({ cityLabel, pins, missingCount, showRoute = false, rou
 
         {/* controles no canto inferior direito, como no Google Maps (o zoom padrão do Leaflet fica desligado) */}
         {map && (
-          <div className={styles.controls}>
+          <div className={`${styles.controls} ${controlsSide === 'left' ? styles.controlsLeft : ''}`}>
             <Button
               variant="secondary"
               iconOnly

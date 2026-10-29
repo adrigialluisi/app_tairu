@@ -376,7 +376,7 @@ export function PastTrip() {
                 </section>
               ))}
               <p className="m-0 text-(length:--text-sm) text-muted-foreground">
-                Fotos de exemplo: imagens do Wikimedia Commons. Os créditos ficam em "Créditos das fotos", no rodapé da Início.
+                Fotos de exemplo: imagens do Wikimedia Commons. Os créditos ficam em "Créditos das fotos", no menu do ícone do celular, no topo da tela (toque e segure).
               </p>
             </div>
           ) : (

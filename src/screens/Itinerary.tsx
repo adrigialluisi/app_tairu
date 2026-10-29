@@ -341,9 +341,19 @@ export function Itinerary() {
   const [part, setPart] = useState<RoteiroPart>(
     () => navState.part ?? trip.roteiroPart ?? (trip.selectedPlaces.some(isMyPlace) ? 'agenda' : 'sugestoes'),
   );
+  // miolo rolável da tela (o <main> do ScreenShell): trocar de parte ou de Lista | Mapa volta pro topo (ajustes-101e)
+  const screenTopRef = useRef<HTMLDivElement>(null);
+  function scrollContentTop() {
+    screenTopRef.current?.closest('main')?.scrollTo({ top: 0 });
+  }
   function choosePart(next: RoteiroPart) {
+    if (next !== part) scrollContentTop();
     setPart(next);
     trip.setRoteiroPart(next);
+  }
+  function chooseView(next: 'lista' | 'mapa') {
+    if (next !== roteiroView) scrollContentTop();
+    setRoteiroView(next);
   }
   // a parte pedida pela navegação também passa a ser a lembrada
   useEffect(() => {
@@ -427,6 +437,8 @@ export function Itinerary() {
   });
   // parada pra rolar e piscar depois que a tela renderizar com ela
   const [pendingFocus, setPendingFocus] = useState<string | null>(null);
+  // pino recém-adicionado na Agenda → Mapa (ajustes-101e): o mapa vai até ele e ele pulsa
+  const [flashPin, setFlashPin] = useState<{ id: string; seq: number } | null>(null);
   useEffect(() => {
     if (!pendingFocus) return;
     focusCard(pendingFocus);
@@ -617,7 +629,6 @@ export function Itinerary() {
         ),
       };
     }
-    const destination = trip.destinations.find((d) => d.id === range.destinationId);
     const startISO = getTripStartISO(trip.destinations);
     const gasto = expenseParts({
       key: assignment.place.id,
@@ -626,7 +637,6 @@ export function Itinerary() {
       prefill: {
         description: label,
         destinationId: range.destinationId,
-        currencyCode: destination?.currencyCode,
         date: dateISO,
         category: expenseCategoryFor(place),
         placeSelectionId: assignment.place.id,
@@ -823,7 +833,6 @@ export function Itinerary() {
       prefill: {
         description: label,
         destinationId: destination?.id,
-        currencyCode: destination?.currencyCode,
         date: item.dateISO,
         category: 'passeios',
         eventId: item.sourceId,
@@ -1189,7 +1198,7 @@ export function Itinerary() {
         vale pras duas partes. Sugestões: convidados → busca → seções do perfil e eventos. Agenda:
         Lista | Mapa compacto → pílulas de data (rolam com a página) → dias → "+ Adicionar".
       */}
-      <div className={styles.viewPanel}>
+      <div ref={screenTopRef} className={styles.viewPanel}>
         <div className={styles.stickyBar}>
           <Tabs
             name={ROTEIRO_PART_TABS_NAME}
@@ -1308,7 +1317,7 @@ export function Itinerary() {
                 { value: 'mapa', label: 'Mapa', icon: MapIcon },
               ]}
               value={roteiroView}
-              onChange={(v) => setRoteiroView(v as 'lista' | 'mapa')}
+              onChange={(v) => chooseView(v as 'lista' | 'mapa')}
             />
 
             {tripStartISO && visibleDays.length > 1 && (
@@ -1369,6 +1378,8 @@ export function Itinerary() {
                       missingCount={mapMissingCount}
                       routeByDay
                       pinActions={mapPinActions}
+                      controlsSide="left"
+                      flashPin={flashPin}
                     />
                   </div>
                 )}
@@ -1620,6 +1631,17 @@ export function Itinerary() {
             dayOfSelection={(id) => daysWithPlaces.get(id) ?? null}
             askDay={addSheet.origin !== 'sugestoes'}
             onAdded={(id, destinationId, dayISO) => {
+              if (addSheet.origin !== 'sugestoes' && roteiroView === 'mapa') {
+                // "+ Adicionar" no Mapa (ajustes-101e): continua no mapa, no dia do lugar (se as
+                // pílulas estão num dia) e o pino novo pulsa; sem dia, o toast "Ver" leva ao dia calculado
+                setAddSheet((prev) => ({ ...prev, open: false }));
+                if (roteiroCity !== 'all' && roteiroCity !== destinationId) setRoteiroCity(destinationId);
+                if (dayISO && dayFilter !== 'all' && tripStartISO) setDayFilter(daysBetween(tripStartISO, dayISO) - 1);
+                setFlashPin({ id, seq: Date.now() });
+                if (dayISO) show('Salvo');
+                else setAddedWithoutDay(id);
+                return;
+              }
               if (!dayISO) {
                 // sem dia — busca das Sugestões (ajustes-101b) ou "App escolhe" da Agenda (101d): entra
                 // pela proximidade, a folha fecha e o toast "Adicionado à agenda · Ver" leva ao dia calculado

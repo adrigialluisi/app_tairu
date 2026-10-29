@@ -38,6 +38,25 @@ function PlatformRoot({ children }: { children: ReactNode }) {
  * — ela tem sua própria versão `inline`, dentro do próprio cabeçalho, junto
  * da logo e do ícone de perfil. Nas outras telas continua fixo no canto.
  */
+/** chaves do state de navegação que pedem pra tela ir até um ponto (a tela rola sozinha até ele) */
+const FOCUS_STATE_KEYS = ['section', 'focusSelectionId', 'expenseId'];
+
+/**
+ * Toda troca de tela volta pro topo (ajustes-101e): a janela (a Início rola nela) e o miolo das telas
+ * com ScreenShell. Exceção: navegação que pede um ponto — bloco dos convidados, card piscando,
+ * lançamento em Custos — deixa a própria tela rolar até ele.
+ */
+function ScrollToTopOnNavigate() {
+  const location = useLocation();
+  useEffect(() => {
+    const state = location.state as Record<string, unknown> | null;
+    if (state && FOCUS_STATE_KEYS.some((key) => state[key] !== undefined)) return;
+    window.scrollTo(0, 0);
+    document.querySelectorAll('main').forEach((main) => main.scrollTo(0, 0));
+  }, [location.pathname, location.key, location.state]);
+  return null;
+}
+
 function GlobalPlatformSwitcher() {
   const location = useLocation();
   if (location.pathname === '/inicio') return null;
@@ -51,6 +70,7 @@ export function App() {
         <TripProvider>
           <PlatformRoot>
             <HashRouter>
+              <ScrollToTopOnNavigate />
               <GlobalPlatformSwitcher />
               <Routes>
                 <Route path="/" element={<Splash />} />

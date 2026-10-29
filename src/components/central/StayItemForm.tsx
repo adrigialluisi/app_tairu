@@ -51,7 +51,8 @@ export function StayItemForm({ destination, initialItem, onSave, onCancel, onRem
   const [roomType, setRoomType] = useState(initialItem?.roomType ?? '');
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
   // padrão = moeda do destino da hospedagem (ajustes-98), editável
-  const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? destination.currencyCode);
+  // padrão em real (ajustes-101e; era a moeda do destino, ajustes-98), editável pelo select
+  const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
   const af = useAutofill();
 

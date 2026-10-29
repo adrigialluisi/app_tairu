@@ -118,10 +118,8 @@ export function TransportItemForm({
   const [dropoffAt, setDropoffAt] = useState(carRental?.dropoffAt ?? '');
   const trip = useTrip();
   const [costAmount, setCostAmount] = useState(initialItem?.costAmount ?? '');
-  // padrão = moeda do destino do item (ajustes-98: a moeda saiu de Destinos e aparece só aqui), editável
-  const [costCurrencyCode, setCostCurrencyCode] = useState(
-    initialItem?.costCurrencyCode ?? trip.destinations.find((d) => d.id === destinationId)?.currencyCode ?? 'BRL',
-  );
+  // padrão em real (ajustes-101e; era a moeda do destino, ajustes-98), editável pelo select
+  const [costCurrencyCode, setCostCurrencyCode] = useState(initialItem?.costCurrencyCode ?? 'BRL');
   const [voucherFileName, setVoucherFileName] = useState<string | null>(initialItem?.voucherFileName ?? null);
   const af = useAutofill();
   const tripRange = { startISO: getTripStartISO(trip.destinations), endISO: getTripEndISO(trip.destinations) };
